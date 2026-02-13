@@ -1,0 +1,2 @@
+## No external dependencies beyond Python stdlib
+## imaplib, ssl, email, json are all stdlib

@@ -1,0 +1,30 @@
+# === Credentials & Tokens ===
+*.token
+.env
+.env.*
+
+# === User Configuration (contains real addresses/IDs) ===
+config.json
+
+# === User Content (meeting transcripts, email bodies) ===
+data/
+incoming/
+archive/
+temp/
+documents/
+
+# === Runtime State ===
+state.json
+*.pid
+
+# === Python ===
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+
+# === OS ===
+.DS_Store
+Thumbs.db
