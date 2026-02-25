@@ -1,10 +1,6 @@
 ---
 name: yandex-disk
-description: >
-  Download files from Yandex Disk by public share links (yadi.sk). Retrieves
-  file metadata and download URLs via Yandex Disk REST API. Use when downloading
-  shared files from Yandex Disk, fetching meeting recordings, or working with
-  yadi.sk links.
+description: Download files from Yandex Disk by public share links (yadi.sk). Retrieves file metadata and download URLs via Yandex Disk REST API. Use when downloading shared files from Yandex Disk, fetching meeting recordings, or working with yadi.sk links.
 license: MIT
 compatibility: Requires Python 3.10+, requests, network access to Yandex Disk API
 metadata:
@@ -44,7 +40,9 @@ For private files or higher rate limits, set a Yandex Disk OAuth token:
 export YANDEX_DISK_TOKEN="your_oauth_token"
 ```
 
-Generate a token with `yandex-mail/scripts/oauth_setup.py --service disk --scopes disk:read`.
+Generate a token: `yandex-mail/scripts/oauth_setup.py --client-id DISK_CLIENT_ID --email user@yandex.ru --account bdi --service disk`.
+
+Use a Client ID configured for Disk scope (`cloud_api:disk.read`). It can be different from the Mail Client ID.
 
 ## API Reference
 

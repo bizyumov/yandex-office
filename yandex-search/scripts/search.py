@@ -40,6 +40,23 @@ API_BASE = "https://searchapi.api.cloud.yandex.net"
 OPERATIONS_BASE = "https://operation.api.cloud.yandex.net"
 
 
+def _find_config():
+    """Walk up from script to find config.json at yandex-skills/ root."""
+    from pathlib import Path
+    p = Path(__file__).resolve().parent
+    for _ in range(5):
+        candidate = p / "config.json"
+        if candidate.exists():
+            config = json.loads(candidate.read_text())
+            urls = config.get("urls", {})
+            return urls.get("search_api", API_BASE), urls.get("operations_api", OPERATIONS_BASE)
+        p = p.parent
+    return API_BASE, OPERATIONS_BASE
+
+
+_SEARCH_API_BASE, _OPERATIONS_API_BASE = _find_config()
+
+
 async def _search_api(
     api_key: str,
     folder_id: str,
@@ -90,7 +107,7 @@ async def _search_api(
                 body["region"] = region
 
             async with session.post(
-                f"{API_BASE}/v2/web/searchAsync", json=body
+                f"{_SEARCH_API_BASE}/v2/web/searchAsync", json=body
             ) as resp:
                 if resp.status != 200:
                     error = await resp.text()
@@ -103,7 +120,7 @@ async def _search_api(
         for op_id in operations:
             for attempt in range(10):
                 async with session.get(
-                    f"{OPERATIONS_BASE}/operations/{op_id}"
+                    f"{_OPERATIONS_API_BASE}/operations/{op_id}"
                 ) as resp:
                     if resp.status != 200:
                         await asyncio.sleep(1)

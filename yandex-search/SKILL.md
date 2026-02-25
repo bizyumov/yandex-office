@@ -1,10 +1,6 @@
 ---
 name: yandex-search
-description: >
-  Search the web using Yandex Cloud Search API v2. Supports async queries
-  with regional targeting, content filtering, and structured output.
-  Use when Russian-language search results are preferred or when Western
-  search APIs are unavailable.
+description: Search the web using Yandex Cloud Search API v2. Supports async queries with regional targeting, content filtering, and structured output. Use when Russian-language search results are preferred or when Western search APIs are unavailable.
 license: MIT
 compatibility: Requires Python 3.10+, aiohttp, network access to Yandex Cloud API
 metadata:

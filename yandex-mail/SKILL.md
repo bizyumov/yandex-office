@@ -1,54 +1,77 @@
 ---
 name: yandex-mail
-description: >
-  Fetch emails and attachments from Yandex Mail via IMAP with OAuth2
-  authentication. Downloads new messages into a structured incoming directory
-  for downstream processing. Classifies Telemost emails by type (transcript
-  vs recording), extracts meeting UIDs, and enriches metadata. Use when
-  checking for new emails, downloading attachments, or setting up automated
-  email polling from Yandex mailboxes.
+description: Fetch emails and attachments from Yandex Mail via IMAP with OAuth2 authentication. Downloads new messages into a structured incoming directory for downstream processing by specialized skills. Generic fetcher with no business logic — just saves emails matching configured filters.
 license: MIT
 compatibility: Requires Python 3.10+, network access to imap.yandex.ru
 metadata:
   author: bizyumov
-  version: "1.0"
+  version: "2.1"
 ---
 
 # Yandex Mail
 
-Automated email fetcher for Yandex Mail via IMAP XOAUTH2.
+Generic email fetcher for Yandex Mail via IMAP XOAUTH2. Saves incoming emails matching configured filters into a structured directory for downstream processing by other skills.
 
 ## Quick Start
 
 ```bash
-# One-time: set up OAuth token
-python scripts/oauth_setup.py --client-id YOUR_ID --email user@yandex.ru --service mail
+# One-time: set up OAuth token for mail (read-only IMAP scope)
+python scripts/oauth_setup.py --client-id MAIL_CLIENT_ID --email user@yandex.ru --account bdi --service mail
 
-# Fetch new emails
+# Fetch new emails (auto-discovers config.json)
+python scripts/fetch_emails.py
+
+# Fetch at most N new messages in this run (global cap)
+python scripts/fetch_emails.py --num 20
+
+# Or specify config explicitly
 python scripts/fetch_emails.py --config /path/to/config.json
-
-# Or via cron-safe wrapper
-scripts/fetch.sh
 ```
+
+> Note: if you also need Disk access, run oauth_setup again with `--service disk` and a Disk-capable Client ID (can be different from mail Client ID).
 
 ## What It Does
 
-1. Connects to Yandex Mail via IMAP XOAUTH2
-2. Searches for new emails from configured sender (e.g. `keeper@telemost.yandex.ru`)
-3. Classifies each email: "Конспект встречи" (transcript) or "Запись встречи" (recording)
-4. Extracts meeting UID from `https://telemost.yandex.ru/j/{UID}` in body
-5. Downloads attachments (preserving original filenames)
-6. Extracts email body (HTML→text)
-7. Writes structured directory to `incoming/` with enriched `meta.json`
-8. Persists UID state after each email (crash-safe)
+1. Loads shared `config.json` from yandex-skills root
+2. Connects to Yandex Mail via IMAP XOAUTH2
+3. Searches for new emails from configured sender filter
+4. Downloads attachments (preserving original filenames)
+5. Saves email body (text + HTML)
+6. Writes structured directory to `{data_dir}/incoming/` with generic `meta.json`
+7. Persists UID state after each email (crash-safe, atomic writes)
+8. Optionally limits intake with `--num` to avoid flood on newly added mailboxes
+
+### Sender Normalization
+
+`meta.json.sender` is normalized to keep a space before the address:
+
+- Input example: `Хранитель встреч Телемоста<keeper@telemost.yandex.ru>`
+- Stored as: `Хранитель встреч Телемоста <keeper@telemost.yandex.ru>`
+
+## Flood Control (`--num`)
+
+Use `--num` to cap the total number of newly fetched messages per run:
+
+```bash
+python scripts/fetch_emails.py --num 25
+```
+
+Behavior:
+
+- Cap is global across all configured mailboxes.
+- Messages are fetched in ascending UID order (oldest unseen first).
+- Once the cap is reached, remaining mailboxes are skipped for that run.
+- UID state is persisted after each successfully processed message.
+- `--num` must be a positive integer.
 
 ## Output Structure
 
 ```
-incoming/{YYYY-MM-DD}_{mailbox}_uid{N}/
-    {original_filename}.txt    # Telemost transcript (if "Конспект")
-    email_body.txt             # Email body converted to text
-    meta.json                  # Enriched metadata
+{data_dir}/incoming/{YYYY-MM-DD}_{mailbox}_uid{N}/
+    {original_filename}.txt    # Attachments (preserved names)
+    email_body.txt             # Email body (text)
+    email_body.html            # Email body (raw HTML, for downstream parsing)
+    meta.json                  # Generic metadata
 ```
 
 ### meta.json Fields
@@ -56,33 +79,41 @@ incoming/{YYYY-MM-DD}_{mailbox}_uid{N}/
 ```json
 {
   "imap_uid": 2550,
-  "mailbox": "mailbox1",
+  "mailbox": "bdi",
   "subject": "Конспект встречи от 08.02.2026",
-  "email_type": "konspekt",
-  "meeting_uid": "3500330089",
-  "meeting_title": null,
-  "media_links": [],
+  "sender": "Хранитель встреч Телемоста <keeper@telemost.yandex.ru>",
+  "timestamp": "2026-02-08T09:27:00Z",
   "attachments": ["2026-02-08 19:07 (MSK) 5981404294.txt"],
-  "date": "2026-02-08"
+  "dir_name": "2026-02-08_bdi_uid2550"
 }
 ```
 
-## Cron Setup
-
-```bash
-# Every 15 minutes
-*/15 * * * * /path/to/yandex-mail/scripts/fetch.sh
-
-# PID file prevents concurrent runs automatically
-```
+No business logic fields — downstream skills (yandex-telemost, etc.) enrich meta.json as needed.
 
 ## Configuration
 
-See `config.example.json`. Set `YANDEX_MAIL_DATA` env var to override data directory.
+Uses shared `config.json` at the yandex-skills root. Key fields:
+
+- `data_dir` — Base directory for data (auth, incoming, state)
+- `imap.server` / `imap.port` — IMAP connection settings
+- `mailboxes` — List of accounts to check
+- `mail.filters.sender` — FROM address filter
+- `mail.state_file` — UID tracking file
+
+## Token Format
+
+```json
+{
+  "email": "user@yandex.ru",
+  "token.mail": "y0_...",
+  "token.disk": "y0_..."
+}
+```
+
+Stored at `{data_dir}/auth/{account}.token` with 600 permissions.
 
 ## Files
 
 - `scripts/fetch_emails.py` — Main fetcher (CLI + Python API)
-- `scripts/oauth_setup.py` — Interactive OAuth token wizard (mail + disk)
-- `scripts/fetch.sh` — Cron-safe shell wrapper with PID lock
-- `references/imap-xoauth2.md` — XOAUTH2 protocol notes
+- `scripts/oauth_setup.py` — Interactive OAuth token wizard
+- `scripts/fetch.sh` — Cron-safe shell wrapper with PID lock (passes `--num` and other args through)

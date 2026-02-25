@@ -1,10 +1,6 @@
 ---
 name: yandex-cloud
-description: >
-  Deploy and manage serverless functions, object storage, and cloud resources
-  on Yandex Cloud. Covers deployment patterns, Cloud Functions, Object Storage
-  (S3-compatible), and Yandex Cloud CLI usage. Use when deploying to Yandex
-  Cloud or managing Russian cloud infrastructure.
+description: Deploy and manage serverless functions, object storage, and cloud resources on Yandex Cloud. Covers deployment patterns, Cloud Functions, Object Storage (S3-compatible), and Yandex Cloud CLI usage. Use when deploying to Yandex Cloud or managing Russian cloud infrastructure.
 license: MIT
 compatibility: Requires yc CLI, network access to Yandex Cloud
 metadata:

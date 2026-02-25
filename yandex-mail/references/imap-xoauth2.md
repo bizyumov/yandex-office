@@ -16,8 +16,8 @@ The auth string is base64-encoded by `imaplib.IMAP4_SSL.authenticate()`.
 
 | Service | Scope | Grants |
 |---------|-------|--------|
-| Mail (IMAP) | `mail:imap_full` | Full IMAP read/write access |
-| Disk | `disk:read` | Read-only access to Yandex Disk |
+| Mail (IMAP) | `mail:imap_ro` | Read-only IMAP access |
+| Disk | `cloud_api:disk.read` | Read-only access to Yandex Disk |
 
 ## Token Lifecycle
 

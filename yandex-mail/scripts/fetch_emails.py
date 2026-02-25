@@ -9,10 +9,11 @@ Designed to be run as a cron job. State is persisted after each email
 to prevent data loss on interruption.
 
 Output structure per email:
-    incoming/{YYYY-MM-DD}_{mailbox}_uid{N}/
+    {data_dir}/incoming/{YYYY-MM-DD}_{mailbox}_uid{N}/
         {original_attachment_filename}   # Preserved original name
         email_body.txt                   # HTML→text converted body
-        meta.json                        # Enriched metadata
+        email_body.html                  # Raw HTML body (if available)
+        meta.json                        # Metadata (no business logic)
 """
 
 import imaplib
@@ -20,31 +21,47 @@ import ssl
 import json
 import email
 import email.utils
-import os
 import re
 import logging
 import time
 from pathlib import Path
 from email.header import decode_header
-from datetime import datetime
+from datetime import datetime, timezone
+
 
 logger = logging.getLogger("yandex-mail")
 
-# Telemost meeting UID pattern in email body
-TELEMOST_UID_RE = re.compile(r'https://telemost\.yandex\.ru/j/(\d+)')
 
-# Meeting title in "Запись встречи «Title» от DD.MM.YYYY"
-MEETING_TITLE_RE = re.compile(r'\u00ab(.+?)\u00bb')
+def _find_config() -> Path:
+    """Walk up from script to find config.json at yandex-skills/ root."""
+    p = Path(__file__).resolve().parent
+    for _ in range(5):
+        candidate = p / "config.json"
+        if candidate.exists():
+            return candidate
+        p = p.parent
+    raise FileNotFoundError("config.json not found in parent directories")
 
-# yadi.sk links for video/audio
-YADISK_LINK_RE = re.compile(r'https://yadi\.sk/[a-zA-Z0-9/_-]+')
+
+def _resolve_data_dir(config: dict, config_path: Path) -> Path:
+    """Resolve data_dir from config, relative to config file location."""
+    data_dir = config.get("data_dir", "data")
+    return (config_path.parent / data_dir).resolve()
 
 
 class EmailFetcher:
-    def __init__(self, config_path: str | Path):
-        """Initialize fetcher with config."""
-        self.config_path = Path(config_path)
+    def __init__(self, config_path: str | Path | None = None):
+        """Initialize fetcher with shared config.
+
+        If config_path is None, auto-discovers config.json from parent dirs.
+        """
+        if config_path is None:
+            self.config_path = _find_config()
+        else:
+            self.config_path = Path(config_path)
+
         self.config = self._load_config()
+        self.data_dir = _resolve_data_dir(self.config, self.config_path)
         self.state = self._load_state()
         self.downloaded = []
 
@@ -54,13 +71,16 @@ class EmailFetcher:
         return json.loads(self.config_path.read_text())
 
     def _load_state(self) -> dict:
-        state_path = self.config_path.parent / self.config["state_file"]
+        state_file = self.config.get("mail", {}).get("state_file", "state.json")
+        state_path = self.data_dir / state_file
         if state_path.exists():
             return json.loads(state_path.read_text())
         return {"mailboxes": {}}
 
     def _save_state(self):
-        state_path = self.config_path.parent / self.config["state_file"]
+        state_file = self.config.get("mail", {}).get("state_file", "state.json")
+        state_path = self.data_dir / state_file
+        state_path.parent.mkdir(parents=True, exist_ok=True)
         tmp_path = state_path.with_suffix(".tmp")
         tmp_path.write_text(json.dumps(self.state, indent=2))
         tmp_path.replace(state_path)
@@ -75,13 +95,13 @@ class EmailFetcher:
         self.state["mailboxes"][mailbox_name]["last_check"] = datetime.now().isoformat()
 
     def _connect_imap(self, email_addr: str, token: str) -> imaplib.IMAP4_SSL:
+        imap_cfg = self.config.get("imap", {})
+        server = imap_cfg.get("server", "imap.yandex.com")
+        port = imap_cfg.get("port", 993)
+
         auth_string = f"user={email_addr}\x01auth=Bearer {token}\x01\x01"
         context = ssl.create_default_context()
-        conn = imaplib.IMAP4_SSL(
-            self.config["imap_server"],
-            self.config["imap_port"],
-            ssl_context=context,
-        )
+        conn = imaplib.IMAP4_SSL(server, port, ssl_context=context)
         conn.authenticate("XOAUTH2", lambda x: auth_string.encode())
         conn.select("INBOX")
         return conn
@@ -96,7 +116,7 @@ class EmailFetcher:
             if isinstance(content, bytes):
                 content = content.decode(encoding or "utf-8", errors="replace")
             result.append(content)
-        return "".join(result)
+        return " ".join(result)
 
     @staticmethod
     def _html_to_text(html: str) -> str:
@@ -112,75 +132,31 @@ class EmailFetcher:
         lines = [l for l in lines if l]
         return '\n'.join(lines)
 
-    @staticmethod
-    def classify_email(subject: str) -> str:
-        """Classify email type from subject line.
-
-        Returns: 'konspekt', 'zapis', or 'unknown'
-        """
-        if subject.startswith("Конспект встречи"):
-            return "konspekt"
-        if subject.startswith("Запись встречи"):
-            return "zapis"
-        return "unknown"
-
-    @staticmethod
-    def extract_meeting_uid(html_body: str) -> str | None:
-        """Extract Telemost meeting UID from email HTML body.
-
-        Looks for https://telemost.yandex.ru/j/{UID} pattern.
-        """
-        match = TELEMOST_UID_RE.search(html_body)
-        return match.group(1) if match else None
-
-    @staticmethod
-    def extract_meeting_title(subject: str) -> str | None:
-        """Extract meeting title from 'Запись встречи «Title» от ...' subject."""
-        match = MEETING_TITLE_RE.search(subject)
-        return match.group(1) if match else None
-
-    @staticmethod
-    def extract_media_links(html_body: str) -> list[str]:
-        """Extract yadi.sk links from email body."""
-        return YADISK_LINK_RE.findall(html_body)
-
     def _search_emails(self, conn, sender: str, last_uid: int) -> list[tuple[int, bytes]]:
         """Search for new emails from sender after last_uid.
 
-        Uses UID SEARCH for efficiency. Accepts both "Конспект встречи"
-        and "Запись встречи" subjects.
+        Returns ALL matching UIDs — no subject filtering.
+        Note: Yandex IMAP doesn't support combining FROM + UID criteria
+        in a single SEARCH, so we search by FROM and filter UID in Python.
         """
-        # UID SEARCH returns UIDs directly — much faster than N+1 fetches
-        criteria = f'FROM "{sender}" UID {last_uid + 1}:*'
-        _, uid_data = conn.uid("SEARCH", None, criteria)
+        _, uid_data = conn.uid("SEARCH", None, f'FROM "{sender}"')
         if not uid_data[0]:
             return []
 
-        matching_uids = []
+        result = []
         for uid_bytes in uid_data[0].split():
             uid = int(uid_bytes)
             if uid <= last_uid:
                 continue
+            result.append((uid, uid_bytes))
 
-            # Fetch subject header to classify
-            _, msg_data = conn.uid(
-                "FETCH", uid_bytes, "(BODY[HEADER.FIELDS (SUBJECT)])"
-            )
-            subject_raw = msg_data[0][1].decode("utf-8", errors="replace")
-            subject = self._decode_header(
-                subject_raw.replace("Subject: ", "").strip()
-            )
-
-            email_type = self.classify_email(subject)
-            if email_type != "unknown":
-                matching_uids.append((uid, uid_bytes))
-
-        return sorted(matching_uids, key=lambda x: x[0])
+        return sorted(result, key=lambda x: x[0])
 
     def _process_email(self, conn, uid_bytes: bytes, uid: int, mailbox_name: str) -> dict | None:
         """Fetch a single email and write to incoming/ directory.
 
-        Returns metadata dict or None on failure.
+        Saves email body (text + HTML), attachments, and generic metadata.
+        No business logic — downstream skills enrich meta.json as needed.
         """
         _, msg_data = conn.uid("FETCH", uid_bytes, "(RFC822)")
         raw_email = msg_data[0][1]
@@ -188,16 +164,17 @@ class EmailFetcher:
 
         subject = self._decode_header(msg.get("Subject", ""))
         date_str = msg.get("Date", "")
-        sender = msg.get("From", "")
+        sender_raw = msg.get("From", "")
+        sender = self._decode_header(sender_raw)
 
+        # Parse date to UTC ISO 8601 timestamp
         try:
             date_parsed = email.utils.parsedate_to_datetime(date_str)
+            timestamp = date_parsed.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
             date_formatted = date_parsed.strftime("%Y-%m-%d")
         except Exception:
+            timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
             date_formatted = datetime.now().strftime("%Y-%m-%d")
-
-        # Classify
-        email_type = self.classify_email(subject)
 
         # Extract email body (prefer text/plain, fallback to text/html)
         email_body_text = None
@@ -216,32 +193,23 @@ class EmailFetcher:
             elif part.get_content_type() == "text/html" and email_body_html is None:
                 email_body_html = payload.decode(charset, errors="replace")
 
-        # Keep raw HTML for UID/link extraction, convert for text output
         body_for_text = email_body_text or (
             self._html_to_text(email_body_html) if email_body_html else ""
         )
-        body_for_parsing = email_body_html or ""
-
-        # Extract meeting UID from HTML body
-        meeting_uid = self.extract_meeting_uid(body_for_parsing)
-
-        # Extract meeting title (only from "Запись" subjects)
-        meeting_title = None
-        if email_type == "zapis":
-            meeting_title = self.extract_meeting_title(subject)
-
-        # Extract yadi.sk media links
-        media_links = self.extract_media_links(body_for_parsing)
 
         # Create incoming directory
-        incoming_dir = Path(self.config.get("incoming_dir", "incoming"))
+        incoming_dir = self.data_dir / "incoming"
         dir_name = f"{date_formatted}_{mailbox_name}_uid{uid}"
         email_dir = incoming_dir / dir_name
         email_dir.mkdir(parents=True, exist_ok=True)
 
-        # Save email body
+        # Save email body (text)
         if body_for_text:
             (email_dir / "email_body.txt").write_text(body_for_text, encoding="utf-8")
+
+        # Save email body (HTML) for downstream skill parsing
+        if email_body_html:
+            (email_dir / "email_body.html").write_text(email_body_html, encoding="utf-8")
 
         # Download attachments (preserve original filenames)
         attachment_files = []
@@ -258,17 +226,13 @@ class EmailFetcher:
             filepath.write_bytes(part.get_payload(decode=True))
             attachment_files.append(filename)
 
-        # Build metadata
+        # Build metadata — generic, no business logic
         meta = {
             "imap_uid": uid,
             "mailbox": mailbox_name,
             "subject": subject,
             "sender": sender,
-            "date": date_formatted,
-            "email_type": email_type,
-            "meeting_uid": meeting_uid,
-            "meeting_title": meeting_title,
-            "media_links": media_links,
+            "timestamp": timestamp,
             "attachments": attachment_files,
             "dir_name": dir_name,
         }
@@ -280,21 +244,32 @@ class EmailFetcher:
 
         return meta
 
-    def fetch_mailbox(self, mailbox_config: dict):
-        """Fetch emails from a single mailbox."""
+    def fetch_mailbox(self, mailbox_config: dict, max_messages: int | None = None) -> int:
+        """Fetch emails from a single mailbox.
+
+        Args:
+            mailbox_config: Mailbox config entry with name/email.
+            max_messages: Optional cap for this mailbox in current run.
+
+        Returns:
+            Number of successfully fetched messages.
+        """
         mailbox_name = mailbox_config["name"]
         email_addr = mailbox_config["email"]
 
         logger.info(f"Checking mailbox: {email_addr} ({mailbox_name})")
 
-        # Load token
-        token_path = self.config_path.parent / mailbox_config["token_file"]
+        # Load token from data_dir/auth/{name}.token
+        token_path = self.data_dir / "auth" / f"{mailbox_name}.token"
         if not token_path.exists():
             logger.error(f"Token not found: {token_path}")
-            return
+            return 0
 
         token_data = json.loads(token_path.read_text())
-        token = token_data["token"]
+        token = token_data.get("token.mail")
+        if not token:
+            logger.error(f"No 'token.mail' found in {token_path}")
+            return 0
 
         # Connect with retry
         conn = None
@@ -309,20 +284,32 @@ class EmailFetcher:
                     time.sleep(2 ** attempt)
         if conn is None:
             logger.error("All connection attempts failed")
-            return
+            return 0
 
         last_uid = self._get_last_uid(mailbox_name)
         logger.info(f"Last processed UID: {last_uid}")
 
-        # Search (accepts both "Конспект" and "Запись")
-        sender = self.config["filters"]["sender"]
+        # Search for emails matching filter
+        sender = self.config.get("mail", {}).get("filters", {}).get("sender", "")
+        if not sender:
+            logger.error("No mail.filters.sender configured")
+            conn.logout()
+            return 0
+
         try:
             matching = self._search_emails(conn, sender, last_uid)
-            logger.info(f"Found {len(matching)} new emails")
         except Exception as e:
             logger.error(f"Search failed: {e}")
             conn.logout()
-            return
+            return 0
+
+        if max_messages is not None:
+            matching = matching[:max_messages]
+            logger.info(f"Found {len(matching)} new emails (capped by --num)")
+        else:
+            logger.info(f"Found {len(matching)} new emails")
+
+        fetched_count = 0
 
         # Process each email
         for uid, uid_bytes in matching:
@@ -331,25 +318,37 @@ class EmailFetcher:
                 meta = self._process_email(conn, uid_bytes, uid, mailbox_name)
                 if meta:
                     self.downloaded.append(meta)
-                    # Save state after each successful email (Option A)
                     self._update_last_uid(mailbox_name, uid)
                     self._save_state()
+                    fetched_count += 1
                     logger.info(
-                        f"  OK: {meta['email_type']} "
-                        f"meeting_uid={meta['meeting_uid']} "
+                        f"  OK: {meta['subject'][:50]} "
                         f"attachments={len(meta['attachments'])}"
                     )
             except Exception as e:
                 logger.error(f"  Failed UID {uid}: {e}")
-                # Do NOT advance UID — will retry on next run
 
         conn.logout()
         logger.info("Disconnected")
+        return fetched_count
 
-    def fetch_all(self) -> list[dict]:
-        """Fetch from all configured mailboxes."""
+    def fetch_all(self, num_messages: int | None = None) -> list[dict]:
+        """Fetch from all configured mailboxes.
+
+        Args:
+            num_messages: Optional global cap for fetched messages in this run.
+        """
+        remaining = num_messages
+
         for mailbox_config in self.config["mailboxes"]:
-            self.fetch_mailbox(mailbox_config)
+            if remaining is not None and remaining <= 0:
+                logger.info("Reached --num cap; stopping mailbox scan")
+                break
+
+            fetched = self.fetch_mailbox(mailbox_config, max_messages=remaining)
+            if remaining is not None:
+                remaining -= fetched
+
         return self.downloaded
 
 
@@ -358,12 +357,21 @@ def main():
 
     parser = argparse.ArgumentParser(description="Fetch emails from Yandex Mail")
     parser.add_argument(
-        "--config", "-c", default="config.json", help="Path to config.json"
+        "--config", "-c", default=None, help="Path to config.json (auto-discovers if omitted)"
+    )
+    parser.add_argument(
+        "--num",
+        type=int,
+        default=None,
+        help="Maximum number of new messages to fetch in this run (global cap across mailboxes)",
     )
     parser.add_argument(
         "--verbose", "-v", action="store_true", help="Enable verbose logging"
     )
     args = parser.parse_args()
+
+    if args.num is not None and args.num <= 0:
+        parser.error("--num must be a positive integer")
 
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
@@ -371,16 +379,14 @@ def main():
     )
 
     fetcher = EmailFetcher(args.config)
-    results = fetcher.fetch_all()
+    results = fetcher.fetch_all(num_messages=args.num)
 
-    # Summary
     print(json.dumps({
         "fetched": len(results),
         "emails": [
             {
                 "uid": r["imap_uid"],
-                "type": r["email_type"],
-                "meeting_uid": r["meeting_uid"],
+                "subject": r["subject"],
                 "attachments": len(r["attachments"]),
             }
             for r in results

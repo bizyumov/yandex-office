@@ -33,14 +33,80 @@ logger = logging.getLogger("YandexDisk")
 API_BASE = "https://cloud-api.yandex.net"
 
 
+def _find_config() -> Path:
+    """Walk up from script to find config.json at yandex-skills/ root."""
+    p = Path(__file__).resolve().parent
+    for _ in range(5):
+        candidate = p / "config.json"
+        if candidate.exists():
+            return candidate
+        p = p.parent
+    return None
+
+
+def _resolve_data_dir(config: dict, config_path: Path) -> Path:
+    """Resolve data_dir from config, relative to config file location."""
+    data_dir = config.get("data_dir", "data")
+    return (config_path.parent / data_dir).resolve()
+
+
 class YandexDisk:
     """Client for Yandex Disk REST API (public resources)."""
 
-    def __init__(self, token: str | None = None):
-        self.token = token or os.getenv("YANDEX_DISK_TOKEN")
+    def __init__(self, token: str | None = None, token_file: str | None = None,
+                 account: str | None = None, auth_dir: str | None = None,
+                 config_path: str | Path | None = None):
+        """Initialize with token resolution chain.
+
+        Priority: token > token_file > account > YANDEX_DISK_TOKEN env > None (public only)
+
+        If auth_dir is None, resolves from shared config's data_dir.
+        """
+        # Load shared config for API base and data_dir
+        self._config = {}
+        self._config_path = None
+        if config_path:
+            self._config_path = Path(config_path)
+        else:
+            self._config_path = _find_config()
+
+        if self._config_path and self._config_path.exists():
+            self._config = json.loads(self._config_path.read_text())
+            self._data_dir = _resolve_data_dir(self._config, self._config_path)
+        else:
+            self._data_dir = Path("data")
+
+        self.api_base = self._config.get("urls", {}).get("disk_api", API_BASE)
+
+        if auth_dir is None:
+            auth_dir = str(self._data_dir / "auth")
+
+        self.token = token
+        if not self.token and token_file:
+            self.token = self._read_token(Path(token_file))
+        if not self.token and account:
+            self.token = self._read_token(Path(auth_dir) / f"{account}.token")
+        if not self.token:
+            self.token = os.getenv("YANDEX_DISK_TOKEN")
         self.session = requests.Session()
         if self.token:
             self.session.headers["Authorization"] = f"OAuth {self.token}"
+
+    @staticmethod
+    def _read_token(path: Path) -> str | None:
+        """Read disk token from account token file.
+
+        Token format: {"email": "...", "token.disk": "y0_..."}
+        """
+        if not path.exists():
+            logger.debug(f"Token file not found: {path}")
+            return None
+        try:
+            data = json.loads(path.read_text())
+            return data.get("token.disk")
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.warning(f"Failed to read token from {path}: {e}")
+            return None
 
     def get_public_meta(self, public_url: str) -> dict:
         """Get metadata for a public file or directory.
@@ -50,7 +116,7 @@ class YandexDisk:
         Returns dict with: name, size, mime_type, created, modified, public_url, etc.
         """
         resp = self.session.get(
-            f"{API_BASE}/v1/disk/public/resources",
+            f"{self.api_base}/v1/disk/public/resources",
             params={"public_key": public_url},
         )
         resp.raise_for_status()
@@ -174,6 +240,15 @@ def main():
         "--filename", "-f", help="Override output filename"
     )
     parser.add_argument(
+        "--token-file", help="Path to token JSON file ({account}.token)"
+    )
+    parser.add_argument(
+        "--account", "-a", help="Account name — resolves to data/auth/{account}.token"
+    )
+    parser.add_argument(
+        "--auth-dir", default=None, help="Auth directory (default: from config)"
+    )
+    parser.add_argument(
         "--meta", action="store_true", help="Print file metadata as JSON"
     )
     parser.add_argument(
@@ -187,7 +262,11 @@ def main():
         format="%(asctime)s %(name)s %(levelname)s %(message)s",
     )
 
-    disk = YandexDisk()
+    disk = YandexDisk(
+        token_file=args.token_file,
+        account=args.account,
+        auth_dir=args.auth_dir,
+    )
 
     if args.meta:
         meta = disk.get_public_meta(args.url)
