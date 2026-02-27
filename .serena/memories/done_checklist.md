@@ -1,1 +1,0 @@
-When finishing a task: run requested validation commands (at minimum fetch_emails + process_meeting as requested by maintainer), run telemost tests when changed, confirm docs updated for behavior/CLI changes, and only then mark TODO entries as DONE.
