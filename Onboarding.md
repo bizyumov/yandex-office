@@ -1,6 +1,6 @@
 # Yandex Skills Onboarding (Operator Playbook)
 
-This guide documents the **actual onboarding flow** for `yandex-mail` / `yandex-disk` in this repository, including edge cases, ambiguity points, and recommended UX copy.
+This guide documents the **actual onboarding flow** for `mail` / `disk` in this repository, including edge cases, ambiguity points, and recommended UX copy.
 
 ---
 
@@ -86,7 +86,7 @@ Ask for:
 Run:
 
 ```bash
-python yandex-mail/scripts/oauth_setup.py \
+python mail/scripts/oauth_setup.py \
   --client-id MAIL_CLIENT_ID \
   --email user@yandex.ru \
   --account bdi \
@@ -99,7 +99,7 @@ User returns access token; save to `token.mail`.
 Run:
 
 ```bash
-python yandex-mail/scripts/oauth_setup.py \
+python mail/scripts/oauth_setup.py \
   --client-id DISK_CLIENT_ID \
   --email user@yandex.ru \
   --account bdi \
@@ -112,7 +112,7 @@ User returns access token; save to `token.disk`.
 Run:
 
 ```bash
-python yandex-mail/scripts/fetch_emails.py --config /path/to/config.json
+python mail/scripts/fetch_emails.py --config /path/to/config.json
 ```
 
 Success indicators:
@@ -256,4 +256,4 @@ Onboarding complete ✅
 
 ## Maintainer Note
 
-If onboarding was tested in a real chat session and exposed confusion, update this file first, then update `README.md` + skill `SKILL.md` files to keep guidance aligned.
+If onboarding was tested in a real chat session and exposed confusion, update this file first, then update `README.md`, root `SKILL.md`, and per-skill docs (`mail/mail.md`, `disk/disk.md`, etc.) to keep guidance aligned.

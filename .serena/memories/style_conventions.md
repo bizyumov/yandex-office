@@ -1,0 +1,1 @@
+Codebase is Python scripts with practical script-style modules, type hints in many functions, and straightforward naming. Data contracts are documented in README/SKILL docs; keep docs aligned with script behavior. Prefer minimal invasive edits and preserve existing conventions/CLI patterns.

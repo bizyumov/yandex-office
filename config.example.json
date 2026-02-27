@@ -17,7 +17,11 @@
     }
   ],
   "mail": {
+    "since": "off",
     "filters": { "sender": "keeper@telemost.yandex.ru" },
+    "fetch": {
+      "sleep_seconds": 0.5
+    },
     "state_file": "state.json"
   }
 }

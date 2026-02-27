@@ -1,29 +1,221 @@
-# TODO 
+# Yandex Skills TODO
 
-1. DONE — fetch_emails.py > resulting meta.json sender spacing fixed.
+## Overview
 
-2. DONE — process_meeting.py > stdout no longer includes Telemost default frontmatter.
+This document contains all discovered issues and required changes for the yandex suite based on production testing. Items are prioritized by severity.
 
-3. DONE — summary preview reduced from 500 to 250 chars.
-   - `summary_preview` now uses `[:250]`.
+---
 
-4. DONE — minimal output by default; detailed output only with `--verbose`.
-   - `report_result(..., verbose=False)` prints compact single-line status.
-   - Detailed multi-line report shown only with `--verbose`.
+## 🔴 CRITICAL: disk - Telemost Recordings OAuth Issue
 
-5. DONE — process_meeting.py > meeting.meta.json root `date` removed.
-   - `meta` no longer writes `"date"`.
+### Problem
+Telemost meeting recordings (audio/video) with `yadi.sk` public share links **require OAuth authentication** to download via API. Without token, API returns 404 "DiskNotFoundError" even though links appear to be public.
 
-6. DONE — `telemost_summary` preserved in meeting metadata.
-   - Added `telemost_summary` propagation in merge stage and output `meeting.meta.json`.
+### Current Behavior
 
-7. DONE — summary generation now copies original `email_body.txt` when available.
-   - Added `summary_file` tracking in merge stage.
-   - `process_meeting()` copies source file to `summary.txt` via `shutil.copyfile(...)`.
-   - Falls back to text write only when source file is unavailable.
+| Request Type | With Token | Without Token |
+|--------------|------------|---------------|
+| `GET /v1/disk/public/resources/download` | ✅ Returns working download URL | ❌ 404 DiskNotFoundError |
+| `HEAD` (any endpoint) | ❌ 405 Method Not Allowed | ❌ 302 redirect to captcha |
 
-8. process_meeting.py: ref_utc comes from `transcipt.txt` and then used to make dir name. Consequence: no dir name for recordings. Change the logic to parse date from `email_body.txt` (either `Запись началась 13.02.2026 в 19:08` or `Конспектирование началось 13.02.2026 в 19:08 (MSK)` both contain `13.02.2026 в 19:08`)
+### Root Cause
+- Telemost recordings are not truly public; they require owner's OAuth token
+- Current `download.py` doesn't use OAuth token for "public" files
 
-9. process_meeting.py: parse TELEMOST_UID_RE from `email_body.txt` NOT HTML! 
+### Required Changes
 
-10. HTML should not be used for anything! Remove HTML processing altogether and switch all processing to plain-text `email_body.txt`
+1. **Update `scripts/download.py`**:
+   - For `yadi.sk` links, always attempt OAuth authentication if token is available
+   - Don't assume "public" means "no auth required"
+   - Add `--force-auth` flag to explicitly use token even for public-looking URLs
+
+2. **Update `disk/disk.md`** documentation:
+   ```markdown
+   ## Important: Telemost Recordings
+   
+   Telemost meeting recordings require OAuth authentication despite having 
+   public share links (`yadi.sk/d/...`).
+   
+   ### API Behavior
+   - HEAD requests: NOT supported (always returns 405)
+   - GET without token: 404 "Resource not found" for Telemost files
+   - GET with OAuth token: Returns working download URL
+   
+   ### Usage for Telemost
+   Ensure YANDEX_DISK_TOKEN is set:
+   ```bash
+   export YANDEX_DISK_TOKEN="y0__..."
+   python scripts/download.py "https://yadi.sk/d/..." --output ./
+   ```
+   ```
+
+3. **Add test case**:
+   - Test downloading a Telemost recording with and without token
+   - Document expected 404 vs 200 behavior
+
+---
+
+## 🟡 MEDIUM: mail - Documentation Clarity
+
+### Problem
+The relationship between `fetch_emails.py`, `incoming/` directory, and downstream processing is not clearly documented. Users may browse `archive/` or `meetings/` instead of fetching new emails.
+
+### Required Changes
+
+1. **Update `mail/mail.md`** with explicit data flow:
+   ```markdown
+   ## Data Flow
+   
+   1. **Fetch**: `fetch_emails.py` downloads from IMAP → `incoming/`
+   2. **Process**: Downstream skills (telemost) process raw `incoming/` emails into rich `meetings/`
+   3. **Archive**: Processed emails move to `archive/`
+   
+   ⚠️ **Never check `archive/` or `meetings/` for "new" data** — 
+   always run `fetch_emails.py` first.
+   ```
+
+2. **Add `--dry-run` flag** to `fetch_emails.py`:
+   - Show what would be downloaded without actually downloading
+   - List pending emails with UID, subject, sender, timestamp
+   - Useful for checking "what's new" without modifying state
+   
+   Note: `migrate_meeting_dirs.py` already has `--dry-run` for directory migration,
+   but `fetch_emails.py` lacks this feature.
+
+---
+
+## 🟡 MEDIUM: Meta-Skill Structure Documentation
+
+### Problem
+`yandex` is a meta-skill containing multiple sub-skills (mail, disk, telemost, search, cloud). The structure is not immediately obvious, and users may look for `mail` as a separate top-level skill.
+
+### Required Changes
+
+1. **Update root `SKILL.md`** with clear structure diagram:
+   ```markdown
+   ## Structure
+   
+   This is a meta-skill containing multiple Yandex service integrations:
+   
+   ```
+   yandex/
+   ├── SKILL.md              (this file - overview)
+   ├── config.json           (shared configuration)
+   ├── mail/          (IMAP email fetching)
+   │   └── mail.md
+   ├── disk/          (file downloads)
+   │   └── disk.md
+   ├── telemost/      (meeting transcript processing)
+   │   └── telemost.md
+   ├── search/        (web search API)
+   │   └── search.md
+   └── cloud/         (cloud services)
+       └── cloud.md
+   ```
+   
+   Each subfolder is an independent skill with its own documentation.
+   ```
+
+2. **Restructure skill layout** (ACTION REQUIRED - breaking change):
+   
+   Rename sub-skill folders and their docs for clarity:
+   ```
+   BEFORE:                    AFTER:
+   yandex/             yandex/
+   ├── mail/           ├── SKILL.md (root index)
+   │   └── SKILL.md           ├── mail/
+   ├── disk/               └── mail.md
+   │   └── SKILL.md           ├── disk/
+   ├── telemost/           └── disk.md
+   │   └── SKILL.md           ├── telemost/
+   ├── search/             └── telemost.md
+   │   └── SKILL.md           ├── search/
+   └── cloud/              └── search.md
+       └── SKILL.md           └── cloud/
+                                  └── cloud.md
+   ```
+   
+   This eliminates confusion with multiple `SKILL.md` files and makes navigation
+   explicit: "For mail, see `mail/mail.md`".
+
+---
+
+## 🟢 LOW: General Improvements
+
+### 1. Environment Variable Handling
+
+**Issue**: Skills look for tokens in different places (env vars, `{account}.token` files).
+
+**Fix**: Standardize token resolution order in all skills:
+1. Environment variable (e.g., `YANDEX_DISK_TOKEN`)
+2. `{data_dir}/auth/{account}.token` file
+3. `{data_dir}/auth/default.token` fallback
+
+### 2. Error Messages
+
+**Issue**: 404 errors are generic and don't hint at OAuth requirement.
+
+**Fix**: Add contextual error handling:
+```python
+if response.status == 404 and "yadi.sk" in public_url:
+    logger.error("404 Not Found. Telemost recordings require OAuth token. "
+                 "Set YANDEX_DISK_TOKEN or ensure token file exists.")
+```
+
+### 3. Logging Verbosity
+
+**Issue**: It's hard to debug what's happening during API calls.
+
+**Fix**: Add `--verbose` flag to all scripts that logs:
+- API endpoints being called
+- Auth method being used (token vs none)
+- Response status codes
+
+---
+
+## Test Checklist
+
+Before marking these tasks complete, verify:
+
+- [ ] Can download Telemost audio with `YANDEX_DISK_TOKEN` set
+- [ ] Get 404 (with helpful error message) without token
+- [ ] HEAD request returns 405 (documented, not confusing)
+- [ ] `fetch_emails.py --dry-run` works and shows pending emails (NOTE: `migrate_meeting_dirs.py` already has `--dry-run`)
+- [ ] Root SKILL.md clearly explains meta-skill structure
+- [ ] All sub-skills reference root config properly
+
+---
+
+## Related Files
+
+- `/home/velizar/src/migrate-openclaw/skills/yandex/config.json` - Shared config
+- `/home/velizar/src/migrate-openclaw/skills/yandex/disk/scripts/download.py` - Needs OAuth fix
+- `/home/velizar/src/migrate-openclaw/skills/yandex/disk/disk.md` - Needs Telemost docs
+- `/home/velizar/src/migrate-openclaw/skills/yandex/mail/scripts/fetch_emails.py` - Needs `--dry-run` (NOTE: `migrate_meeting_dirs.py` already has it)
+- `/home/velizar/src/migrate-openclaw/skills/yandex/SKILL.md` - Needs structure diagram
+
+---
+
+## Notes from Testing
+
+**Test Case: Telemost Audio Download**
+```bash
+# This should work
+export YANDEX_DISK_TOKEN="y0__..."
+python disk/scripts/download.py "https://yadi.sk/d/kvnJPr7okDIY4g" --output /tmp/
+
+# This should fail with helpful error
+unset YANDEX_DISK_TOKEN
+python disk/scripts/download.py "https://yadi.sk/d/kvnJPr7okDIY4g" --output /tmp/
+# Expected: Error message explaining OAuth requirement
+```
+
+**Discovered API Quirks:**
+- Yandex Disk API doesn't support HEAD requests (always 405)
+- Telemost public links aren't truly public (need owner's OAuth)
+- 404 can mean "not found" OR "exists but you need auth"
+
+---
+
+*Last updated: 2026-02-27*
+*Testing performed with bdi@boevayaslava.ru account*

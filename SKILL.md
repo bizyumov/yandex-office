@@ -1,6 +1,44 @@
+---
+name: yandex
+description: Meta-skill index for Yandex integrations: mail, disk, telemost, search, cloud. Includes shared config, workflow, and per-skill entry points.
+license: MIT
+compatibility: Python 3.10+, per-skill dependencies, network access for Yandex APIs
+metadata:
+  author: bizyumov
+  version: "1.0"
+---
+
 # yandex
 
 A collection of [agentskills.io](https://agentskills.io/specification)-compliant skills for working with Yandex platform services.
+
+## Structure
+
+This is a meta-skill containing multiple Yandex service integrations:
+
+```text
+yandex/
+├── SKILL.md                  (this file: root index)
+├── config.json               (shared configuration)
+├── mail/
+│   └── mail.md
+├── disk/
+│   └── disk.md
+├── telemost/
+│   └── telemost.md
+├── search/
+│   └── search.md
+└── cloud/
+    └── cloud.md
+```
+
+## Where To Read Each Skill
+
+- Mail: `mail/mail.md`
+- Disk: `disk/disk.md`
+- Telemost: `telemost/telemost.md`
+- Search: `search/search.md`
+- Cloud: `cloud/cloud.md`
 
 ## Skills
 
@@ -8,7 +46,7 @@ A collection of [agentskills.io](https://agentskills.io/specification)-compliant
 |-------|-------------|
 | [mail](mail/) | Generic email fetcher via IMAP XOAUTH2 — saves emails to incoming/ |
 | [telemost](telemost/) | Enrich and process Telemost meetings — merge summary + recording, UTC diarization |
-| [disk](disk/) | Download public files from Yandex Disk (yadi.sk links) |
+| [disk](disk/) | Download files from Yandex Disk (yadi.sk links; Telemost links may require OAuth) |
 | [search](search/) | Web search via Yandex Cloud Search API v2 |
 | [cloud](cloud/) | Deploy serverless functions to Yandex Cloud |
 
@@ -38,16 +76,16 @@ All skills use a shared `config.json` at the repository root:
 
 `data_dir` is relative to the config file. Scripts auto-discover config by walking up directories.
 
-### Data Directory
+## Data Directory
 
 Runtime data lives **outside** the repo at `{data_dir}/`:
 
-```
+```text
 {data_dir}/
 ├── auth/bdi.token      # OAuth tokens (per-account)
 ├── incoming/           # mail writes here
 ├── state.json          # UID tracking
-├── meetings/ # telemost output (bucketed by month)
+├── meetings/           # telemost output (bucketed by month)
 │   └── 2026-02/
 │       └── 2026-02-24_18-19_bdi_1000349120/
 │           ├── transcript.txt
@@ -56,38 +94,19 @@ Runtime data lives **outside** the repo at `{data_dir}/`:
 └── archive/            # Processed email dirs
 ```
 
-## Installation
-
-### Full clone
-
-```bash
-git clone https://github.com/bizyumov/yandex-skills.git
-```
-
-### Single skill (sparse checkout)
-
-```bash
-git clone --filter=blob:none --sparse https://github.com/bizyumov/yandex-skills.git
-cd yandex
-git sparse-checkout set mail
-
-# Add more skills later
-git sparse-checkout add telemost disk
-```
-
 ## Typical Workflow
 
-```
-[Yandex Mail] → incoming/ → [Yandex Telemost] → meetings/
-                                    ↓
-                             [Yandex Disk] (download recordings)
+```text
+[Mail] -> incoming/ -> [Telemost] -> meetings/
+                           |
+                           +-> [Disk] (optional recording downloads)
 ```
 
-1. **mail** fetches emails on a cron schedule, saves to `{data_dir}/incoming/`
-2. **telemost** enriches Telemost emails, groups by meeting UID, merges + transforms
-3. **disk** (optional) downloads video/audio from yadi.sk links
+1. `mail` fetches emails on a cron schedule, saves to `{data_dir}/incoming/`
+2. `telemost` enriches Telemost emails, groups by meeting UID, merges + transforms
+3. `disk` (optional) downloads recording links
 
-Each skill is self-contained and can be used independently.
+Important: for "what is new", always run `mail/scripts/fetch_emails.py` first. Do not treat `archive/` or `meetings/` as source-of-truth for new messages.
 
 ## Telemost Meeting Directory Contract
 
@@ -120,6 +139,35 @@ python telemost/scripts/migrate_meeting_dirs.py --dry-run
 python telemost/scripts/migrate_meeting_dirs.py
 ```
 
+## Telemost Recording OAuth Caveat
+
+Yandex Disk links that look public (for example `yadi.sk/d/...`) may still require OAuth for Telemost recordings.
+
+- With token: API may return downloadable link.
+- Without token: API may return `404` for existing Telemost resources.
+- `HEAD` requests are not a reliable probe for availability.
+
+Use token-based auth when handling Telemost media links.
+
+## Installation
+
+### Full clone
+
+```bash
+git clone https://github.com/bizyumov/yandex-skills.git
+```
+
+### Single skill (sparse checkout)
+
+```bash
+git clone --filter=blob:none --sparse https://github.com/bizyumov/yandex-skills.git
+cd yandex
+git sparse-checkout set mail
+
+# Add more skills later
+git sparse-checkout add telemost disk
+```
+
 ## OAuth Setup
 
 ### Token Format
@@ -148,7 +196,7 @@ python mail/scripts/oauth_setup.py --client-id DISK_CLIENT_ID --email user@yande
 > Use a Client ID that is configured for the requested service scope.
 > For mail fetching, prefer read-only scope (`mail:imap_ro`).
 
-### OAuth App Registration
+## OAuth App Registration
 
 | Step | URL |
 |------|-----|
@@ -156,7 +204,7 @@ python mail/scripts/oauth_setup.py --client-id DISK_CLIENT_ID --email user@yande
 | Create new API key | https://oauth.yandex.ru/client/new/api |
 | View existing tokens | https://oauth.yandex.ru/ |
 
-### Service-Specific Documentation
+## Service-Specific Documentation
 
 | Service | Documentation |
 |---------|---------------|
@@ -164,6 +212,11 @@ python mail/scripts/oauth_setup.py --client-id DISK_CLIENT_ID --email user@yande
 | Yandex Mail IMAP | https://yandex.ru/support/mail/mail-clients/others.html |
 | Yandex Cloud Search API | https://yandex.cloud/ru/docs/search-api/ |
 | Yandex Cloud CLI | https://cloud.yandex.com/docs/cli/quickstart |
+
+## Migration Note
+
+This repository now uses `yandex/` with `mail/`, `disk/`, `telemost/`, `search/`, `cloud/`.
+Old `yandex-*` paths are removed as part of hard cutover.
 
 ## License
 

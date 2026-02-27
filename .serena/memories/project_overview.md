@@ -1,0 +1,1 @@
+Project: yandex-skills, a Python-based collection of Yandex service skills (mail, telemost, disk, search, cloud). Main runtime flow: yandex-mail fetches into {data_dir}/incoming, yandex-telemost processes into {data_dir}/meetings, optional yandex-disk downloads recordings. Repo root contains shared config and per-skill scripts/docs.
