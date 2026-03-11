@@ -23,13 +23,14 @@ Does **not** cover:
 Before asking the user for anything, verify:
 
 1. `config.json` exists and is readable.
-2. `data_dir` points to an intended location (prefer explicit absolute path for production).
-3. Required dirs exist (or can be created):
+2. Agent config exists at `{cwd}/yandex-data/config.agent.json`.
+3. `data_dir` points to an intended location.
+4. Required dirs exist (or can be created):
    - `{data_dir}/auth`
    - `{data_dir}/incoming`
    - `{data_dir}/meetings`
-4. Mailbox is confirmed (e.g. `bdi@boevayaslava.ru`).
-5. Sender filter is confirmed (default often `keeper@telemost.yandex.ru`).
+5. Mailbox is confirmed (e.g. `user@example.com`).
+6. Sender filter is confirmed (default often `keeper@telemost.yandex.ru`).
 
 ---
 
@@ -79,7 +80,8 @@ Ask for:
 - Data directory preference
 
 ### Step 2 — Normalize config and directories
-- Set `data_dir` to explicit path.
+- Keep shared defaults in root `config.json`.
+- Put mailbox-specific settings into `{cwd}/yandex-data/config.agent.json`.
 - Create `auth`, `incoming`, `meetings`.
 
 ### Step 3 — Issue mail token
@@ -112,7 +114,7 @@ User returns access token; save to `token.disk`.
 Run:
 
 ```bash
-python mail/scripts/fetch_emails.py --config /path/to/config.json
+python mail/scripts/fetch_emails.py
 ```
 
 Success indicators:
@@ -250,7 +252,7 @@ Onboarding complete ✅
 - `AUTHENTICATE failed`: wrong scope, wrong token, wrong mailbox email.
 - Empty fetch result: sender filter too strict or UID state already advanced.
 - Token file missing fields: rerun oauth_setup with missing `--service`.
-- Unexpected data path: resolve `data_dir` relative to `config.json` and switch to absolute path.
+- Unexpected data path: confirm the process CWD and check `{cwd}/yandex-data/config.agent.json`.
 
 ---
 

@@ -24,52 +24,34 @@ import email.utils
 import re
 import logging
 import time
+import sys
 from pathlib import Path
 from email.header import decode_header
 from datetime import datetime, timezone
 
+ROOT_DIR = Path(__file__).resolve().parents[2]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+from common.auth import resolve_token
+from common.config import load_runtime_context
 
 logger = logging.getLogger("mail")
 
 
-def _find_config() -> Path:
-    """Walk up from script to find config.json in repository root."""
-    p = Path(__file__).resolve().parent
-    for _ in range(5):
-        candidate = p / "config.json"
-        if candidate.exists():
-            return candidate
-        p = p.parent
-    raise FileNotFoundError("config.json not found in parent directories")
-
-
-def _resolve_data_dir(config: dict, config_path: Path) -> Path:
-    """Resolve data_dir from config, relative to config file location."""
-    data_dir = config.get("data_dir", "data")
-    return (config_path.parent / data_dir).resolve()
-
-
 class EmailFetcher:
-    def __init__(self, config_path: str | Path | None = None):
-        """Initialize fetcher with shared config.
-
-        If config_path is None, auto-discovers config.json from parent dirs.
-        """
-        if config_path is None:
-            self.config_path = _find_config()
-        else:
-            self.config_path = Path(config_path)
-
-        self.config = self._load_config()
-        self.data_dir = _resolve_data_dir(self.config, self.config_path)
+    def __init__(self):
+        """Initialize fetcher from shared + agent config."""
+        self.runtime = load_runtime_context(__file__)
+        self.config_path = self.runtime.global_config_path
+        self.config = self.runtime.config
+        self.data_dir = self.runtime.data_dir
         self.state = self._load_state()
         self.downloaded = []
         self.mailbox_counts = {}
 
     def _load_config(self) -> dict:
-        if not self.config_path.exists():
-            raise FileNotFoundError(f"Config not found: {self.config_path}")
-        return json.loads(self.config_path.read_text())
+        return self.runtime.config
 
     def _load_state(self) -> dict:
         state_file = self.config.get("mail", {}).get("state_file", "state.json")
@@ -359,16 +341,18 @@ class EmailFetcher:
         logger.info(f"Checking mailbox: {email_addr} ({mailbox_name})")
 
         # Load token from data_dir/auth/{name}.token
-        token_path = self.data_dir / "auth" / f"{mailbox_name}.token"
-        if not token_path.exists():
-            logger.error(f"Token not found: {token_path}")
+        try:
+            token_info = resolve_token(
+                account=mailbox_name,
+                skill="mail",
+                data_dir=self.data_dir,
+                config=self.config,
+                required_scopes=["mail:imap_ro"],
+            )
+        except Exception as exc:
+            logger.error(str(exc))
             return 0
-
-        token_data = json.loads(token_path.read_text())
-        token = token_data.get("token.mail")
-        if not token:
-            logger.error(f"No 'token.mail' found in {token_path}")
-            return 0
+        token = token_info.token
 
         # Connect with retry
         conn = None
@@ -498,9 +482,6 @@ def main():
 
     parser = argparse.ArgumentParser(description="Fetch emails from Yandex Mail")
     parser.add_argument(
-        "--config", "-c", default=None, help="Path to config.json (auto-discovers if omitted)"
-    )
-    parser.add_argument(
         "--num",
         type=int,
         default=None,
@@ -524,7 +505,7 @@ def main():
         format="%(asctime)s %(name)s %(levelname)s %(message)s",
     )
 
-    fetcher = EmailFetcher(args.config)
+    fetcher = EmailFetcher()
     results = fetcher.fetch_all(num_messages=args.num, dry_run=args.dry_run)
 
     pending_rows = []

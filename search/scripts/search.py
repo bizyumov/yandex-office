@@ -24,6 +24,7 @@ import base64
 import re
 from typing import List, Dict, Optional, Any
 from xml.etree import ElementTree as ET
+from pathlib import Path
 
 try:
     import aiohttp
@@ -39,22 +40,23 @@ logger = logging.getLogger("YandexSearch")
 API_BASE = "https://searchapi.api.cloud.yandex.net"
 OPERATIONS_BASE = "https://operation.api.cloud.yandex.net"
 
+ROOT_DIR = Path(__file__).resolve().parents[2]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 
-def _find_config():
-    """Walk up from script to find config.json in repository root."""
-    from pathlib import Path
-    p = Path(__file__).resolve().parent
-    for _ in range(5):
-        candidate = p / "config.json"
-        if candidate.exists():
-            config = json.loads(candidate.read_text())
-            urls = config.get("urls", {})
-            return urls.get("search_api", API_BASE), urls.get("operations_api", OPERATIONS_BASE)
-        p = p.parent
-    return API_BASE, OPERATIONS_BASE
+from common.config import load_runtime_context
 
 
-_SEARCH_API_BASE, _OPERATIONS_API_BASE = _find_config()
+def _load_api_bases() -> tuple[str, str]:
+    runtime = load_runtime_context(__file__)
+    urls = runtime.config.get("urls", {})
+    return (
+        urls.get("search_api", API_BASE),
+        urls.get("operations_api", OPERATIONS_BASE),
+    )
+
+
+_SEARCH_API_BASE, _OPERATIONS_API_BASE = _load_api_bases()
 
 
 async def _search_api(

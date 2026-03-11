@@ -18,30 +18,28 @@ Generic email fetcher for Yandex Mail via IMAP XOAUTH2. Saves incoming emails ma
 # One-time: set up OAuth token for mail (read-only IMAP scope)
 python scripts/oauth_setup.py --client-id MAIL_CLIENT_ID --email user@yandex.ru --account bdi --service mail
 
-# Fetch new emails (auto-discovers config.json)
+# Fetch new emails from the agent workspace
 python scripts/fetch_emails.py
 
 # Fetch at most N new messages in this run (global cap)
 python scripts/fetch_emails.py --num 20
-
-# Or specify config explicitly
-python scripts/fetch_emails.py --config /path/to/config.json
 ```
 
 > Note: if you also need Disk access, run oauth_setup again with `--service disk` and a Disk-capable Client ID (can be different from mail Client ID).
 
 ## What It Does
 
-1. Loads shared `config.json` from yandex root
-2. Connects to Yandex Mail via IMAP XOAUTH2
-3. Searches for new emails from configured sender filter
-4. Downloads attachments (preserving original filenames)
-5. Saves email body (text + HTML)
-6. Writes structured directory to `{data_dir}/incoming/` with generic `meta.json`
-7. Persists UID state after each email (crash-safe, atomic writes)
-8. Optionally limits intake with `--num` to avoid flood on newly added mailboxes
-9. Optionally narrows IMAP search with global `SINCE` mode for large mailboxes
-10. Applies configurable sleep between message-processing iterations (global)
+1. Loads shared root `config.json`
+2. Loads `{cwd}/yandex-data/config.agent.json`
+3. Connects to Yandex Mail via IMAP XOAUTH2
+4. Searches for new emails from configured sender filter
+5. Downloads attachments (preserving original filenames)
+6. Saves email body (text + HTML)
+7. Writes structured directory to `{data_dir}/incoming/` with generic `meta.json`
+8. Persists UID state after each email (crash-safe, atomic writes)
+9. Optionally limits intake with `--num` to avoid flood on newly added mailboxes
+10. Optionally narrows IMAP search with global `SINCE` mode for large mailboxes
+11. Applies configurable sleep between message-processing iterations (global)
 
 ## Flood Control (`--num`)
 
@@ -63,7 +61,7 @@ Behavior:
 
 For large mailboxes, you can globally limit IMAP search to messages sent since a date.
 
-Config (`config.json`):
+Root config (`config.json`):
 
 ```json
 {
@@ -155,11 +153,11 @@ No business logic fields — downstream skills (telemost, etc.) enrich meta.json
 
 ## Configuration
 
-Uses shared `config.json` at the yandex root. Key fields:
+Uses shared root `config.json` plus agent-local `yandex-data/config.agent.json`. Key fields:
 
 - `data_dir` — Base directory for data (auth, incoming, state)
 - `imap.server` / `imap.port` — IMAP connection settings
-- `mailboxes` — List of accounts to check
+- `mailboxes` — Agent-local mailbox list in `config.agent.json`
 - `mail.filters.sender` — FROM address filter
 - `mail.since` — `"on"`/`"off"` toggle for state-driven IMAP `SINCE` filtering
 - `mail.fetch.sleep_seconds` — Global sleep between `_process_email` iterations (seconds, default `0.5`)

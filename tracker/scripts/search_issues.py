@@ -68,12 +68,11 @@ def main():
     parser.add_argument("--status", help="Filter by status")
     parser.add_argument("--limit", type=int, default=50, help="Max results")
     parser.add_argument("--output", help="Output JSON file")
-    parser.add_argument("--config", help="Path to config.json")
     
     args = parser.parse_args()
     
     try:
-        client = load_tracker_client(args.account, args.config)
+        client = load_tracker_client(args.account)
         
         # Build filter if individual params provided
         filter_obj = None

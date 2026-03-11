@@ -22,12 +22,11 @@ def main():
     parser.add_argument("--no-follow", action="store_true", 
                         help="Don't add self to followers")
     parser.add_argument("--output", help="Output JSON file")
-    parser.add_argument("--config", help="Path to config.json")
     
     args = parser.parse_args()
     
     try:
-        client = load_tracker_client(args.account, args.config)
+        client = load_tracker_client(args.account, required_scopes=["tracker:write"])
         
         summon = args.summon.split(",") if args.summon else None
         

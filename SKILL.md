@@ -1,11 +1,11 @@
 ---
 name: yandex
-description: Meta-skill index for Yandex integrations: mail, disk, telemost, search, cloud. Includes shared config, workflow, and per-skill entry points.
+description: Meta-skill index for Yandex integrations: mail, disk, telemost, search, cloud, forms. Includes shared config, workflow, and per-skill entry points.
 license: MIT
 compatibility: Python 3.10+, per-skill dependencies, network access for Yandex APIs
 metadata:
   author: bizyumov
-  version: "1.0"
+  version: "1.1"
 ---
 
 # yandex
@@ -19,7 +19,8 @@ This is a meta-skill containing multiple Yandex service integrations:
 ```text
 yandex/
 ├── SKILL.md                  (this file: root index)
-├── config.json               (shared configuration)
+├── config.json               (shared defaults)
+├── config.agent.example.json (workspace override example)
 ├── mail/
 │   └── mail.md
 ├── disk/
@@ -28,8 +29,10 @@ yandex/
 │   └── telemost.md
 ├── search/
 │   └── search.md
-└── cloud/
-    └── cloud.md
+├── cloud/
+│   └── cloud.md
+└── forms/
+    └── forms.md
 ```
 
 ## Where To Read Each Skill
@@ -39,32 +42,41 @@ yandex/
 - Telemost: `telemost/telemost.md`
 - Search: `search/search.md`
 - Cloud: `cloud/cloud.md`
+- Forms: `forms/forms.md`
+- Tracker: `tracker/tracker.md`
 
 ## Skills
 
 | Skill | Description |
 |-------|-------------|
 | [mail](mail/) | Generic email fetcher via IMAP XOAUTH2 — saves emails to incoming/ |
-| [telemost](telemost/) | Enrich and process Telemost meetings — merge summary + recording, UTC diarization |
-| [disk](disk/) | Download files from Yandex Disk (yadi.sk links; Telemost links may require OAuth) |
+| [telemost](telemost/) | Enrich/process Telemost emails, manage real Telemost conferences, and admin Telemost org defaults |
+| [disk](disk/) | Download files from Yandex Disk, upload files to Disk, and manage public or organization-only share links (Telemost links may require OAuth) |
 | [search](search/) | Web search via Yandex Cloud Search API v2 |
 | [cloud](cloud/) | Deploy serverless functions to Yandex Cloud |
+| [forms](forms/) | Export form responses from Yandex Forms — download results as XLSX or JSON |
+| [tracker](tracker/) | Manage tasks in Yandex Tracker — create, search, update issues, manage Agile boards |
 
 ## Shared Configuration
 
-All skills use a shared `config.json` at the repository root:
+All Yandex sub-skills use the same two-level config:
+
+- root `config.json` for shared defaults
+- `{cwd}/yandex-data/config.agent.json` for agent-specific overrides
+
+Root `config.json`:
 
 ```json
 {
-  "data_dir": "../../data/yandex",
+  "data_dir": "yandex-data",
   "urls": {
     "oauth": "https://oauth.yandex.ru/authorize",
     "disk_api": "https://cloud-api.yandex.net",
+    "telemost_api": "https://cloud-api.yandex.net/v1/telemost-api",
     "search_api": "https://searchapi.api.cloud.yandex.net",
     "operations_api": "https://operation.api.cloud.yandex.net"
   },
   "imap": { "server": "imap.yandex.com", "port": 993 },
-  "mailboxes": [{ "name": "bdi", "email": "bdi@boevayaslava.ru" }],
   "mail": {
     "since": "off",
     "filters": { "sender": "keeper@telemost.yandex.ru" },
@@ -74,7 +86,15 @@ All skills use a shared `config.json` at the repository root:
 }
 ```
 
-`data_dir` is relative to the config file. Scripts auto-discover config by walking up directories.
+Agent override example:
+
+```json
+{
+  "mailboxes": [{ "name": "primary", "email": "user@example.com" }]
+}
+```
+
+`data_dir` is resolved from the actual process CWD, so the canonical runtime path is `{cwd}/yandex-data/`.
 
 ## Data Directory
 
@@ -91,7 +111,11 @@ Runtime data lives **outside** the repo at `{data_dir}/`:
 │           ├── transcript.txt
 │           ├── summary.txt
 │           └── meeting.meta.json
-└── archive/            # Processed email dirs
+├── archive/            # Processed email dirs
+└── forms/              # forms export output
+    └── {form_id}/
+        ├── responses_2026-03-03_080512.xlsx
+        └── meta.json
 ```
 
 ## Typical Workflow
@@ -105,6 +129,17 @@ Runtime data lives **outside** the repo at `{data_dir}/`:
 1. `mail` fetches emails on a cron schedule, saves to `{data_dir}/incoming/`
 2. `telemost` enriches Telemost emails, groups by meeting UID, merges + transforms
 3. `disk` (optional) downloads recording links
+
+Disk note:
+
+- organization-only sharing is live-verified for the documented `public_settings.accesses[].macros` payload
+- `available_until` behaves as an absolute Unix timestamp; omitting it means infinite sharing
+- resource metadata does not reliably echo ACLs back, so link behavior must be verified through the public-resource endpoints
+
+Telemost calendar note:
+
+- `calendar/scripts/create_event.py` can create a new Telemost conference or bind an existing one with `--telemost-conference-id`
+- existing-conference binding is strict and cannot be combined with new-conference flags
 
 Important: for "what is new", always run `mail/scripts/fetch_emails.py` first. Do not treat `archive/` or `meetings/` as source-of-truth for new messages.
 
@@ -175,12 +210,13 @@ git sparse-checkout add telemost disk
 ```json
 {
   "email": "user@yandex.ru",
+  "token.auth": "y0_...",
   "token.mail": "y0_...",
   "token.disk": "y0_..."
 }
 ```
 
-Flat keys (`token.mail`, `token.disk`), one file per account at `{data_dir}/auth/{account}.token`.
+Canonical convention is `token.<skill>` across the board. `token.auth` is the bootstrap fallback. Legacy token names are migrated to canonical keys when read.
 
 ### Generate a Token
 

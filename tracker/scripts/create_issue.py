@@ -28,12 +28,11 @@ def main():
     parser.add_argument("--due-date", help="Due date (YYYY-MM-DD)")
     parser.add_argument("--parent", help="Parent issue key")
     parser.add_argument("--output", help="Output JSON file")
-    parser.add_argument("--config", help="Path to config.json")
     
     args = parser.parse_args()
     
     try:
-        client = load_tracker_client(args.account, args.config)
+        client = load_tracker_client(args.account, required_scopes=["tracker:write"])
         
         # Parse lists
         followers = args.followers.split(",") if args.followers else None

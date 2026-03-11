@@ -213,7 +213,7 @@ Each result contains:
 
 ## Cost and Billing
 
-**Pricing:** ~0.30 RUB per query (~$0.003 USD)
+**Pricing:** ~0.03 RUB per query (~$0.0003 USD)
 
 Each page in `pages_to_fetch` counts as a separate API request.
 

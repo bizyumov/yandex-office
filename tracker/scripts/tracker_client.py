@@ -15,6 +15,13 @@ from urllib.parse import urljoin
 
 import requests
 
+ROOT_DIR = Path(__file__).resolve().parents[2]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+from common.auth import resolve_token
+from common.config import load_runtime_context
+
 
 class TrackerError(Exception):
     """Base exception for Tracker API errors."""
@@ -39,7 +46,7 @@ class TrackerValidationError(TrackerError):
 class TrackerClient:
     """Yandex Tracker API client."""
     
-    BASE_URL = "https://api.tracker.yandex.net/v3"
+    BASE_URL = "https://api.tracker.yandex.net/v3/"
     
     def __init__(self, token: str, org_id: str, org_type: str = "360"):
         """
@@ -76,6 +83,8 @@ class TrackerClient:
         **kwargs
     ) -> Any:
         """Make API request with error handling."""
+        # Strip leading slash to ensure proper URL joining
+        endpoint = endpoint.lstrip('/')
         url = urljoin(self.BASE_URL, endpoint)
         
         try:
@@ -392,51 +401,33 @@ class TrackerClient:
         return self._request("GET", f"/queues/{queue_key}")
 
 
-def load_tracker_client(account: str, config_path: Optional[str] = None) -> TrackerClient:
+def load_tracker_client(
+    account: str,
+    *,
+    required_scopes: Optional[list[str]] = None,
+) -> TrackerClient:
     """
     Load tracker client from config and token file.
     
     Args:
         account: Account name (token file name)
-        config_path: Path to config.json (auto-discovered if not provided)
-        
     Returns:
         Configured TrackerClient instance
     """
-    # Find config
-    if config_path:
-        config_file = Path(config_path)
-    else:
-        # Walk up from current directory
-        current = Path.cwd()
-        config_file = None
-        for parent in [current] + list(current.parents):
-            candidate = parent / "config.json"
-            if candidate.exists():
-                config_file = candidate
-                break
-        
-        if not config_file:
-            raise TrackerError("config.json not found")
-    
-    with open(config_file) as f:
-        config = json.load(f)
-    
-    # Determine data directory
-    data_dir = Path(config_file).parent / config.get("data_dir", "../../yandex-data")
-    data_dir = data_dir.resolve()
-    
-    # Load token
-    token_file = data_dir / "auth" / f"{account}.token"
-    if not token_file.exists():
-        raise TrackerError(f"Token file not found: {token_file}")
-    
-    with open(token_file) as f:
-        token_data = json.load(f)
-    
-    token = token_data.get("token.tracker")
-    if not token:
-        raise TrackerError(f"No tracker token for account {account}")
+    runtime = load_runtime_context(__file__)
+    try:
+        token_info = resolve_token(
+            account=account,
+            skill="tracker",
+            data_dir=runtime.data_dir,
+            config=runtime.config,
+            required_scopes=required_scopes or ["tracker:read"],
+        )
+    except Exception as exc:
+        raise TrackerError(str(exc)) from exc
+
+    token_data = token_info.token_data
+    token = token_info.token
     
     org_id = token_data.get("org_id")
     if not org_id:
@@ -453,12 +444,11 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description="Test Tracker API connection")
     parser.add_argument("--account", required=True, help="Account name")
-    parser.add_argument("--config", help="Path to config.json")
     
     args = parser.parse_args()
     
     try:
-        client = load_tracker_client(args.account, args.config)
+        client = load_tracker_client(args.account)
         myself = client.get_myself()
         print(f"Connected as: {myself.get('display', 'Unknown')}")
         print(f"UID: {myself.get('passportUid')}")

@@ -22,9 +22,15 @@ import json
 import logging
 import re
 import shutil
+import sys
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 
+ROOT_DIR = Path(__file__).resolve().parents[2]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+from common.config import load_runtime_context
 from process_transcript import transform_transcript, format_utc, parse_reference_timestamp
 
 logger = logging.getLogger("telemost")
@@ -93,25 +99,6 @@ def extract_meeting_title(subject: str) -> str | None:
 def extract_media_links(body_text: str) -> list[str]:
     """Extract yadi.sk links from email plain text body."""
     return YADISK_LINK_RE.findall(body_text)
-
-
-# ── Shared config helpers ─────────────────────────────────────────────────────
-
-def _find_config() -> Path | None:
-    """Walk up from script to find config.json in repository root."""
-    p = Path(__file__).resolve().parent
-    for _ in range(5):
-        candidate = p / "config.json"
-        if candidate.exists():
-            return candidate
-        p = p.parent
-    return None
-
-
-def _resolve_data_dir(config: dict, config_path: Path) -> Path:
-    """Resolve data_dir from config, relative to config file location."""
-    data_dir = config.get("data_dir", "data")
-    return (config_path.parent / data_dir).resolve()
 
 
 # ── Meeting output naming helpers ──────────────────────────────────────────────
@@ -722,10 +709,6 @@ def main():
         description="Process Telemost meetings from incoming/ directory"
     )
     parser.add_argument(
-        "--config", default=None,
-        help="Path to config.json (auto-discovers if omitted)"
-    )
-    parser.add_argument(
         "--incoming", default=None,
         help="Override incoming directory path"
     )
@@ -756,13 +739,8 @@ def main():
         format="%(asctime)s %(name)s %(levelname)s %(message)s",
     )
 
-    # Load shared config for data_dir
-    config_path = Path(args.config) if args.config else _find_config()
-    if config_path and config_path.exists():
-        config = json.loads(config_path.read_text())
-        data_dir = _resolve_data_dir(config, config_path)
-    else:
-        data_dir = Path(".")
+    runtime = load_runtime_context(__file__)
+    data_dir = runtime.data_dir
 
     incoming_dir = Path(args.incoming) if args.incoming else data_dir / "incoming"
     output_base = Path(args.output) if args.output else data_dir / "meetings"

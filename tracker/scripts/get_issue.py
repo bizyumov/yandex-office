@@ -99,12 +99,11 @@ def main():
     parser.add_argument("--with-comments", action="store_true", help="Include comments")
     parser.add_argument("--with-transitions", action="store_true", help="Include transitions")
     parser.add_argument("--output", help="Output JSON file")
-    parser.add_argument("--config", help="Path to config.json")
     
     args = parser.parse_args()
     
     try:
-        client = load_tracker_client(args.account, args.config)
+        client = load_tracker_client(args.account)
         
         expand = []
         if args.with_comments:

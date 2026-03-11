@@ -29,8 +29,7 @@ def format_board(board: dict) -> str:
     
     for col in columns:
         col_name = col.get("name", "Unknown")
-        col_status = col.get("status", "").
-get("display", "")
+        col_status = col.get("status", {}).get("display", "")
         
         # Count issues in column
         issues = col.get("issues", [])
@@ -55,12 +54,11 @@ def main():
     parser.add_argument("--account", required=True, help="Account name")
     parser.add_argument("--board", type=int, required=True, help="Board ID")
     parser.add_argument("--output", help="Output JSON file")
-    parser.add_argument("--config", help="Path to config.json")
     
     args = parser.parse_args()
     
     try:
-        client = load_tracker_client(args.account, args.config)
+        client = load_tracker_client(args.account)
         
         board = client.get_board(args.board)
         

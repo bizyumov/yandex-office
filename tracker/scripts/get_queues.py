@@ -17,12 +17,11 @@ def main():
     parser = argparse.ArgumentParser(description="List Yandex Tracker queues")
     parser.add_argument("--account", required=True, help="Account name")
     parser.add_argument("--output", help="Output JSON file")
-    parser.add_argument("--config", help="Path to config.json")
     
     args = parser.parse_args()
     
     try:
-        client = load_tracker_client(args.account, args.config)
+        client = load_tracker_client(args.account)
         
         queues = client.get_queues()
         

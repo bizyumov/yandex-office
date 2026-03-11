@@ -44,12 +44,11 @@ def main():
     parser.add_argument("--priority", help="Filter by priority")
     parser.add_argument("--limit", type=int, default=20, help="Max results")
     parser.add_argument("--overdue", action="store_true", help="Show only overdue")
-    parser.add_argument("--config", help="Path to config.json")
     
     args = parser.parse_args()
     
     try:
-        client = load_tracker_client(args.account, args.config)
+        client = load_tracker_client(args.account)
         
         # Build query
         conditions = ["Assignee: me()"]

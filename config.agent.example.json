@@ -1,0 +1,13 @@
+{
+  "mailboxes": [
+    {
+      "name": "myaccount",
+      "email": "user@example.com"
+    }
+  ],
+  "mail": {
+    "fetch": {
+      "sleep_seconds": 0.0
+    }
+  }
+}

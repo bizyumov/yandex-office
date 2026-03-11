@@ -10,11 +10,9 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-SKILL_DIR="$(dirname "$SCRIPT_DIR")"
-ROOT_DIR="$(dirname "$SKILL_DIR")"
-
-# Config path (override with YANDEX_TELEMOST_CONFIG env var)
-CONFIG_PATH="${YANDEX_TELEMOST_CONFIG:-$ROOT_DIR/config.json}"
+WORKSPACE_DIR="${OPENCLAW_AGENT_DIR:-$(pwd)}"
+DATA_DIR="$WORKSPACE_DIR/yandex-data"
+AGENT_CONFIG_PATH="$DATA_DIR/config.agent.json"
 
 # PID file lock
 PIDFILE="/tmp/telemost-process.pid"
@@ -26,12 +24,13 @@ fi
 echo $$ > "$PIDFILE"
 trap "rm -f '$PIDFILE'" EXIT
 
-# Verify config exists
-if [ ! -f "$CONFIG_PATH" ]; then
-    echo "Config not found: $CONFIG_PATH"
-    echo "Set YANDEX_TELEMOST_CONFIG or place config.json in repository root."
+# Verify agent config exists
+if [ ! -f "$AGENT_CONFIG_PATH" ]; then
+    echo "Agent config not found: $AGENT_CONFIG_PATH"
+    echo "Create yandex-data/config.agent.json in the workspace before running."
     exit 1
 fi
 
 # Run processor
-python3 "$SCRIPT_DIR/process_meeting.py" --config "$CONFIG_PATH" "$@"
+cd "$WORKSPACE_DIR"
+python3 "$SCRIPT_DIR/process_meeting.py" "$@"

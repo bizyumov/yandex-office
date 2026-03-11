@@ -7,26 +7,31 @@ A collection of [agentskills.io](https://agentskills.io/specification)-compliant
 | Skill | Description |
 |-------|-------------|
 | [mail](mail/) | Generic email fetcher via IMAP XOAUTH2 — saves emails to incoming/ |
-| [telemost](telemost/) | Enrich and process Telemost meetings — merge summary + recording, UTC diarization |
-| [disk](disk/) | Download public files from Yandex Disk (yadi.sk links) |
+| [telemost](telemost/) | Enrich/process Telemost emails, manage real Telemost conferences, and admin Telemost org defaults |
+| [disk](disk/) | Download public files from Yandex Disk, upload files to Disk, and manage public or organization-only share links |
 | [search](search/) | Web search via Yandex Cloud Search API v2 |
 | [cloud](cloud/) | Deploy serverless functions to Yandex Cloud |
 
 ## Shared Configuration
 
-All skills use a shared `config.json` at the repository root:
+All Yandex sub-skills use the same two-level config:
+
+- skill defaults in root `config.json`
+- agent overrides in `{cwd}/yandex-data/config.agent.json`
+
+Root `config.json`:
 
 ```json
 {
-  "data_dir": "../../data/yandex",
+  "data_dir": "yandex-data",
   "urls": {
     "oauth": "https://oauth.yandex.ru/authorize",
     "disk_api": "https://cloud-api.yandex.net",
+    "telemost_api": "https://cloud-api.yandex.net/v1/telemost-api",
     "search_api": "https://searchapi.api.cloud.yandex.net",
     "operations_api": "https://operation.api.cloud.yandex.net"
   },
   "imap": { "server": "imap.yandex.com", "port": 993 },
-  "mailboxes": [{ "name": "bdi", "email": "bdi@boevayaslava.ru" }],
   "mail": {
     "since": "off",
     "filters": { "sender": "keeper@telemost.yandex.ru" },
@@ -36,7 +41,15 @@ All skills use a shared `config.json` at the repository root:
 }
 ```
 
-`data_dir` is relative to the config file. Scripts auto-discover config by walking up directories.
+Workspace `yandex-data/config.agent.json`:
+
+```json
+{
+  "mailboxes": [{ "name": "primary", "email": "user@example.com" }]
+}
+```
+
+`data_dir` is resolved from the actual process CWD. Run scripts from the agent workspace, not from the repo root.
 
 ### Data Directory
 
@@ -87,6 +100,17 @@ git sparse-checkout add telemost disk
 2. **telemost** enriches Telemost emails, groups by meeting UID, merges + transforms
 3. **disk** (optional) downloads video/audio from yadi.sk links
 
+Disk note:
+
+- organization-only sharing is live-verified for the documented `public_settings.accesses[].macros` payload
+- `available_until` behaves as an absolute Unix timestamp; omitting it means infinite sharing
+- metadata does not reliably echo ACLs back, so share verification depends on public-resource endpoint behavior
+
+Telemost calendar note:
+
+- `calendar/scripts/create_event.py` can create a new Telemost conference or bind an existing one with `--telemost-conference-id`
+- existing-conference binding is strict and cannot be combined with new-conference flags
+
 Each skill is self-contained and can be used independently.
 
 ## Telemost Meeting Directory Contract
@@ -127,12 +151,13 @@ python telemost/scripts/migrate_meeting_dirs.py
 ```json
 {
   "email": "user@yandex.ru",
+  "token.auth": "y0_...",
   "token.mail": "y0_...",
   "token.disk": "y0_..."
 }
 ```
 
-Flat keys (`token.mail`, `token.disk`), one file per account at `{data_dir}/auth/{account}.token`.
+Canonical convention is `token.<skill>` for every sub-skill. Legacy aliases are migrated in place where needed (`token.org` -> `token.directory`, contacts currently duplicates calendar auth into `token.contacts`).
 
 ### Generate a Token
 

@@ -29,12 +29,11 @@ def main():
     parser.add_argument("--due-date", help="New due date (YYYY-MM-DD)")
     parser.add_argument("--follow", action="store_true", help="Add self to followers")
     parser.add_argument("--output", help="Output JSON file")
-    parser.add_argument("--config", help="Path to config.json")
     
     args = parser.parse_args()
     
     try:
-        client = load_tracker_client(args.account, args.config)
+        client = load_tracker_client(args.account, required_scopes=["tracker:write"])
         
         # Build update fields
         add_tags = args.add_tags.split(",") if args.add_tags else None

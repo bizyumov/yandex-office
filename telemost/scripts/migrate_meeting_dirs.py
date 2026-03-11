@@ -6,12 +6,18 @@ Target layout:
 """
 
 import argparse
-import json
 import logging
 import shutil
 from pathlib import Path
 
-from process_meeting import _find_config, _resolve_data_dir, build_meeting_output_path
+import sys
+
+ROOT_DIR = Path(__file__).resolve().parents[2]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+from common.config import load_runtime_context
+from process_meeting import build_meeting_output_path
 
 logger = logging.getLogger("telemost-migrate")
 
@@ -83,11 +89,6 @@ def main():
         description="Rename Telemost meeting dirs to YYYY-MM/date localtime_mailbox_uid layout",
     )
     parser.add_argument(
-        "--config",
-        default=None,
-        help="Path to config.json (auto-discovers if omitted)",
-    )
-    parser.add_argument(
         "--meetings",
         default=None,
         help="Override meetings root (default: {data_dir}/meetings)",
@@ -110,12 +111,8 @@ def main():
         format="%(asctime)s %(name)s %(levelname)s %(message)s",
     )
 
-    config_path = Path(args.config) if args.config else _find_config()
-    if config_path and config_path.exists():
-        config = json.loads(config_path.read_text())
-        data_dir = _resolve_data_dir(config, config_path)
-    else:
-        data_dir = Path(".")
+    runtime = load_runtime_context(__file__)
+    data_dir = runtime.data_dir
 
     meetings_root = (
         Path(args.meetings)
