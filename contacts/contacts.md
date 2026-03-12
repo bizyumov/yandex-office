@@ -40,8 +40,8 @@ Token stored per-account at: `{data_dir}/auth/{account}.token`
 ### 1. Search Contacts by Name
 
 **User Request Examples:**
-- "Find Vasiliy in my contacts"
-- "What's the email for Andreyuk?"
+- "Find Ivan in my contacts"
+- "What's the email for Ivanov?"
 - "Show me all Transneft contacts"
 - "Кто такой Иванов в моих контактах?"
 
@@ -52,15 +52,15 @@ Token stored per-account at: `{data_dir}/auth/{account}.token`
   - Email addresses
   - Organization/Company
   - Phone numbers
-- Support partial matches ("Вас" → "Василий")
-- Support transliteration ("Vasiliy" → "Василий")
+- Support partial matches ("Вас" → "Иван")
+- Support transliteration ("Ivan" → "Иван")
 - Return ranked results with match confidence
 - Handle Russian and English queries
 
 **Output Format:**
 ```json
 {
-  "query": "Vasiliy",
+  "query": "Ivan",
   "account": "ctiis",
   "total_results": 3,
   "results": [
@@ -68,9 +68,9 @@ Token stored per-account at: `{data_dir}/auth/{account}.token`
       "uid": "uuid-here",
       "match_confidence": 0.95,
       "matched_field": "FN",
-      "full_name": "Андреюк Василий Сергеевич",
-      "first_name": "Василий",
-      "last_name": "Андреюк",
+      "full_name": "Иванов Иван Иванович",
+      "first_name": "Иван",
+      "last_name": "Иванов",
       "middle_name": "Сергеевич",
       "emails": ["contact@example.com"],
       "phones": ["+7..."],
@@ -83,15 +83,15 @@ Token stored per-account at: `{data_dir}/auth/{account}.token`
 
 **CLI Interface:**
 ```bash
-python contacts/scripts/search.py --account ctiis --query "Василий"
-python contacts/scripts/search.py --account ctiis --query "Andreyuk" --json
+python contacts/scripts/search.py --account ctiis --query "Иван"
+python contacts/scripts/search.py --account ctiis --query "Ivanov" --json
 python contacts/scripts/search.py --account ctiis --domain "transneft.ru"
 ```
 
 ### 2. Add New Contact
 
 **User Request Examples:**
-- "Add Vasiliy Andreyuk to contacts"
+- "Add Ivan Ivanov to contacts"
 - "Save contact: Иванов Иван, contact@example.com"
 - "Add contact from email" (extract from email headers)
 
@@ -117,8 +117,8 @@ python contacts/scripts/search.py --account ctiis --domain "transneft.ru"
 ```bash
 python contacts/scripts/add.py \
   --account ctiis \
-  --first-name "Василий" \
-  --last-name "Андреюк" \
+  --first-name "Иван" \
+  --last-name "Иванов" \
   --middle-name "Сергеевич" \
   --email "contact@example.com" \
   --org "Транснефть"
@@ -130,8 +130,8 @@ python contacts/scripts/add.py --account ctiis --from-json contacts.json
 ### 3. Update Existing Contact
 
 **User Request Examples:**
-- "Update Vasiliy's phone number"
-- "Add work email to Andreyuk"
+- "Update Ivan's phone number"
+- "Add work email to Ivanov"
 - "Change organization for all Transneft contacts"
 
 **Requirements:**
@@ -145,7 +145,7 @@ python contacts/scripts/add.py --account ctiis --from-json contacts.json
 ```bash
 python contacts/scripts/update.py \
   --account ctiis \
-  --search "Андреюк" \
+  --search "Иванов" \
   --phone "+79161234567" \
   --phone-type "mobile"
 
@@ -159,7 +159,7 @@ python contacts/scripts/update.py \
 ### 4. Delete Contact
 
 **User Request Examples:**
-- "Delete Vasiliy from contacts"
+- "Delete Ivan from contacts"
 - "Remove all contacts from NLMK"
 
 **Requirements:**
@@ -170,7 +170,7 @@ python contacts/scripts/update.py \
 
 **CLI Interface:**
 ```bash
-python contacts/scripts/delete.py --account ctiis --search "Андреюк"
+python contacts/scripts/delete.py --account ctiis --search "Иванов"
 python contacts/scripts/delete.py --account ctiis --uid "uuid" --force
 ```
 
@@ -249,7 +249,7 @@ def suggest_attendees(account: str, partial_name: str, limit: int = 5) -> List[C
 ```bash
 python calendar/scripts/create_event.py \
   --account ctiis \
-  --contact "Андреюк" \
+  --contact "Иванов" \
   --start "2026-03-04T11:00:00" \
   --duration 60
 ```
@@ -345,7 +345,7 @@ Add shared defaults to root `config.json` and contact-specific overrides to `yan
   "message": "Contact with email 'contact@example.com' already exists",
   "existing_contact": {
     "uid": "...",
-    "full_name": "Андреюк Василий Сергеевич"
+    "full_name": "Иванов Иван Иванович"
   }
 }
 ```

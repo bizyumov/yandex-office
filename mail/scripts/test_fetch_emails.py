@@ -56,7 +56,7 @@ def test_to_imap_date_normalizes_iso_date() -> None:
 def test_fetch_mailbox_dry_run_collects_headers(monkeypatch) -> None:
     header_message = (
         "Subject: =?utf-8?B?0KLQtdGB0YI=?=\r\n"
-        "From: sender@example.com\r\n"
+        "From: news@example.com\r\n"
         "Date: Thu, 12 Mar 2026 10:00:00 +0000\r\n\r\n"
     )
     conn = FakeConn(header_message)
@@ -83,7 +83,7 @@ def test_fetch_mailbox_dry_run_collects_headers(monkeypatch) -> None:
             "imap_uid": 11,
             "mailbox": "bdi",
             "subject": "Тест",
-            "sender": "sender@example.com",
+            "sender": "news@example.com",
             "timestamp": "2026-03-12T10:00:00Z",
             "dry_run": True,
         }
@@ -93,8 +93,8 @@ def test_fetch_mailbox_dry_run_collects_headers(monkeypatch) -> None:
 def test_fetch_all_respects_global_cap() -> None:
     fetcher = build_fetcher()
     fetcher.config["mailboxes"] = [
-        {"name": "one", "email": "one@example.com"},
-        {"name": "two", "email": "two@example.com"},
+        {"name": "one", "email": "user@example.com"},
+        {"name": "two", "email": "contact@example.com"},
     ]
 
     calls = []
