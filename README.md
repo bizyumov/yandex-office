@@ -44,6 +44,14 @@ Root `config.json`:
 }
 ```
 
+## Regression Tests
+
+Run the checked-in regression suite from the repo root:
+
+```bash
+./scripts/test_regression.sh
+```
+
 Workspace `yandex-data/config.agent.json`:
 
 ```json
