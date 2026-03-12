@@ -218,4 +218,4 @@ python disk/scripts/download.py "https://yadi.sk/d/kvnJPr7okDIY4g" --output /tmp
 ---
 
 *Last updated: 2026-02-27*
-*Testing performed with user@example.com account*
+*Testing performed with a placeholder example account*

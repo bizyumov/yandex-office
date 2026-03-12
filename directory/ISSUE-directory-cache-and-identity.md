@@ -110,11 +110,11 @@ Identity graph shape:
 
 ```json
 {
-  "telegram_id": "123456789",
+  "telegram_id": "123456",
   "email": "user@example.com",
   "domain": "example.com",
   "org_id": "123456",
-  "yandex_user_id": "1000000000000000"
+  "yandex_user_id": "123456"
 }
 ```
 

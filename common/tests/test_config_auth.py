@@ -52,7 +52,7 @@ def test_resolve_token_bootstraps_directory_alias(tmp_path: Path) -> None:
         token_path,
         {
             "email": "user@example.com",
-            "token.org": "y0_directory",
+            "token.org": "directory_placeholder_token",
         },
     )
 
@@ -64,10 +64,10 @@ def test_resolve_token_bootstraps_directory_alias(tmp_path: Path) -> None:
         required_scopes=["directory:read_users"],
     )
 
-    assert resolved.token == "y0_directory"
+    assert resolved.token == "directory_placeholder_token"
     assert canonical_token_key("directory") == "token.directory"
     stored = json.loads(token_path.read_text(encoding="utf-8"))
-    assert stored["token.directory"] == "y0_directory"
+    assert stored["token.directory"] == "directory_placeholder_token"
 
 
 def test_resolve_token_falls_back_to_token_auth(tmp_path: Path) -> None:

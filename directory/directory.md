@@ -1,8 +1,8 @@
-# Yandex 360 Directory Sub-Skill Requirements
+# Yandex 360 Directory / Директория
 
 ## Overview
 
-Yandex 360 Directory API integration for accessing organization users, departments, and calendar free/busy information. Works alongside Calendar and Contacts skills to enable "find common meeting time" workflows.
+Yandex 360 Directory / Директория API integration for accessing organization users, departments, and calendar free/busy information. Works alongside Calendar and Contacts skills to enable "find common meeting time" workflows.
 
 ## API Discovery
 

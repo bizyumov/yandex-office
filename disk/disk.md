@@ -1,6 +1,6 @@
 ---
 name: disk
-description: Download files from Yandex Disk by public share links, upload files to Disk, and manage publish/share settings for Disk resources. Use when downloading shared files, fetching meeting recordings, uploading artifacts, or creating and revoking controlled share links.
+description: Disk / Диск — download files from Yandex Disk by public share links, upload files to Disk, and manage publish/share settings for Disk resources. Use when downloading shared files, fetching meeting recordings, uploading artifacts, or creating and revoking controlled share links.
 license: MIT
 compatibility: Requires Python 3.10+, requests, network access to Yandex Disk API
 metadata:
@@ -8,7 +8,7 @@ metadata:
   version: "1.1"
 ---
 
-# Yandex Disk
+# Yandex Disk / Диск
 
 Download public files from Yandex Disk, upload files to Disk, and manage share links.
 

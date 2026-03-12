@@ -6,11 +6,14 @@ A collection of [agentskills.io](https://agentskills.io/specification)-compliant
 
 | Skill | Description |
 |-------|-------------|
-| [mail](mail/) | Generic email fetcher via IMAP XOAUTH2 — saves emails to incoming/ |
-| [telemost](telemost/) | Enrich/process Telemost emails, manage real Telemost conferences, and admin Telemost org defaults |
-| [disk](disk/) | Download public files from Yandex Disk, upload files to Disk, and manage public or organization-only share links |
-| [search](search/) | Web search via Yandex Cloud Search API v2 |
-| [cloud](cloud/) | Deploy serverless functions to Yandex Cloud |
+| [mail](mail/) | Mail / Почта: generic email fetcher via IMAP XOAUTH2 — saves emails to incoming/ |
+| [calendar](calendar/) | Calendar / Календарь: CalDAV integration for Yandex Calendar — list/create/update events, find slots, Telemost binding |
+| [contacts](contacts/) | Contacts / Контакты: CardDAV integration for Yandex Contacts — fuzzy lookup, create/update contacts |
+| [directory](directory/) | Directory / Директория: Yandex 360 Directory API — users, departments, groups, and org-aware identity data |
+| [telemost](telemost/) | Telemost / Телемост: process Telemost emails, manage real conferences, and admin Telemost org defaults |
+| [disk](disk/) | Disk / Диск: download files, upload files, and manage public or organization-only share links |
+| [search](search/) | Search / Поиск: web search via Yandex Cloud Search API v2 |
+| [cloud](cloud/) | Cloud / Облако: deploy serverless functions to Yandex Cloud |
 
 ## Shared Configuration
 

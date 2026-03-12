@@ -1,13 +1,13 @@
 ---
 name: telemost
-description: 'Process Yandex Telemost meeting data and manage real Telemost conferences. Use when processing Telemost meeting emails or when creating/updating conferences for calendar scheduling.'
+description: 'Telemost / Телемост — process Yandex Telemost meeting data and manage real Telemost conferences. Use when processing Telemost meeting emails or when creating/updating conferences for calendar scheduling.'
 license: MIT
 metadata:
   author: bizyumov
   version: "2.5"
 ---
 
-# Yandex Telemost
+# Yandex Telemost / Телемост
 
 Process Telemost meeting transcripts and recordings into structured documents, and create or update real Telemost conferences via the Telemost API.
 

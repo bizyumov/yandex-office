@@ -97,7 +97,7 @@ def test_create_telemost_event_uses_real_conference(monkeypatch):
         summary="Demo",
         start_str="2026-03-12T10:00:00",
         duration_minutes=30,
-        attendees=["guest@example.com"],
+        attendees=["user@example.com"],
     )
 
     assert result["success"] is True
@@ -111,7 +111,7 @@ def test_create_telemost_event_uses_real_conference(monkeypatch):
     assert "LOCATION:https://telemost.yandex.ru/j/conf-live" in captured["data"]
     assert "Ссылка: https://telemost.yandex.ru/j/conf-live" in captured["data"]
     assert "METHOD:REQUEST" in captured["data"]
-    assert "ATTENDEE;CUTYPE=INDIVIDUAL;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION:mailto:guest@example.com" in captured["data"]
+    assert "ATTENDEE;CUTYPE=INDIVIDUAL;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION:mailto:user@example.com" in captured["data"]
     assert "ORGANIZER;CN=acct:mailto:user@example.com" in captured["data"]
 
 
@@ -128,7 +128,7 @@ def test_create_telemost_event_passes_overrides(monkeypatch):
         attendees=[],
         telemost_access_level="ORGANIZATION",
         telemost_waiting_room="ADMINS",
-        telemost_cohosts=["lead@example.com"],
+        telemost_cohosts=["contact@example.com"],
     )
 
     assert result["success"] is True
@@ -136,7 +136,7 @@ def test_create_telemost_event_passes_overrides(monkeypatch):
     assert DummyTelemostClient.last_kwargs == {
         "access_level": "ORGANIZATION",
         "waiting_room_level": "ADMINS",
-        "cohosts": ["lead@example.com"],
+        "cohosts": ["contact@example.com"],
     }
 
 

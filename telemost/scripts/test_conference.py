@@ -120,24 +120,24 @@ def test_create_conference_with_overrides():
                     },
                 },
             ),
-            FakeResponse(200, {"cohosts": [{"email": "cohost@example.com"}]}),
+            FakeResponse(200, {"cohosts": [{"email": "contact@example.com"}]}),
         ]
     )
     client = telemost_client.YandexTelemostClient("acct", session=session)
     result = client.create_conference(
         access_level="ORGANIZATION",
         waiting_room_level="ADMINS",
-        cohosts=["cohost@example.com"],
+        cohosts=["contact@example.com"],
         live_stream={"access_level": "PUBLIC", "title": "Broadcast"},
     )
 
     assert result["live_stream"]["watch_url"] == "https://telemost.yandex.ru/watch/2"
-    assert result["cohosts"] == ["cohost@example.com"]
+    assert result["cohosts"] == ["contact@example.com"]
     assert session.calls[0]["json"] == {
         "access_level": "ORGANIZATION",
         "waiting_room_level": "ADMINS",
         "live_stream": {"access_level": "PUBLIC", "title": "Broadcast"},
-        "cohosts": [{"email": "cohost@example.com"}],
+        "cohosts": [{"email": "contact@example.com"}],
     }
 
 
@@ -155,22 +155,22 @@ def test_update_conference_with_patch_and_cohosts():
                     "waiting_room_level": "ORGANIZATION",
                 },
             ),
-            FakeResponse(200, {"cohosts": [{"email": "lead@example.com"}]}),
+            FakeResponse(200, {"cohosts": [{"email": "contact@example.com"}]}),
         ]
     )
     client = telemost_client.YandexTelemostClient("acct", session=session)
     result = client.update_conference(
         "conf-3",
         waiting_room_level="ORGANIZATION",
-        cohosts=["lead@example.com"],
+        cohosts=["contact@example.com"],
     )
 
     assert result["waiting_room_level"] == "ORGANIZATION"
-    assert result["cohosts"] == ["lead@example.com"]
+    assert result["cohosts"] == ["contact@example.com"]
     assert session.calls[0]["method"] == "PATCH"
     assert session.calls[0]["json"] == {"waiting_room_level": "ORGANIZATION"}
     assert session.calls[1]["method"] == "PUT"
-    assert session.calls[1]["json"] == {"cohosts": [{"email": "lead@example.com"}]}
+    assert session.calls[1]["json"] == {"cohosts": [{"email": "contact@example.com"}]}
 
 
 def test_get_conference_maps_404():

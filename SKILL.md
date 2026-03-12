@@ -1,6 +1,6 @@
 ---
 name: yandex
-description: Meta-skill index for Yandex integrations: mail, disk, telemost, search, cloud, forms. Includes shared config, workflow, and per-skill entry points.
+description: Meta-skill index for Yandex integrations: mail/почта, disk/диск, telemost/телемост, calendar/календарь, contacts/контакты, directory/директория, search/поиск, cloud/облако, forms/формы, tracker/трекер. Includes shared config, workflow, and per-skill entry points.
 license: MIT
 compatibility: Python 3.10+, per-skill dependencies, network access for Yandex APIs
 metadata:
@@ -23,6 +23,12 @@ yandex/
 ├── config.agent.example.json (workspace override example)
 ├── mail/
 │   └── mail.md
+├── calendar/
+│   └── calendar.md
+├── contacts/
+│   └── contacts.md
+├── directory/
+│   └── directory.md
 ├── disk/
 │   └── disk.md
 ├── telemost/
@@ -38,6 +44,9 @@ yandex/
 ## Where To Read Each Skill
 
 - Mail: `mail/mail.md`
+- Calendar: `calendar/calendar.md`
+- Contacts: `contacts/contacts.md`
+- Directory: `directory/directory.md`
 - Disk: `disk/disk.md`
 - Telemost: `telemost/telemost.md`
 - Search: `search/search.md`
@@ -49,13 +58,16 @@ yandex/
 
 | Skill | Description |
 |-------|-------------|
-| [mail](mail/) | Generic email fetcher via IMAP XOAUTH2 — saves emails to incoming/ |
-| [telemost](telemost/) | Enrich/process Telemost emails, manage real Telemost conferences, and admin Telemost org defaults |
-| [disk](disk/) | Download files from Yandex Disk, upload files to Disk, and manage public or organization-only share links (Telemost links may require OAuth) |
-| [search](search/) | Web search via Yandex Cloud Search API v2 |
-| [cloud](cloud/) | Deploy serverless functions to Yandex Cloud |
-| [forms](forms/) | Export form responses from Yandex Forms — download results as XLSX or JSON |
-| [tracker](tracker/) | Manage tasks in Yandex Tracker — create, search, update issues, manage Agile boards |
+| [mail](mail/) | Mail / Почта: generic email fetcher via IMAP XOAUTH2 — saves emails to incoming/ |
+| [calendar](calendar/) | Calendar / Календарь: CalDAV integration for Yandex Calendar — list/create/update events, find slots, Telemost binding |
+| [contacts](contacts/) | Contacts / Контакты: CardDAV integration for Yandex Contacts — fuzzy lookup, create/update contacts |
+| [directory](directory/) | Directory / Директория: Yandex 360 Directory API — users, departments, groups, and org-aware identity data |
+| [telemost](telemost/) | Telemost / Телемост: process Telemost emails, manage real conferences, and admin Telemost org defaults |
+| [disk](disk/) | Disk / Диск: download files from Yandex Disk, upload files to Disk, and manage public or organization-only share links (Telemost links may require OAuth) |
+| [search](search/) | Search / Поиск: web search via Yandex Cloud Search API v2 |
+| [cloud](cloud/) | Cloud / Облако: deploy serverless functions to Yandex Cloud |
+| [forms](forms/) | Forms / Формы: export form responses from Yandex Forms — download results as XLSX or JSON |
+| [tracker](tracker/) | Tracker / Трекер: manage tasks in Yandex Tracker — create, search, update issues, manage Agile boards |
 
 ## Shared Configuration
 

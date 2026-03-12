@@ -20,6 +20,8 @@ from common.auth import ResolvedToken
 from telemost.lib import client as telemost_client
 import settings as settings_cli
 
+TEST_ORG_ID = 1234567
+
 
 class FakeResponse:
     def __init__(self, status_code: int, payload=None):
@@ -58,7 +60,7 @@ def stub_token(monkeypatch):
             token_key="token.telemost",
             source_key="token.telemost",
             token_path=Path("/tmp/acct.token"),
-            token_data={"token.telemost": "secret", "org_id": "7994665"},
+            token_data={"token.telemost": "secret", "org_id": str(TEST_ORG_ID)},
             email="user@example.com",
         ),
     )
@@ -70,9 +72,9 @@ def test_get_org_settings_uses_token_org_id():
     ])
     client = telemost_client.YandexTelemostClient("acct", session=session)
     result = client.get_org_settings()
-    assert result["org_id"] == 7994665
+    assert result["org_id"] == TEST_ORG_ID
     assert session.calls[0]["method"] == "GET"
-    assert session.calls[0]["url"].endswith("/organizations/7994665/settings")
+    assert session.calls[0]["url"].endswith(f"/organizations/{TEST_ORG_ID}/settings")
 
 
 def test_update_org_settings_normalizes_payload():
@@ -91,7 +93,7 @@ def test_update_org_settings_normalizes_payload():
         cloud_recording_allowed_roles=["owner"],
     )
     result = client.update_org_settings(payload)
-    assert result["org_id"] == 7994665
+    assert result["org_id"] == TEST_ORG_ID
     assert session.calls[0]["method"] == "PUT"
     assert session.calls[0]["json"] == {
         "waiting_room_level_adhoc": {"value": "PUBLIC"},
@@ -135,14 +137,14 @@ def test_settings_cli_get(monkeypatch, capsys):
             self.account = account
 
         def get_org_settings(self, *, org_id=None):
-            return {"org_id": org_id or 7994665, "waiting_room_level_adhoc": {"value": "PUBLIC"}}
+            return {"org_id": org_id or TEST_ORG_ID, "waiting_room_level_adhoc": {"value": "PUBLIC"}}
 
     monkeypatch.setattr(settings_cli, "YandexTelemostClient", StubClient)
     monkeypatch.setattr(sys, "argv", ["settings.py", "get", "--account", "acct"])
     code = settings_cli.main()
     out = json.loads(capsys.readouterr().out)
     assert code == 0
-    assert out["org_id"] == 7994665
+    assert out["org_id"] == TEST_ORG_ID
 
 
 def test_settings_cli_update_from_flags(monkeypatch, capsys):
@@ -159,7 +161,7 @@ def test_settings_cli_update_from_flags(monkeypatch, capsys):
         def update_org_settings(self, payload, *, org_id=None):
             captured["payload"] = payload
             captured["org_id"] = org_id
-            return {"org_id": org_id or 7994665, **payload}
+            return {"org_id": org_id or TEST_ORG_ID, **payload}
 
     monkeypatch.setattr(settings_cli, "YandexTelemostClient", StubClient)
     monkeypatch.setattr(

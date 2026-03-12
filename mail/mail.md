@@ -1,6 +1,6 @@
 ---
 name: mail
-description: Fetch emails and attachments from Yandex Mail via IMAP with OAuth2 authentication. Downloads new messages into a structured incoming directory for downstream processing by specialized skills. Generic fetcher with no business logic — just saves emails matching configured filters.
+description: Mail / Почта — fetch emails and attachments from Yandex Mail via IMAP with OAuth2 authentication. Downloads new messages into a structured incoming directory for downstream processing by specialized skills. Generic fetcher with no business logic — just saves emails matching configured filters.
 license: MIT
 compatibility: Requires Python 3.10+, network access to imap.yandex.ru
 metadata:
@@ -8,7 +8,7 @@ metadata:
   version: "2.4"
 ---
 
-# Yandex Mail
+# Yandex Mail / Почта
 
 Generic email fetcher for Yandex Mail via IMAP XOAUTH2. Saves incoming emails matching configured filters into a structured directory for downstream processing by other skills.
 

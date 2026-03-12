@@ -1,6 +1,6 @@
 ---
 name: forms
-description: Download form responses and results from Yandex Forms via API. Supports JSON export, XLSX export, form discovery, and monthly response statistics.
+description: Forms / Формы — download form responses and results from Yandex Forms via API. Supports JSON export, XLSX export, form discovery, and monthly response statistics.
 license: MIT
 compatibility: Python 3.10+, network access to api.forms.yandex.net
 metadata:
@@ -8,7 +8,7 @@ metadata:
   version: "1.1"
 ---
 
-# Yandex Forms
+# Yandex Forms / Формы
 
 API client for Yandex Forms to download form responses, export results, and discover forms. Works with forms in Yandex 360 for Business organizations.
 

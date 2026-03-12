@@ -1,6 +1,6 @@
 ---
 name: tracker
-description: Yandex Tracker API client for task management. Create, search, update issues; manage comments, transitions, boards, and sprints. Integrates with mail, telemost, calendar, and directory services.
+description: Tracker / Трекер — Yandex Tracker API client for task management. Create, search, update issues; manage comments, transitions, boards, and sprints. Integrates with mail, telemost, calendar, and directory services.
 license: MIT
 compatibility: Python 3.10+, network access to api.tracker.yandex.net
 metadata:
@@ -8,7 +8,7 @@ metadata:
   version: "0.1"
 ---
 
-# Yandex Tracker
+# Yandex Tracker / Трекер
 
 API client for Yandex Tracker to manage tasks, projects, and agile workflows. Works with organizations in Yandex 360 for Business and Yandex Cloud.
 

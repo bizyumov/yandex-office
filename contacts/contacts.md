@@ -1,8 +1,8 @@
-# Yandex Contacts Skill Requirements
+# Yandex Contacts / Контакты
 
 ## Overview
 
-A CardDAV-based skill for managing Yandex Contacts (Address Book), integrated with the Yandex skill ecosystem. Provides read/write access to contacts, fuzzy name search, and seamless integration with Calendar and Mail skills.
+A CardDAV-based Contacts / Контакты skill for managing Yandex Contacts (Address Book), integrated with the Yandex skill ecosystem. Provides read/write access to contacts, fuzzy name search, and seamless integration with Calendar and Mail skills.
 
 **Single Source of Truth:** Yandex CardDAV server is the primary source. Local cache is maintained for performance and offline access, but all writes go through to Yandex.
 
@@ -92,7 +92,7 @@ python contacts/scripts/search.py --account ctiis --domain "transneft.ru"
 
 **User Request Examples:**
 - "Add Vasiliy Andreyuk to contacts"
-- "Save contact: Иванов Иван, ivan@example.com"
+- "Save contact: Иванов Иван, contact@example.com"
 - "Add contact from email" (extract from email headers)
 
 **Requirements:**

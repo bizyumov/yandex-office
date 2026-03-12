@@ -1,8 +1,8 @@
-# Yandex Calendar Skill Requirements
+# Yandex Calendar / Календарь
 
 ## Overview
 
-A CalDAV-based skill for managing Yandex Calendar events, integrated with the Yandex skill ecosystem. Provides read/write access to calendars, meeting scheduling, and multi-user availability queries.
+A CalDAV-based Calendar / Календарь skill for managing Yandex Calendar events, integrated with the Yandex skill ecosystem. Provides read/write access to calendars, meeting scheduling, and multi-user availability queries.
 
 ---
 
@@ -67,7 +67,7 @@ Token stored per-account at: `{data_dir}/auth/{account}.token`
       "location": "Zoom",
       "description": "Quarterly review",
       "is_recurring": false,
-      "attendees": ["user1@yandex.ru", "user2@yandex.ru"]
+      "attendees": ["user@yandex.ru", "colleague@yandex.ru"]
     }
   ]
 }
@@ -116,7 +116,7 @@ python calendar/scripts/create_event.py \
   --start "2026-03-03T15:00:00" \
   --duration 60 \
   --calendar "Мои события" \
-  --attendees "colleague1@yandex.ru,colleague2@yandex.ru" \
+  --attendees "user@yandex.ru,colleague@yandex.ru" \
   --description "Weekly team synchronization"
 ```
 
@@ -128,7 +128,7 @@ python calendar/scripts/create_event.py \
   --summary "Team Sync" \
   --start "2026-03-12T10:00:00" \
   --duration 60 \
-  --telemost-conference-id 7462688834
+  --telemost-conference-id 1234567890
 ```
 
 ---
