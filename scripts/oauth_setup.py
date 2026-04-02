@@ -101,22 +101,20 @@ def main() -> None:
         sys.exit(1)
 
     token_path = data_dir / "auth" / f"{args.account}.token"
-    token_data = load_token_file(token_path)
+    try:
+        token_data = load_token_file(token_path)
+    except FileNotFoundError:
+        token_data = {"email": args.email}
     token_key = canonical_token_key(args.service)
 
     token_data["email"] = args.email
     token_data[token_key] = token
-    token_data["oauth_client_id"] = plan.client_id
     set_token_metadata(
         token_data,
         token_key,
         scopes=plan.scopes,
         client_id=plan.client_id,
         app_id=plan.app_id,
-        oauth_base=config.get("urls", {}).get(
-            "oauth",
-            "https://oauth.yandex.ru/authorize",
-        ),
     )
     save_token_file(token_path, token_data)
 

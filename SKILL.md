@@ -9,6 +9,9 @@ metadata:
   version: "1.1"
   openclaw:
     emoji: "🟡"
+    requires:
+      bins:
+        - python3
 ---
 
 # yandex
@@ -180,7 +183,7 @@ Where:
 
 1. `YYYY-MM` is derived from first-seen meeting timestamp.
 2. Meeting folder starts with local date/time prefix `YYYY-MM-DD_HH-MM`.
-3. Date/time prefix is immediately followed by mailbox tag (`bdi`, `ctiis`, etc.).
+3. Date/time prefix is immediately followed by mailbox tag (`bdi`, `work`, etc.).
 4. Folder always ends with meeting UID (`_{MEETING_UID}` or `_unknown`).
 5. Folder routing is constrained by same-day wildcard candidate matching.
 
@@ -197,8 +200,8 @@ Processing semantics:
 Migration for existing folders:
 
 ```bash
-python telemost/scripts/migrate_meeting_dirs.py --dry-run
-python telemost/scripts/migrate_meeting_dirs.py
+python3 telemost/scripts/migrate_meeting_dirs.py --dry-run
+python3 telemost/scripts/migrate_meeting_dirs.py
 ```
 
 ## Telemost Recording OAuth Caveat
@@ -238,7 +241,14 @@ git sparse-checkout add telemost disk
 {
   "email": "user@yandex.ru",
   "token.mail": "y0_...",
-  "token.disk": "y0_..."
+  "token.disk": "y0_...",
+  "token_meta": {
+    "token.mail": {
+      "app_id": "mail-readonly",
+      "client_id": "660686ff45f947f2ac6e3f6495a9ec74",
+      "scopes": ["mail:imap_ro"]
+    }
+  }
 }
 ```
 
@@ -248,13 +258,13 @@ Canonical convention is `token.<service>`. Each service stores and resolves its 
 
 ```bash
 # Recommended: default preconfigured app from config.json, ready approval link
-python scripts/oauth_setup.py --email user@yandex.ru --account bdi --service mail
+python3 scripts/oauth_setup.py --email user@yandex.ru --account bdi --service mail
 
 # Recommended: choose a non-default preconfigured app variant
-python scripts/oauth_setup.py --email user@yandex.ru --account bdi --service disk --app disk-full
+python3 scripts/oauth_setup.py --email user@yandex.ru --account bdi --service disk --app disk-full
 
 # Advanced: explicit client ID and explicit scope override
-python scripts/oauth_setup.py --client-id DISK_CLIENT_ID --scope cloud_api:disk.write --scope cloud_api:disk.app_folder --email user@yandex.ru --account bdi --service disk
+python3 scripts/oauth_setup.py --client-id DISK_CLIENT_ID --scope cloud_api:disk.write --scope cloud_api:disk.app_folder --email user@yandex.ru --account bdi --service disk
 ```
 
 Recommended flow:
@@ -262,8 +272,9 @@ Recommended flow:
 - keep the app catalog in root `config.json` under `oauth_apps.catalog`
 - keep default app bindings in root `config.json` under `oauth_apps.service_defaults`
 - use `--app <app_id>` only when selecting a non-default variant
-- run `python scripts/oauth_setup.py --service <name> ...`
+- run `python3 scripts/oauth_setup.py --service <name> ...`
 - the generated URL omits `scope=` by default and uses the app's baked-in permissions
+- new token files are created automatically on first save
 
 Advanced flow:
 

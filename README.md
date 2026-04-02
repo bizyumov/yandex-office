@@ -63,7 +63,7 @@ Workspace `yandex-data/config.agent.json`:
 
 ```json
 {
-  "mailboxes": [{ "name": "primary", "email": "user@example.com" }]
+  "mailboxes": [{ "name": "bdi", "email": "user@example.com" }]
 }
 ```
 
@@ -77,7 +77,7 @@ Runtime data lives **outside** the repo at `{data_dir}/`:
 {data_dir}/
 ├── auth/bdi.token      # OAuth tokens (per-account)
 ├── incoming/           # mail writes here
-├── state.json          # UID tracking
+├── state.json          # UID/date tracking keyed by mailbox name
 ├── meetings/ # telemost output (bucketed by month)
 │   └── 2026-02/
 │       └── 2026-02-24_18-19_bdi_1000349120/
@@ -141,7 +141,7 @@ Where:
 
 1. `YYYY-MM` is derived from first-seen meeting timestamp.
 2. Meeting folder starts with local date/time prefix `YYYY-MM-DD_HH-MM`.
-3. Date/time prefix is immediately followed by mailbox tag (`bdi`, `ctiis`, etc.).
+3. Date/time prefix is immediately followed by mailbox tag (`bdi`, `work`, etc.).
 4. Folder always ends with meeting UID (`_{MEETING_UID}` or `_unknown`).
 5. Folder routing is constrained by same-day wildcard candidate matching.
 
@@ -158,8 +158,8 @@ Processing semantics:
 Migration for existing folders:
 
 ```bash
-python telemost/scripts/migrate_meeting_dirs.py --dry-run
-python telemost/scripts/migrate_meeting_dirs.py
+python3 telemost/scripts/migrate_meeting_dirs.py --dry-run
+python3 telemost/scripts/migrate_meeting_dirs.py
 ```
 
 ## OAuth Setup
@@ -175,11 +175,13 @@ Skill config.json
   -> oauth_apps.service_defaults.<service> selects the default app_id
   -> oauth_apps.catalog.<app_id> stores app name, client_id, service, and baked-in scopes
 
-python scripts/oauth_setup.py --service <service> [--app <app_id>] --account <account> --email <email>
+python3 scripts/oauth_setup.py --service <service> [--app <app_id>] --account <account> --email <email>
   -> resolves app_id from oauth_apps.service_defaults unless --app is passed
   -> reads oauth_apps.catalog.<app_id>
   -> generates approval URL
+  -> creates auth/{account}.token on first save if needed
   -> stores token under auth/{account}.token as token.<service>
+  -> stores app_id/client_id/scopes under token_meta.token.<service>
 
 runtime clients
   -> resolve token.<service>
@@ -221,23 +223,31 @@ If you want write-capable variants later, keep them as separate app scenarios in
 {
   "email": "user@yandex.ru",
   "token.mail": "y0_...",
-  "token.disk": "y0_..."
+  "token.disk": "y0_...",
+  "token_meta": {
+    "token.mail": {
+      "app_id": "mail-readonly",
+      "client_id": "660686ff45f947f2ac6e3f6495a9ec74",
+      "scopes": ["mail:imap_ro"]
+    }
+  }
 }
 ```
 
 Canonical convention is `token.<service>`. Each service stores and resolves its own token directly.
+`token_meta` is optional but recommended: clients use it to validate granted scopes and generate a corrected approval URL when a token is under-scoped.
 
 ### Generate a Token
 
 ```bash
 # Recommended: default preconfigured app from config.json, ready approval link
-python scripts/oauth_setup.py --email user@yandex.ru --account bdi --service mail
+python3 scripts/oauth_setup.py --email user@yandex.ru --account bdi --service mail
 
 # Recommended: choose a non-default preconfigured app variant
-python scripts/oauth_setup.py --email user@yandex.ru --account bdi --service disk --app disk-full
+python3 scripts/oauth_setup.py --email user@yandex.ru --account bdi --service disk --app disk-full
 
 # Advanced: explicit client ID and explicit scope override
-python scripts/oauth_setup.py --client-id DISK_CLIENT_ID --scope cloud_api:disk.write --scope cloud_api:disk.app_folder --email user@yandex.ru --account bdi --service disk
+python3 scripts/oauth_setup.py --client-id DISK_CLIENT_ID --scope cloud_api:disk.write --scope cloud_api:disk.app_folder --email user@yandex.ru --account bdi --service disk
 ```
 
 Recommended flow:
@@ -245,7 +255,7 @@ Recommended flow:
 - keep the checked-in app catalog in `config.json` under `oauth_apps.catalog`
 - keep service defaults in `config.json` under `oauth_apps.service_defaults`
 - use `--app <app_id>` only when you need a non-default variant such as `disk-full`, `forms-full`, `tracker-full`, or `directory-full`
-- run `python scripts/oauth_setup.py --service <name> ...`
+- run `python3 scripts/oauth_setup.py --service <name> ...`
 - the generated URL omits `scope=` by default and relies on the OAuth app's baked-in permissions
 
 Advanced flow:

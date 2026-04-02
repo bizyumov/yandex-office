@@ -117,7 +117,40 @@ class YandexCalendarClient:
             attendees = component.get("attendee", [])
             if not isinstance(attendees, list):
                 attendees = [attendees]
-            result["attendees"] = [str(a) for a in attendees]
+
+            parsed_attendees = []
+            for attendee in attendees:
+                # Parse attendee object to extract email and CN (common name)
+                email = str(attendee)
+                if email.startswith("mailto:"):
+                    email = email[7:]  # Remove mailto: prefix
+
+                attendee_data = {"email": email}
+
+                # Extract CN parameter (full name) if available
+                if hasattr(attendee, "params"):
+                    cn = attendee.params.get("CN")
+                    if cn:
+                        attendee_data["cn"] = str(cn)
+
+                    # Extract RSVP status
+                    partstat = attendee.params.get("PARTSTAT")
+                    if partstat:
+                        attendee_data["partstat"] = str(partstat)
+
+                    # Extract attendee type (INDIVIDUAL, GROUP, etc.)
+                    cutype = attendee.params.get("CUTYPE")
+                    if cutype:
+                        attendee_data["cutype"] = str(cutype)
+
+                    # Extract role (REQ-PARTICIPANT, OPT-PARTICIPANT, etc.)
+                    role = attendee.params.get("ROLE")
+                    if role:
+                        attendee_data["role"] = str(role)
+
+                parsed_attendees.append(attendee_data)
+
+            result["attendees"] = parsed_attendees
 
             return result
 

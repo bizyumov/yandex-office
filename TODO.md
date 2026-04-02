@@ -45,7 +45,7 @@ Telemost meeting recordings (audio/video) with `yadi.sk` public share links **re
    Ensure YANDEX_DISK_TOKEN is set:
    ```bash
    export YANDEX_DISK_TOKEN="y0__..."
-   python scripts/download.py "https://yadi.sk/d/..." --output ./
+   python3 scripts/download.py "https://yadi.sk/d/..." --output ./
    ```
    ```
 
@@ -87,7 +87,7 @@ The relationship between `fetch_emails.py`, `incoming/` directory, and downstrea
 ## 🟡 MEDIUM: Meta-Skill Structure Documentation
 
 ### Problem
-`yandex` is a meta-skill containing multiple sub-skills (mail, disk, telemost, search, cloud). The structure is not immediately obvious, and users may look for `mail` as a separate top-level skill.
+`yandex` is a meta-skill containing multiple sub-skills (mail, disk, telemost, cloud). The structure is not immediately obvious, and users may look for `mail` as a separate top-level skill.
 
 ### Required Changes
 
@@ -107,8 +107,6 @@ The relationship between `fetch_emails.py`, `incoming/` directory, and downstrea
    │   └── disk.md
    ├── telemost/      (meeting transcript processing)
    │   └── telemost.md
-   ├── search/        (web search API)
-   │   └── search.md
    └── cloud/         (cloud services)
        └── cloud.md
    ```
@@ -128,9 +126,7 @@ The relationship between `fetch_emails.py`, `incoming/` directory, and downstrea
    │   └── SKILL.md           ├── disk/
    ├── telemost/           └── disk.md
    │   └── SKILL.md           ├── telemost/
-   ├── search/             └── telemost.md
-   │   └── SKILL.md           ├── search/
-   └── cloud/              └── search.md
+   └── cloud/
        └── SKILL.md           └── cloud/
                                   └── cloud.md
    ```
@@ -202,11 +198,11 @@ Before marking these tasks complete, verify:
 ```bash
 # This should work
 export YANDEX_DISK_TOKEN="y0__..."
-python disk/scripts/download.py "https://yadi.sk/d/kvnJPr7okDIY4g" --output /tmp/
+python3 disk/scripts/download.py "https://yadi.sk/d/kvnJPr7okDIY4g" --output ./downloads/
 
 # This should fail with helpful error
 unset YANDEX_DISK_TOKEN
-python disk/scripts/download.py "https://yadi.sk/d/kvnJPr7okDIY4g" --output /tmp/
+python3 disk/scripts/download.py "https://yadi.sk/d/kvnJPr7okDIY4g" --output ./downloads/
 # Expected: Error message explaining OAuth requirement
 ```
 

@@ -14,18 +14,23 @@ Generic email fetcher for Yandex Mail via IMAP XOAUTH2. Saves incoming emails ma
 
 ## Quick Start
 
+Enable IMAP + OAuth in the target mailbox first:
+
+- EN: Open Yandex Mail in a browser, go to Settings → Mail clients (direct URL: `https://mail.yandex.ru/#setup/client`), enable `From imap.yandex.ru server via IMAP` and `App passwords and OAuth tokens`, then save.
+- RU: Откройте Яндекс Почту в браузере, перейдите в Настройки → Почтовые программы (прямая ссылка: `https://mail.yandex.ru/#setup/client`), включите `С сервера imap.yandex.ru по протоколу IMAP` и `Пароли приложений и OAuth-токены`, затем сохраните изменения.
+
 ```bash
 # From the Yandex skill root: set up OAuth token for mail (read-only IMAP scope)
-python scripts/oauth_setup.py --email user@yandex.ru --account bdi --service mail
+python3 scripts/oauth_setup.py --email user@yandex.ru --account bdi --service mail
 
-# Fetch new emails from the agent workspace
-python scripts/fetch_emails.py
+# Fetch new emails
+python3 scripts/fetch_emails.py
 
 # Fetch at most N new messages in this run (global cap)
-python scripts/fetch_emails.py --num 20
+python3 scripts/fetch_emails.py --num 20
 ```
 
-> Recommended: use the default Mail app from root `config.json` (`oauth_apps.service_defaults.mail`) so the approval URL can use the app's baked-in scopes without passing `--client-id` each time. If you also need Disk access, run `python scripts/oauth_setup.py --service disk ...` from the Yandex skill root.
+> Recommended: use the default Mail app from root `config.json` (`oauth_apps.service_defaults.mail`) so the approval URL can use the app's baked-in scopes without passing `--client-id` each time. If you also need Disk access, run `python3 scripts/oauth_setup.py --service disk ...` from the Yandex skill root.
 
 ## What It Does
 
@@ -46,7 +51,7 @@ python scripts/fetch_emails.py --num 20
 Use `--num` to cap the total number of newly fetched messages per run:
 
 ```bash
-python scripts/fetch_emails.py --num 25
+python3 scripts/fetch_emails.py --num 25
 ```
 
 Behavior:
@@ -169,11 +174,18 @@ Uses shared root `config.json` plus agent-local `yandex-data/config.agent.json`.
 {
   "email": "user@yandex.ru",
   "token.mail": "y0_...",
-  "token.disk": "y0_..."
+  "token.disk": "y0_...",
+  "token_meta": {
+    "token.mail": {
+      "app_id": "mail-readonly",
+      "client_id": "660686ff45f947f2ac6e3f6495a9ec74",
+      "scopes": ["mail:imap_ro"]
+    }
+  }
 }
 ```
 
-Stored at `{data_dir}/auth/{account}.token` with 600 permissions.
+Stored at `{data_dir}/auth/{account}.token` with 600 permissions. New token files are created automatically on first save.
 
 ## Files
 

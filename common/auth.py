@@ -120,7 +120,6 @@ def set_token_metadata(
     scopes: list[str] | None = None,
     client_id: str | None = None,
     app_id: str | None = None,
-    oauth_base: str | None = None,
 ) -> None:
     meta = dict(_token_meta_store(token_data))
     current = dict(meta.get(token_key) or {})
@@ -130,8 +129,6 @@ def set_token_metadata(
         current["client_id"] = client_id
     if app_id:
         current["app_id"] = app_id
-    if oauth_base:
-        current["oauth_base"] = oauth_base
     meta[token_key] = current
     token_data["token_meta"] = meta
 

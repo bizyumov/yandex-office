@@ -75,8 +75,8 @@ Token stored per-account at: `{data_dir}/auth/{account}.token`
 
 **CLI Interface:**
 ```bash
-python calendar/scripts/list_events.py --account ctiis --date tomorrow
-python calendar/scripts/list_events.py --account ctiis --date 2026-03-03 --calendar "Мои события"
+python3 calendar/scripts/list_events.py --account ctiis --date tomorrow
+python3 calendar/scripts/list_events.py --account ctiis --date 2026-03-03 --calendar "Мои события"
 ```
 
 ---
@@ -110,7 +110,7 @@ python calendar/scripts/list_events.py --account ctiis --date 2026-03-03 --calen
 
 **CLI Interface:**
 ```bash
-python calendar/scripts/create_event.py \
+python3 calendar/scripts/create_event.py \
   --account ctiis \
   --summary "Team Sync" \
   --start "2026-03-03T15:00:00" \
@@ -123,7 +123,7 @@ python calendar/scripts/create_event.py \
 Bind an existing Telemost conference instead of creating a new one:
 
 ```bash
-python calendar/scripts/create_event.py \
+python3 calendar/scripts/create_event.py \
   --account ctiis \
   --summary "Team Sync" \
   --start "2026-03-12T10:00:00" \
@@ -160,13 +160,13 @@ python calendar/scripts/create_event.py \
 
 **CLI Interface:**
 ```bash
-python calendar/scripts/reschedule.py \
+python3 calendar/scripts/reschedule.py \
   --account ctiis \
   --search "Сбер ЦФА" \
   --date "2026-03-03" \
   --new-start "2026-03-03T16:00:00"
 
-python calendar/scripts/reschedule.py \
+python3 calendar/scripts/reschedule.py \
   --account ctiis \
   --event-uid "uuid-here" \
   --postpone 30  # minutes
@@ -195,12 +195,12 @@ python calendar/scripts/reschedule.py \
 
 **CLI Interface:**
 ```bash
-python calendar/scripts/cancel.py \
+python3 calendar/scripts/cancel.py \
   --account ctiis \
   --search "Team Sync" \
   --date "2026-03-03"
 
-python calendar/scripts/cancel.py \
+python3 calendar/scripts/cancel.py \
   --account ctiis \
   --event-uid "uuid-here" \
   --cancel-series
@@ -269,14 +269,14 @@ python calendar/scripts/cancel.py \
 
 **CLI Interface:**
 ```bash
-python calendar/scripts/find_slots.py \
+python3 calendar/scripts/find_slots.py \
   --duration 120 \
   --attendees "bdi,ctiis,colleague@yandex.ru" \
   --from "tomorrow" \
   --to "friday" \
   --time-window "9:00-18:00"
 
-python calendar/scripts/find_slots.py \
+python3 calendar/scripts/find_slots.py \
   --duration 60 \
   --attendees "bdi,ctiis" \
   --next-available
@@ -383,7 +383,7 @@ Add shared defaults to root `config.json` and per-agent overrides to `yandex-dat
 ## Error Handling
 
 ### Common Error Cases
-1. **Token expired** → Prompt for re-auth via `scripts/oauth_setup.py`
+1. **Token expired** → Prompt for re-auth via `python3 scripts/oauth_setup.py ...` from the Yandex skill root
 2. **Calendar not found** → List available calendars
 3. **Event not found** → Suggest similar titles, show events for that date
 4. **Conflict detected** → Show conflicting events, ask for confirmation
