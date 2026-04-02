@@ -16,22 +16,22 @@ API client for Yandex Tracker to manage tasks, projects, and agile workflows. Wo
 
 ```bash
 # Search issues with query language
-python scripts/search_issues.py --query "Queue: PROJ Status: open" --account ctiis
+python3 scripts/search_issues.py --query "Queue: PROJ Status: open" --account ctiis
 
 # Create a new issue
-python scripts/create_issue.py --queue PROJ --summary "New task title" --account ctiis
+python3 scripts/create_issue.py --queue PROJ --summary "New task title" --account ctiis
 
 # Get issue details
-python scripts/get_issue.py --issue PROJ-123 --account ctiis
+python3 scripts/get_issue.py --issue PROJ-123 --account ctiis
 
 # Add comment to issue
-python scripts/add_comment.py --issue PROJ-123 --text "Status update" --account ctiis
+python3 scripts/add_comment.py --issue PROJ-123 --text "Status update" --account ctiis
 
 # List my open issues
-python scripts/my_issues.py --account ctiis
+python3 scripts/my_issues.py --account ctiis
 
 # Get board columns and issues
-python scripts/get_board.py --board 123 --account ctiis
+python3 scripts/get_board.py --board 123 --account ctiis
 ```
 
 ## What It Does
@@ -60,12 +60,13 @@ Add to existing token file:
 
 Or generate new token:
 ```bash
-python ../mail/scripts/oauth_setup.py \
-  --client-id YOUR_CLIENT_ID \
+python3 scripts/oauth_setup.py \
   --email user@yandex.ru \
   --account ctiis \
   --service tracker
 ```
+
+Recommended: use the default Tracker app from root `config.json` (`oauth_apps.service_defaults.tracker`, currently `tracker-read`) for the default onboarding path. Use `--app tracker-full` for write access, and explicit `--client-id` and `--scope` only when you need a one-off override.
 
 ### Organization ID
 
@@ -93,7 +94,7 @@ To find your org ID: https://tracker.yandex.ru/admin/orgs
 Search issues using Yandex Tracker query language or filters.
 
 ```bash
-python scripts/search_issues.py --account ACCOUNT [options]
+python3 scripts/search_issues.py --account ACCOUNT [options]
 ```
 
 **Arguments:**
@@ -114,16 +115,16 @@ python scripts/search_issues.py --account ACCOUNT [options]
 **Query Language Examples:**
 ```bash
 # My open tasks
-python scripts/search_issues.py --account ctiis --query "Assignee: me() Status: open"
+python3 scripts/search_issues.py --account ctiis --query "Assignee: me() Status: open"
 
 # High priority bugs in specific queue
-python scripts/search_issues.py --account ctiis --query 'Queue: PROJ Type: bug Priority: high'
+python3 scripts/search_issues.py --account ctiis --query 'Queue: PROJ Type: bug Priority: high'
 
 # Overdue tasks
-python scripts/search_issues.py --account ctiis --query "Deadline: < today() Status: !closed"
+python3 scripts/search_issues.py --account ctiis --query "Deadline: < today() Status: !closed"
 
 # Tasks created this week
-python scripts/search_issues.py --account ctiis --query 'Created: >= "-7d"'
+python3 scripts/search_issues.py --account ctiis --query 'Created: >= "-7d"'
 ```
 
 **Output:**
@@ -156,7 +157,7 @@ Found 3 issues:
 Create a new issue in specified queue.
 
 ```bash
-python scripts/create_issue.py --queue QUEUE --summary SUMMARY --account ACCOUNT [options]
+python3 scripts/create_issue.py --queue QUEUE --summary SUMMARY --account ACCOUNT [options]
 ```
 
 **Arguments:**
@@ -179,10 +180,10 @@ python scripts/create_issue.py --queue QUEUE --summary SUMMARY --account ACCOUNT
 **Examples:**
 ```bash
 # Simple task
-python scripts/create_issue.py --queue PROJ --summary "Review PR #42" --account ctiis
+python3 scripts/create_issue.py --queue PROJ --summary "Review PR #42" --account ctiis
 
 # Task with all metadata
-python scripts/create_issue.py \
+python3 scripts/create_issue.py \
   --queue PROJ \
   --summary "Critical bug in production" \
   --description "## Steps to reproduce\n1. Open app\n2. Click button" \
@@ -199,7 +200,7 @@ python scripts/create_issue.py \
 Get detailed information about a specific issue.
 
 ```bash
-python scripts/get_issue.py --issue ISSUE_KEY --account ACCOUNT [options]
+python3 scripts/get_issue.py --issue ISSUE_KEY --account ACCOUNT [options]
 ```
 
 **Arguments:**
@@ -217,7 +218,7 @@ python scripts/get_issue.py --issue ISSUE_KEY --account ACCOUNT [options]
 Add a comment to an issue.
 
 ```bash
-python scripts/add_comment.py --issue ISSUE --text TEXT --account ACCOUNT [options]
+python3 scripts/add_comment.py --issue ISSUE --text TEXT --account ACCOUNT [options]
 ```
 
 **Arguments:**
@@ -232,7 +233,7 @@ python scripts/add_comment.py --issue ISSUE --text TEXT --account ACCOUNT [optio
 
 **Example:**
 ```bash
-python scripts/add_comment.py \
+python3 scripts/add_comment.py \
   --issue PROJ-123 \
   --text "@petrov @ivanov Please review the updated design" \
   --summon petrov,ivanov \
@@ -244,7 +245,7 @@ python scripts/add_comment.py \
 Update issue fields or status.
 
 ```bash
-python scripts/update_issue.py --issue ISSUE --account ACCOUNT [options]
+python3 scripts/update_issue.py --issue ISSUE --account ACCOUNT [options]
 ```
 
 **Arguments:**
@@ -268,20 +269,20 @@ python scripts/update_issue.py --issue ISSUE --account ACCOUNT [options]
 **Examples:**
 ```bash
 # Change assignee
-python scripts/update_issue.py --issue PROJ-123 --assignee petrov --account ctiis
+python3 scripts/update_issue.py --issue PROJ-123 --assignee petrov --account ctiis
 
 # Close issue with resolution
-python scripts/update_issue.py \
+python3 scripts/update_issue.py \
   --issue PROJ-123 \
   --status closed \
   --resolution "fixed" \
   --account ctiis
 
 # Add tags
-python scripts/update_issue.py --issue PROJ-123 --add-tags "frontend,urgent" --account ctiis
+python3 scripts/update_issue.py --issue PROJ-123 --add-tags "frontend,urgent" --account ctiis
 
 # Take issue to work
-python scripts/update_issue.py \
+python3 scripts/update_issue.py \
   --issue PROJ-123 \
   --assignee me() \
   --status "in_progress" \
@@ -294,7 +295,7 @@ python scripts/update_issue.py \
 List issues assigned to current user.
 
 ```bash
-python scripts/my_issues.py --account ACCOUNT [options]
+python3 scripts/my_issues.py --account ACCOUNT [options]
 ```
 
 **Arguments:**
@@ -313,7 +314,7 @@ python scripts/my_issues.py --account ACCOUNT [options]
 Get board columns and issues (Agile board).
 
 ```bash
-python scripts/get_board.py --board BOARD_ID --account ACCOUNT [options]
+python3 scripts/get_board.py --board BOARD_ID --account ACCOUNT [options]
 ```
 
 **Arguments:**
@@ -329,7 +330,7 @@ python scripts/get_board.py --board BOARD_ID --account ACCOUNT [options]
 List available queues for the user.
 
 ```bash
-python scripts/get_queues.py --account ACCOUNT [options]
+python3 scripts/get_queues.py --account ACCOUNT [options]
 ```
 
 **Arguments:**
@@ -397,10 +398,10 @@ Cron job to notify about upcoming deadlines:
 
 ```bash
 # Daily check for tasks due tomorrow
-python scripts/search_issues.py \
+python3 scripts/search_issues.py \
   --account ctiis \
   --query 'Deadline: "+1d" Status: !closed' \
-  --output /tmp/due_tomorrow.json
+  --output ./due_tomorrow.json
 
 # Send notifications via Telegram
 ```

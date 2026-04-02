@@ -15,22 +15,22 @@ Download public files from Yandex Disk, upload files to Disk, and manage share l
 ## Quick Start
 
 ```bash
-python scripts/download.py "https://yadi.sk/d/x4dG3ImjPMSvzg" --output ./downloads/
+python3 scripts/download.py "https://yadi.sk/d/x4dG3ImjPMSvzg" --output ./downloads/
 
 # Publish a Disk file for public read access
-python scripts/share.py publish --account bdi --path "disk:/Docs/report.pdf" --access all --rights read
+python3 scripts/share.py publish --account bdi --path "disk:/Docs/report.pdf" --access all --rights read
 
 # Upload a local file and auto-create missing parent folders
-python scripts/upload.py --account bdi --local ./photo.jpg --remote "disk:/Проекты/photo.jpg"
+python3 scripts/upload.py --account bdi --local ./photo.jpg --remote "disk:/Проекты/photo.jpg"
 
 # Upload and publish in one step
-python scripts/upload.py --account bdi --local ./photo.jpg --remote "disk:/Проекты/photo.jpg" --publish --access all --rights read
+python3 scripts/upload.py --account bdi --local ./photo.jpg --remote "disk:/Проекты/photo.jpg" --publish --access all --rights read
 
 # Inspect current share settings
-python scripts/share.py info --account bdi --path "disk:/Docs/report.pdf"
+python3 scripts/share.py info --account bdi --path "disk:/Docs/report.pdf"
 
 # Revoke access
-python scripts/share.py unpublish --account bdi --path "disk:/Docs/report.pdf"
+python3 scripts/share.py unpublish --account bdi --path "disk:/Docs/report.pdf"
 ```
 
 ## Python API
@@ -78,11 +78,10 @@ Upload/share-management scopes:
 - `cloud_api:disk.write`
 - `cloud_api:disk.app_folder`
 
-Generate a download token:
+From the Yandex skill root, generate a download token:
 
 ```bash
-python ../mail/scripts/oauth_setup.py \
-  --client-id DISK_CLIENT_ID \
+python3 scripts/oauth_setup.py \
   --email user@yandex.ru \
   --account bdi \
   --service disk
@@ -91,7 +90,7 @@ python ../mail/scripts/oauth_setup.py \
 Generate an upload/share-management token:
 
 ```bash
-python ../mail/scripts/oauth_setup.py \
+python3 scripts/oauth_setup.py \
   --client-id DISK_CLIENT_ID \
   --email user@yandex.ru \
   --account bdi \
@@ -100,7 +99,7 @@ python ../mail/scripts/oauth_setup.py \
   --scope cloud_api:disk.app_folder
 ```
 
-Use a Client ID configured for the requested Disk scopes. It can be different from the Mail Client ID.
+Recommended: use the default Disk app from root `config.json` (`oauth_apps.service_defaults.disk`, currently `disk-read`) for the read-only approval link. Use `--app disk-full` for the write-capable preconfigured app, and use explicit `--client-id` plus `--scope` only for advanced/operator flows. If the app's scopes change later, reissue tokens.
 
 ## Important: Telemost Recordings
 
@@ -180,7 +179,7 @@ This is a practical deployment mapping, not a claim that the `Organizations` res
 Public share:
 
 ```bash
-python scripts/share.py publish \
+python3 scripts/share.py publish \
   --account bdi \
   --path "disk:/Docs/report.pdf" \
   --access all \
@@ -190,7 +189,7 @@ python scripts/share.py publish \
 Organization-only share:
 
 ```bash
-python scripts/share.py publish \
+python3 scripts/share.py publish \
   --account ctiis \
   --path "disk:/Docs/report.pdf" \
   --access employees \
@@ -204,7 +203,7 @@ Live-verified on March 11, 2026:
 Password-protected share:
 
 ```bash
-python scripts/share.py publish \
+python3 scripts/share.py publish \
   --account bdi \
   --path "disk:/Docs/report.pdf" \
   --access all \
@@ -215,7 +214,7 @@ python scripts/share.py publish \
 Expiring public share:
 
 ```bash
-python scripts/share.py update \
+python3 scripts/share.py update \
   --account bdi \
   --path "disk:/Docs/report.pdf" \
   --access all \
@@ -241,7 +240,7 @@ Behavior:
 Upload into a new nested folder:
 
 ```bash
-python scripts/upload.py \
+python3 scripts/upload.py \
   --account bdi \
   --local ./build/report.pdf \
   --remote "disk:/Projects/2026/report.pdf"
@@ -250,7 +249,7 @@ python scripts/upload.py \
 Upload with overwrite:
 
 ```bash
-python scripts/upload.py \
+python3 scripts/upload.py \
   --account bdi \
   --local ./build/report.pdf \
   --remote "disk:/Projects/2026/report.pdf" \
@@ -260,7 +259,7 @@ python scripts/upload.py \
 Disable parent auto-creation:
 
 ```bash
-python scripts/upload.py \
+python3 scripts/upload.py \
   --account bdi \
   --local ./build/report.pdf \
   --remote "disk:/Projects/2026/report.pdf" \
@@ -272,7 +271,7 @@ python scripts/upload.py \
 Upload and immediately publish a public read link:
 
 ```bash
-python scripts/upload.py \
+python3 scripts/upload.py \
   --account bdi \
   --local ./photo.jpg \
   --remote "disk:/Проекты/photo.jpg" \
@@ -284,7 +283,7 @@ python scripts/upload.py \
 Upload and attempt an org-only link:
 
 ```bash
-python scripts/upload.py \
+python3 scripts/upload.py \
   --account ctiis \
   --local ./report.pdf \
   --remote "disk:/Проекты/Какой-то проект на русском/report.pdf" \
@@ -300,7 +299,7 @@ This flow is live-verified with the documented request shape:
 Inspect current share settings after upload:
 
 ```bash
-python scripts/share.py info --account bdi --path "disk:/Проекты/photo.jpg"
+python3 scripts/share.py info --account bdi --path "disk:/Проекты/photo.jpg"
 ```
 
 ## Live Verification Matrix

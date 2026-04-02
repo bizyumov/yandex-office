@@ -597,8 +597,6 @@ class YandexDisk:
             data = load_token_file(path)
             if data.get("token.disk"):
                 return data.get("token.disk")
-            if data.get("token.auth"):
-                return data.get("token.auth")
             return None
         except (json.JSONDecodeError, KeyError) as e:
             logger.warning(f"Failed to read token from {path}: {e}")

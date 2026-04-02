@@ -2,7 +2,7 @@
 
 ## Authentication Flow
 
-1. Obtain OAuth token via Yandex OAuth (see `oauth_setup.py`)
+1. Obtain OAuth token via Yandex OAuth (run `python3 scripts/oauth_setup.py ...` from the Yandex skill root)
 2. Connect to `imap.yandex.com:993` over TLS
 3. Authenticate with XOAUTH2 SASL mechanism:
 
@@ -22,7 +22,7 @@ The auth string is base64-encoded by `imaplib.IMAP4_SSL.authenticate()`.
 ## Token Lifecycle
 
 - Tokens are valid for ~1 year
-- No refresh token mechanism — re-run `oauth_setup.py` to get a new token
+- No refresh token mechanism — re-run `python3 scripts/oauth_setup.py ...` from the Yandex skill root to get a new token
 - Token file format: `{"email": "user@yandex.ru", "token": "y0_..."}`
 
 ## Yandex IMAP Specifics

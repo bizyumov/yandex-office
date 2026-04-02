@@ -8,7 +8,7 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from common.auth import canonical_token_key, resolve_token
+from common.auth import canonical_token_key, resolve_token, TokenResolutionError
 from common.config import load_runtime_context
 
 
@@ -45,14 +45,14 @@ def test_load_runtime_context_uses_cwd_agent_config(tmp_path: Path) -> None:
     assert runtime.config["mailboxes"][0]["name"] == "primary"
 
 
-def test_resolve_token_bootstraps_directory_alias(tmp_path: Path) -> None:
+def test_resolve_token_uses_canonical_service_key(tmp_path: Path) -> None:
     data_dir = tmp_path / "workspace" / "yandex-data"
     token_path = data_dir / "auth" / "corp.token"
     write_json(
         token_path,
         {
             "email": "user@example.com",
-            "token.org": "directory_placeholder_token",
+            "token.directory": "directory_token",
         },
     )
 
@@ -64,31 +64,30 @@ def test_resolve_token_bootstraps_directory_alias(tmp_path: Path) -> None:
         required_scopes=["directory:read_users"],
     )
 
-    assert resolved.token == "directory_placeholder_token"
+    assert resolved.token == "directory_token"
     assert canonical_token_key("directory") == "token.directory"
-    stored = json.loads(token_path.read_text(encoding="utf-8"))
-    assert stored["token.directory"] == "directory_placeholder_token"
+    assert resolved.source_key == "token.directory"
 
 
-def test_resolve_token_falls_back_to_token_auth(tmp_path: Path) -> None:
+def test_resolve_token_requires_service_specific_token(tmp_path: Path) -> None:
     data_dir = tmp_path / "workspace" / "yandex-data"
     token_path = data_dir / "auth" / "bdi.token"
     write_json(
         token_path,
         {
             "email": "user@example.com",
-            "token.auth": "y0_auth",
         },
     )
 
-    resolved = resolve_token(
-        account="bdi",
-        skill="mail",
-        data_dir=data_dir,
-        config={"urls": {"oauth": "https://oauth.yandex.ru/authorize"}},
-        required_scopes=["mail:imap_ro"],
-    )
-
-    assert resolved.source_key == "token.auth"
-    stored = json.loads(token_path.read_text(encoding="utf-8"))
-    assert stored["token.mail"] == "y0_auth"
+    try:
+        resolve_token(
+            account="bdi",
+            skill="mail",
+            data_dir=data_dir,
+            config={"urls": {"oauth": "https://oauth.yandex.ru/authorize"}},
+            required_scopes=["mail:imap_ro"],
+        )
+    except TokenResolutionError as exc:
+        assert "No token resolved for mail account bdi" in str(exc)
+    else:
+        raise AssertionError("Expected TokenResolutionError for missing token.mail")
