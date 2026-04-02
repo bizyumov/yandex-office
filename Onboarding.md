@@ -13,7 +13,7 @@ Covers:
 - How to present choices to users without confusion
 
 Does **not** cover:
-- Yandex Search API onboarding
+- Yandex Search API onboarding. Search now lives in the standalone `yandex-search-skill` repository.
 - Yandex Cloud infra deployment
 
 ---
@@ -59,12 +59,23 @@ Format:
 {
   "email": "user@yandex.ru",
   "token.mail": "y0_...",
-  "token.disk": "y0_..."
+  "token.disk": "y0_...",
+  "token_meta": {
+    "token.mail": {
+      "app_id": "mail-readonly",
+      "client_id": "660686ff45f947f2ac6e3f6495a9ec74",
+      "scopes": ["mail:imap_ro"]
+    }
+  }
 }
 ```
 
 Permissions:
 - `600`
+
+Revocation:
+- EN: To revoke an issued token, open `https://id.yandex.ru/personal/data-access`, find the corresponding OpenClaw Yandex app, and remove its access.
+- RU: Чтобы отозвать выданный токен, откройте `https://id.yandex.ru/personal/data-access`, найдите соответствующее приложение OpenClaw Yandex и удалите доступ.
 
 ---
 
@@ -72,49 +83,75 @@ Permissions:
 
 ### Step 1 — Collect minimum inputs
 Ask for:
-- Mail Client ID
-- Disk Client ID (allow same value if user knows it supports both scopes)
 - Mailbox email
 - Account alias (e.g. `bdi`)
 - Sender filter (or keep default)
 - Data directory preference
+- Optional explicit Client IDs only if no preconfigured app map exists yet
 
 ### Step 2 — Normalize config and directories
 - Keep shared defaults in root `config.json`.
 - Put mailbox-specific settings into `{cwd}/yandex-data/config.agent.json`.
+- Keep the preconfigured OAuth app catalog and default service bindings in root `config.json` under `oauth_apps.catalog` and `oauth_apps.service_defaults`.
 - Create `auth`, `incoming`, `meetings`.
 
 ### Step 3 — Issue mail token
+Before generating the Mail token, make sure IMAP + OAuth are enabled in the mailbox UI:
+
+- EN: Open Yandex Mail in a browser, go to Settings → Mail clients (direct URL: `https://mail.yandex.ru/#setup/client`), enable `From imap.yandex.ru server via IMAP` and `App passwords and OAuth tokens`, then save.
+- RU: Откройте Яндекс Почту в браузере, перейдите в Настройки → Почтовые программы (прямая ссылка: `https://mail.yandex.ru/#setup/client`), включите `С сервера imap.yandex.ru по протоколу IMAP` и `Пароли приложений и OAuth-токены`, затем сохраните изменения.
+
 Run:
 
 ```bash
-python mail/scripts/oauth_setup.py \
-  --client-id MAIL_CLIENT_ID \
+python3 scripts/oauth_setup.py \
   --email user@yandex.ru \
   --account bdi \
   --service mail
 ```
 
+Recommended behavior:
+
+- resolve the default Mail app from `oauth_apps.service_defaults.mail`
+- resolve its `client_id` and baked-in scopes from `oauth_apps.catalog.<app_id>`
+- generate a ready-made approval link with no `scope=` parameter
+- rely on the app's baked-in permissions
+
 User returns access token; save to `token.mail`.
+
+If `{data_dir}/auth/{account}.token` does not exist yet, `scripts/oauth_setup.py` creates it on first save.
 
 ### Step 4 — Issue disk token
 Run:
 
 ```bash
-python mail/scripts/oauth_setup.py \
-  --client-id DISK_CLIENT_ID \
+python3 scripts/oauth_setup.py \
   --email user@yandex.ru \
   --account bdi \
   --service disk
 ```
 
-User returns access token; save to `token.disk`.
+For advanced/operator flows that need an explicit override:
+
+```bash
+python3 scripts/oauth_setup.py \
+  --client-id DISK_CLIENT_ID \
+  --scope cloud_api:disk.write \
+  --scope cloud_api:disk.app_folder \
+  --email user@yandex.ru \
+  --account bdi \
+  --service disk
+```
+
+If an app's permission set changes later, existing tokens must be reissued.
+
+To use a non-default preconfigured app variant, pass `--app <app_id>` (for example `--app disk-full`).
 
 ### Step 5 — Validate with fetch
 Run:
 
 ```bash
-python mail/scripts/fetch_emails.py
+python3 mail/scripts/fetch_emails.py --num 1
 ```
 
 Success indicators:
@@ -122,6 +159,7 @@ Success indicators:
 - New emails processed
 - Output appears in `{data_dir}/incoming`
 - UID state persisted
+- `state.json` stores mailbox cursors by mailbox `name`; if you rename an alias such as `ctiis` -> `work`, migrate that state key too.
 
 ---
 
@@ -178,7 +216,7 @@ When callback is received:
 - `mail_scope:ro`  -> scope = `mail:imap_ro`
 - `mail_scope:full` -> scope = `mail:imap_full`
 
-Then generate OAuth URL dynamically:
+Then generate OAuth URL dynamically for the advanced explicit-scope path:
 
 ```text
 https://oauth.yandex.ru/authorize?response_type=token&client_id={MAIL_CLIENT_ID}&scope={chosen_scope}
@@ -205,7 +243,7 @@ Callback mapping:
 - `disk_scope:read`  -> `cloud_api:disk.read`
 - `disk_scope:write` -> `cloud_api:disk.write`
 
-Then generate OAuth URL dynamically:
+Then generate OAuth URL dynamically for the advanced explicit-scope path:
 
 ```text
 https://oauth.yandex.ru/authorize?response_type=token&client_id={DISK_CLIENT_ID}&scope={chosen_disk_scope}
@@ -249,7 +287,7 @@ Onboarding complete ✅
 
 ## Quick Troubleshooting
 
-- `AUTHENTICATE failed`: wrong scope, wrong token, wrong mailbox email.
+- `AUTHENTICATE failed`: wrong scope, wrong token, wrong mailbox email, or IMAP/OAuth is not enabled in Yandex Mail Settings → Mail clients (`https://mail.yandex.ru/#setup/client`).
 - Empty fetch result: sender filter too strict or UID state already advanced.
 - Token file missing fields: rerun oauth_setup with missing `--service`.
 - Unexpected data path: confirm the process CWD and check `{cwd}/yandex-data/config.agent.json`.

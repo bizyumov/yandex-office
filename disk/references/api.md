@@ -152,7 +152,7 @@ Admin-capable path:
 
 ```
 GET https://api360.yandex.net/directory/v1/org
-Authorization: OAuth {token.directory or token.org}
+Authorization: OAuth {token.directory}
 ```
 
 Requirements:

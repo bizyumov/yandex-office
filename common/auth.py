@@ -9,11 +9,6 @@ from typing import Any
 from urllib.parse import urlencode
 
 
-LEGACY_SOURCE_KEYS = {
-    "contacts": ["token.calendar"],
-    "directory": ["token.org"],
-}
-
 DEFAULT_SCOPES = {
     "mail": {"read": ["mail:imap_ro"], "write": ["mail:imap_full"]},
     "disk": {
@@ -31,14 +26,18 @@ DEFAULT_SCOPES = {
             "directory:read_users",
             "directory:read_departments",
             "directory:read_groups",
+            "directory:read_domains",
+            "directory:read_external_contacts",
+            "directory:read_organization",
         ]
     },
-    "calendar": {"read": ["calendar"], "write": ["calendar"]},
+    "calendar": {"read": ["calendar:all"], "write": ["calendar:all"]},
     "contacts": {"read": ["addressbook:all"], "write": ["addressbook:all"]},
     "telemost": {
         "read": ["telemost-api:conferences.read"],
         "write": [
             "telemost-api:conferences.create",
+            "telemost-api:conferences.delete",
             "telemost-api:conferences.read",
             "telemost-api:conferences.update",
         ],
@@ -120,7 +119,7 @@ def set_token_metadata(
     *,
     scopes: list[str] | None = None,
     client_id: str | None = None,
-    oauth_base: str | None = None,
+    app_id: str | None = None,
 ) -> None:
     meta = dict(_token_meta_store(token_data))
     current = dict(meta.get(token_key) or {})
@@ -128,8 +127,8 @@ def set_token_metadata(
         current["scopes"] = sorted(set(scopes))
     if client_id:
         current["client_id"] = client_id
-    if oauth_base:
-        current["oauth_base"] = oauth_base
+    if app_id:
+        current["app_id"] = app_id
     meta[token_key] = current
     token_data["token_meta"] = meta
 
@@ -139,18 +138,19 @@ def build_approval_url(
     *,
     client_id: str,
     scopes: list[str],
+    include_scope: bool = True,
 ) -> str:
     oauth_base = config.get("urls", {}).get(
         "oauth",
         "https://oauth.yandex.ru/authorize",
     )
-    params = urlencode(
-        {
-            "response_type": "token",
-            "client_id": client_id,
-            "scope": " ".join(sorted(set(scopes))),
-        }
-    )
+    params_dict = {
+        "response_type": "token",
+        "client_id": client_id,
+    }
+    if include_scope and scopes:
+        params_dict["scope"] = " ".join(sorted(set(scopes)))
+    params = urlencode(params_dict)
     return f"{oauth_base}?{params}"
 
 
@@ -179,14 +179,15 @@ def _approval_details(
     token_data: dict[str, Any],
     config: dict[str, Any],
     *,
+    token_key: str,
     required_scopes: list[str],
 ) -> dict[str, Any]:
-    auth_meta = get_token_metadata(token_data, "token.auth")
-    client_id = auth_meta.get("client_id") or token_data.get("oauth_client_id")
+    token_meta = get_token_metadata(token_data, token_key)
+    client_id = token_meta.get("client_id")
     if not client_id:
         return {}
     combined_scopes = set(required_scopes)
-    combined_scopes.update(_token_scopes(token_data, "token.auth"))
+    combined_scopes.update(_token_scopes(token_data, token_key))
     approval_url = build_approval_url(
         config,
         client_id=client_id,
@@ -194,33 +195,8 @@ def _approval_details(
     )
     return {
         "approval_url": approval_url,
-        "missing_scopes": sorted(set(required_scopes) - _token_scopes(token_data, "token.auth")),
+        "missing_scopes": sorted(set(required_scopes) - _token_scopes(token_data, token_key)),
     }
-
-
-def _persist_alias(
-    token_data: dict[str, Any],
-    *,
-    source_key: str,
-    target_key: str,
-) -> bool:
-    changed = False
-    if token_data.get(source_key) and not token_data.get(target_key):
-        token_data[target_key] = token_data[source_key]
-        changed = True
-    source_meta = get_token_metadata(token_data, source_key)
-    if source_meta:
-        target_meta = get_token_metadata(token_data, target_key)
-        if not target_meta:
-            set_token_metadata(
-                token_data,
-                target_key,
-                scopes=source_meta.get("scopes"),
-                client_id=source_meta.get("client_id"),
-                oauth_base=source_meta.get("oauth_base"),
-            )
-            changed = True
-    return changed
 
 
 def resolve_token(
@@ -230,7 +206,6 @@ def resolve_token(
     data_dir: str | Path,
     config: dict[str, Any],
     required_scopes: list[str] | None = None,
-    persist_bootstrap: bool = True,
 ) -> ResolvedToken:
     if skill == "search":
         raise ValueError("search does not use token-file auth")
@@ -240,70 +215,28 @@ def resolve_token(
     token_data = load_token_file(token_path)
     canonical_key = canonical_token_key(skill)
 
-    changed = False
-    for legacy_key in LEGACY_SOURCE_KEYS.get(skill, []):
-        changed = _persist_alias(
-            token_data,
-            source_key=legacy_key,
-            target_key=canonical_key,
-        ) or changed
+    token_value = token_data.get(canonical_key)
+    if token_value and _token_satisfies_scopes(token_data, canonical_key, required_scopes):
+        return ResolvedToken(
+            account=account,
+            skill=skill,
+            token=str(token_value),
+            token_key=canonical_key,
+            source_key=canonical_key,
+            token_path=token_path,
+            token_data=token_data,
+            email=token_data.get("email"),
+        )
 
-    direct_candidates = [canonical_key]
-    direct_candidates.extend(LEGACY_SOURCE_KEYS.get(skill, []))
-
-    for token_key in direct_candidates:
-        token_value = token_data.get(token_key)
-        if not token_value:
-            continue
-        if _token_satisfies_scopes(token_data, token_key, required_scopes):
-            if token_key != canonical_key:
-                changed = _persist_alias(
-                    token_data,
-                    source_key=token_key,
-                    target_key=canonical_key,
-                ) or changed
-            if changed:
-                save_token_file(token_path, token_data)
-            return ResolvedToken(
-                account=account,
-                skill=skill,
-                token=str(token_value),
-                token_key=canonical_key,
-                source_key=token_key,
-                token_path=token_path,
-                token_data=token_data,
-                email=token_data.get("email"),
-            )
-
-    auth_token = token_data.get("token.auth")
-    if auth_token:
-        if _token_satisfies_scopes(token_data, "token.auth", required_scopes):
-            if persist_bootstrap:
-                changed = _persist_alias(
-                    token_data,
-                    source_key="token.auth",
-                    target_key=canonical_key,
-                ) or changed
-            if changed:
-                save_token_file(token_path, token_data)
-            return ResolvedToken(
-                account=account,
-                skill=skill,
-                token=str(auth_token),
-                token_key=canonical_key,
-                source_key="token.auth",
-                token_path=token_path,
-                token_data=token_data,
-                email=token_data.get("email"),
-            )
-
+    if token_value:
         details = _approval_details(
             token_data,
             config,
+            token_key=canonical_key,
             required_scopes=required_scopes or [],
         )
         raise TokenResolutionError(
-            f"token.auth lacks required scopes for {skill}",
+            f"{canonical_key} lacks required scopes for {skill}",
             account=account,
             skill=skill,
             token_key=canonical_key,

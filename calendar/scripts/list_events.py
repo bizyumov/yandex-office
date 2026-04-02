@@ -36,29 +36,57 @@ def parse_date(date_str: str) -> datetime:
                 raise ValueError(f"Cannot parse date: {date_str}")
 
 
-def format_event(event: dict, index: int) -> str:
+def format_event(event: dict, index: int, show_attendees: bool = False) -> str:
     """Format a single event for display."""
     lines = [f"{index}. {event['summary']}"]
-    
+
     # Time formatting
     start = event['start']
     end = event['end']
-    
+
     if isinstance(start, datetime):
         time_str = f"{start.strftime('%H:%M')}"
         if end:
             time_str += f" – {end.strftime('%H:%M')}"
         lines.append(f"   • Time: {time_str}")
-    
+
     if event.get('location'):
         lines.append(f"   • Location: {event['location']}")
-    
+
     if event.get('is_recurring'):
         lines.append(f"   • 🔁 Recurring")
-    
+
     if event.get('attendees'):
-        lines.append(f"   • Attendees: {len(event['attendees'])}")
-    
+        if show_attendees:
+            lines.append(f"   • Attendees ({len(event['attendees'])}):")
+            for attendee in event['attendees']:
+                if isinstance(attendee, str):
+                    # Legacy format: simple email string
+                    if attendee.startswith('mailto:'):
+                        email = attendee[7:]  # Remove "mailto:" prefix
+                    else:
+                        email = attendee
+                    lines.append(f"     • {email}")
+                elif isinstance(attendee, dict):
+                    # Structured attendee object with params
+                    email = attendee.get('email', 'N/A')
+                    name = attendee.get('cn', '')
+                    status = attendee.get('partstat', '')
+                    status_icon = ''
+                    if status == 'ACCEPTED':
+                        status_icon = '✅'
+                    elif status == 'DECLINED':
+                        status_icon = '❌'
+                    elif status == 'TENTATIVE':
+                        status_icon = '❓'
+
+                    if name:
+                        lines.append(f"     {status_icon} {name} <{email}>")
+                    else:
+                        lines.append(f"     {status_icon} {email}")
+        else:
+            lines.append(f"   • Attendees: {len(event['attendees'])}")
+
     return "\n".join(lines)
 
 
@@ -68,6 +96,7 @@ def main():
     parser.add_argument('--date', '-d', default='today', help='Date to query (today, tomorrow, YYYY-MM-DD, DD.MM.YYYY)')
     parser.add_argument('--calendar', '-c', help='Calendar name (default: first available)')
     parser.add_argument('--json', '-j', action='store_true', help='Output as JSON')
+    parser.add_argument('--show-attendees', action='store_true', help='Show full list of attendees')
     parser.add_argument('--data-dir', help='Path to data directory with auth tokens')
     
     args = parser.parse_args()
@@ -107,7 +136,7 @@ def main():
             else:
                 print(f"\n{len(events)} event(s):\n")
                 for i, event in enumerate(events, 1):
-                    print(format_event(event, i))
+                    print(format_event(event, i, show_attendees=args.show_attendees))
                     print()
         
         return 0

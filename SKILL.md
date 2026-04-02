@@ -1,11 +1,17 @@
 ---
 name: yandex
-description: Meta-skill index for Yandex integrations: mail/почта, disk/диск, telemost/телемост, calendar/календарь, contacts/контакты, directory/директория, search/поиск, cloud/облако, forms/формы, tracker/трекер. Includes shared config, workflow, and per-skill entry points.
+description: Shared Yandex skill pack for Mail, Disk, Telemost, Calendar, Contacts, Directory, Cloud, Forms, and Tracker on this OpenClaw host. Yandex Search now lives in a separate standalone skill repo.
+homepage: https://github.com/bizyumov/yandex-skills
 license: MIT
 compatibility: Python 3.10+, per-skill dependencies, network access for Yandex APIs
 metadata:
   author: bizyumov
   version: "1.1"
+  openclaw:
+    emoji: "🟡"
+    requires:
+      bins:
+        - python3
 ---
 
 # yandex
@@ -33,8 +39,6 @@ yandex/
 │   └── disk.md
 ├── telemost/
 │   └── telemost.md
-├── search/
-│   └── search.md
 ├── cloud/
 │   └── cloud.md
 └── forms/
@@ -49,7 +53,6 @@ yandex/
 - Directory: `directory/directory.md`
 - Disk: `disk/disk.md`
 - Telemost: `telemost/telemost.md`
-- Search: `search/search.md`
 - Cloud: `cloud/cloud.md`
 - Forms: `forms/forms.md`
 - Tracker: `tracker/tracker.md`
@@ -64,10 +67,17 @@ yandex/
 | [directory](directory/) | Directory / Директория: Yandex 360 Directory API — users, departments, groups, and org-aware identity data |
 | [telemost](telemost/) | Telemost / Телемост: process Telemost emails, manage real conferences, and admin Telemost org defaults |
 | [disk](disk/) | Disk / Диск: download files from Yandex Disk, upload files to Disk, and manage public or organization-only share links (Telemost links may require OAuth) |
-| [search](search/) | Search / Поиск: web search via Yandex Cloud Search API v2 |
 | [cloud](cloud/) | Cloud / Облако: deploy serverless functions to Yandex Cloud |
 | [forms](forms/) | Forms / Формы: export form responses from Yandex Forms — download results as XLSX or JSON |
 | [tracker](tracker/) | Tracker / Трекер: manage tasks in Yandex Tracker — create, search, update issues, manage Agile boards |
+
+## Migration Note
+
+Yandex Search moved to the standalone `yandex-search-skill` repository:
+
+- https://github.com/bizyumov/yandex-search-skill
+
+Use that skill when you need Yandex Cloud Search API v2. This `yandex` meta-skill no longer includes search instructions.
 
 ## Shared Configuration
 
@@ -173,7 +183,7 @@ Where:
 
 1. `YYYY-MM` is derived from first-seen meeting timestamp.
 2. Meeting folder starts with local date/time prefix `YYYY-MM-DD_HH-MM`.
-3. Date/time prefix is immediately followed by mailbox tag (`bdi`, `ctiis`, etc.).
+3. Date/time prefix is immediately followed by mailbox tag (`bdi`, `work`, etc.).
 4. Folder always ends with meeting UID (`_{MEETING_UID}` or `_unknown`).
 5. Folder routing is constrained by same-day wildcard candidate matching.
 
@@ -190,8 +200,8 @@ Processing semantics:
 Migration for existing folders:
 
 ```bash
-python telemost/scripts/migrate_meeting_dirs.py --dry-run
-python telemost/scripts/migrate_meeting_dirs.py
+python3 telemost/scripts/migrate_meeting_dirs.py --dry-run
+python3 telemost/scripts/migrate_meeting_dirs.py
 ```
 
 ## Telemost Recording OAuth Caveat
@@ -230,27 +240,52 @@ git sparse-checkout add telemost disk
 ```json
 {
   "email": "user@yandex.ru",
-  "token.auth": "y0_...",
   "token.mail": "y0_...",
-  "token.disk": "y0_..."
+  "token.disk": "y0_...",
+  "token_meta": {
+    "token.mail": {
+      "app_id": "mail-readonly",
+      "client_id": "660686ff45f947f2ac6e3f6495a9ec74",
+      "scopes": ["mail:imap_ro"]
+    }
+  }
 }
 ```
 
-Canonical convention is `token.<skill>` across the board. `token.auth` is the bootstrap fallback. Legacy token names are migrated to canonical keys when read.
+Canonical convention is `token.<service>`. Each service stores and resolves its own token directly.
 
 ### Generate a Token
 
 ```bash
-# Mail token (use Client ID from an OAuth app that has mail/IMAP scope)
-python mail/scripts/oauth_setup.py --client-id MAIL_CLIENT_ID --email user@yandex.ru --account bdi --service mail
+# Recommended: default preconfigured app from config.json, ready approval link
+python3 scripts/oauth_setup.py --email user@yandex.ru --account bdi --service mail
 
-# Disk token (you MAY use a different Client ID from an app that has Disk scope)
-python mail/scripts/oauth_setup.py --client-id DISK_CLIENT_ID --email user@yandex.ru --account bdi --service disk
+# Recommended: choose a non-default preconfigured app variant
+python3 scripts/oauth_setup.py --email user@yandex.ru --account bdi --service disk --app disk-full
+
+# Advanced: explicit client ID and explicit scope override
+python3 scripts/oauth_setup.py --client-id DISK_CLIENT_ID --scope cloud_api:disk.write --scope cloud_api:disk.app_folder --email user@yandex.ru --account bdi --service disk
 ```
 
-> Important: Mail and Disk can use different OAuth apps and therefore different Client IDs.
-> Use a Client ID that is configured for the requested service scope.
-> For mail fetching, prefer read-only scope (`mail:imap_ro`).
+Recommended flow:
+
+- keep the app catalog in root `config.json` under `oauth_apps.catalog`
+- keep default app bindings in root `config.json` under `oauth_apps.service_defaults`
+- use `--app <app_id>` only when selecting a non-default variant
+- run `python3 scripts/oauth_setup.py --service <name> ...`
+- the generated URL omits `scope=` by default and uses the app's baked-in permissions
+- new token files are created automatically on first save
+
+Advanced flow:
+
+- pass `--client-id` explicitly
+- add `--scope` values when you need a one-off override or debugging path
+
+Important:
+
+- Mail and Disk can use different OAuth apps and therefore different Client IDs.
+- If an OAuth app's permission set changes later, tokens must be reissued.
+- For mail fetching, prefer read-only scope (`mail:imap_ro`).
 
 ## OAuth App Registration
 
@@ -266,12 +301,11 @@ python mail/scripts/oauth_setup.py --client-id DISK_CLIENT_ID --email user@yande
 |---------|---------------|
 | Yandex Disk API | https://yandex.ru/dev/disk-api/doc/ru/concepts/quickstart |
 | Yandex Mail IMAP | https://yandex.ru/support/mail/mail-clients/others.html |
-| Yandex Cloud Search API | https://yandex.cloud/ru/docs/search-api/ |
 | Yandex Cloud CLI | https://cloud.yandex.com/docs/cli/quickstart |
 
 ## Migration Note
 
-This repository now uses `yandex/` with `mail/`, `disk/`, `telemost/`, `search/`, `cloud/`.
+This repository now uses `yandex/` with `mail/`, `disk/`, `telemost/`, and `cloud/` plus the other non-search service folders.
 Old `yandex-*` paths are removed as part of hard cutover.
 
 ## License

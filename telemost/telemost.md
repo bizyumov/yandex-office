@@ -15,16 +15,16 @@ Process Telemost meeting transcripts and recordings into structured documents, a
 
 ```bash
 # Create a real conference (defaults: PUBLIC access, PUBLIC waiting room, no cohosts)
-python scripts/conference.py create --account ctiis
+python3 scripts/conference.py create --account ctiis
 
 # Read conference info
-python scripts/conference.py get --account ctiis --id <conference_id>
+python3 scripts/conference.py get --account ctiis --id <conference_id>
 
 # Update conference settings
-python scripts/conference.py update --account ctiis --id <conference_id> --waiting-room ADMINS
+python3 scripts/conference.py update --account ctiis --id <conference_id> --waiting-room ADMINS
 
-# Reuse an existing conference when creating a calendar event
-python ../calendar/scripts/create_event.py \
+# From the Yandex skill root: reuse an existing conference when creating a calendar event
+python3 calendar/scripts/create_event.py \
   --account ctiis \
   --summary "Проектный созвон" \
   --start "2026-03-12T10:00:00" \
@@ -32,22 +32,22 @@ python ../calendar/scripts/create_event.py \
   --telemost-conference-id <conference_id>
 
 # Read organization defaults applied to new conferences
-python scripts/settings.py get --account ctiis
+python3 scripts/settings.py get --account ctiis
 
 # Update organization defaults
-python scripts/settings.py update --account ctiis --waiting-room-calendar ORGANIZATION
+python3 scripts/settings.py update --account ctiis --waiting-room-calendar ORGANIZATION
 
 # Process all unprocessed meetings (uses shared config discovery from the workspace)
-python scripts/process_meeting.py
+python3 scripts/process_meeting.py
 
 # Cron-safe wrapper (PID lock, forwards CLI args)
 ./scripts/process.sh
 
 # Or specify paths explicitly
-python scripts/process_meeting.py --incoming /path/to/incoming --output /path/to/output
+python3 scripts/process_meeting.py --incoming ./incoming --output ./meetings
 
 # Without archiving (keep originals in incoming/)
-python scripts/process_meeting.py --no-archive
+python3 scripts/process_meeting.py --no-archive
 
 # Wrapper with forwarded args
 ./scripts/process.sh --no-archive --download-recordings
@@ -200,10 +200,10 @@ Run once to normalize previously generated folders:
 
 ```bash
 # Preview changes
-python scripts/migrate_meeting_dirs.py --dry-run
+python3 scripts/migrate_meeting_dirs.py --dry-run
 
 # Apply changes
-python scripts/migrate_meeting_dirs.py
+python3 scripts/migrate_meeting_dirs.py
 ```
 
 The migration script scans `{data_dir}/meetings/**/meeting.meta.json`,
@@ -213,7 +213,7 @@ computes the canonical v2 path, and renames each directory in-place.
 
 Use `scripts/process.sh` for scheduled runs to avoid overlapping executions:
 
-- Uses PID lock file: `/tmp/telemost-process.pid`
+- Uses a PID lock file named `telemost-process.pid` in the system temp directory
 - Skips run if previous process is still active
 - Passes all CLI args through to `process_meeting.py`
 - Uses `YANDEX_TELEMOST_CONFIG` env var to override config path
@@ -221,7 +221,7 @@ Use `scripts/process.sh` for scheduled runs to avoid overlapping executions:
 Example:
 
 ```bash
-*/30 * * * * /path/to/telemost/scripts/process.sh --download-recordings
+*/30 * * * * cd telemost && ./scripts/process.sh --download-recordings
 ```
 
 ### Event Processing and Partial Meetings

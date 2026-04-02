@@ -104,7 +104,7 @@ Returns list of organizations accessible to the token.
 
 **CLI:**
 ```bash
-python directory/scripts/search.py \
+python3 directory/scripts/search.py \
   --account ctiis \
   --query "Лебедев"
 ```
@@ -142,7 +142,7 @@ def search_user(token, org_id, query):
 
 **CLI:**
 ```bash
-python directory/scripts/find_slot.py \
+python3 directory/scripts/find_slot.py \
   --account ctiis \
   --attendee "user@example.com" \
   --date 2026-03-04 \
