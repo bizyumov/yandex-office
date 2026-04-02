@@ -60,12 +60,13 @@ Add to existing token file:
 
 Or generate new token:
 ```bash
-python ../mail/scripts/oauth_setup.py \
-  --client-id YOUR_CLIENT_ID \
+python scripts/oauth_setup.py \
   --email user@yandex.ru \
   --account ctiis \
   --service tracker
 ```
+
+Recommended: use the default Tracker app from root `config.json` (`oauth_apps.service_defaults.tracker`, currently `tracker-read`) for the default onboarding path. Use `--app tracker-full` for write access, and explicit `--client-id` and `--scope` only when you need a one-off override.
 
 ### Organization ID
 

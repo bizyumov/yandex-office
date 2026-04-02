@@ -13,7 +13,7 @@ Covers:
 - How to present choices to users without confusion
 
 Does **not** cover:
-- Yandex Search API onboarding
+- Yandex Search API onboarding. Search now lives in the standalone `yandex-search-skill` repository.
 - Yandex Cloud infra deployment
 
 ---
@@ -72,28 +72,34 @@ Permissions:
 
 ### Step 1 — Collect minimum inputs
 Ask for:
-- Mail Client ID
-- Disk Client ID (allow same value if user knows it supports both scopes)
 - Mailbox email
 - Account alias (e.g. `bdi`)
 - Sender filter (or keep default)
 - Data directory preference
+- Optional explicit Client IDs only if no preconfigured app map exists yet
 
 ### Step 2 — Normalize config and directories
 - Keep shared defaults in root `config.json`.
 - Put mailbox-specific settings into `{cwd}/yandex-data/config.agent.json`.
+- Keep the preconfigured OAuth app catalog and default service bindings in root `config.json` under `oauth_apps.catalog` and `oauth_apps.service_defaults`.
 - Create `auth`, `incoming`, `meetings`.
 
 ### Step 3 — Issue mail token
 Run:
 
 ```bash
-python mail/scripts/oauth_setup.py \
-  --client-id MAIL_CLIENT_ID \
+python scripts/oauth_setup.py \
   --email user@yandex.ru \
   --account bdi \
   --service mail
 ```
+
+Recommended behavior:
+
+- resolve the default Mail app from `oauth_apps.service_defaults.mail`
+- resolve its `client_id` and baked-in scopes from `oauth_apps.catalog.<app_id>`
+- generate a ready-made approval link with no `scope=` parameter
+- rely on the app's baked-in permissions
 
 User returns access token; save to `token.mail`.
 
@@ -101,14 +107,27 @@ User returns access token; save to `token.mail`.
 Run:
 
 ```bash
-python mail/scripts/oauth_setup.py \
-  --client-id DISK_CLIENT_ID \
+python scripts/oauth_setup.py \
   --email user@yandex.ru \
   --account bdi \
   --service disk
 ```
 
-User returns access token; save to `token.disk`.
+For advanced/operator flows that need an explicit override:
+
+```bash
+python scripts/oauth_setup.py \
+  --client-id DISK_CLIENT_ID \
+  --scope cloud_api:disk.write \
+  --scope cloud_api:disk.app_folder \
+  --email user@yandex.ru \
+  --account bdi \
+  --service disk
+```
+
+If an app's permission set changes later, existing tokens must be reissued.
+
+To use a non-default preconfigured app variant, pass `--app <app_id>` (for example `--app disk-full`).
 
 ### Step 5 — Validate with fetch
 Run:
@@ -178,7 +197,7 @@ When callback is received:
 - `mail_scope:ro`  -> scope = `mail:imap_ro`
 - `mail_scope:full` -> scope = `mail:imap_full`
 
-Then generate OAuth URL dynamically:
+Then generate OAuth URL dynamically for the advanced explicit-scope path:
 
 ```text
 https://oauth.yandex.ru/authorize?response_type=token&client_id={MAIL_CLIENT_ID}&scope={chosen_scope}
@@ -205,7 +224,7 @@ Callback mapping:
 - `disk_scope:read`  -> `cloud_api:disk.read`
 - `disk_scope:write` -> `cloud_api:disk.write`
 
-Then generate OAuth URL dynamically:
+Then generate OAuth URL dynamically for the advanced explicit-scope path:
 
 ```text
 https://oauth.yandex.ru/authorize?response_type=token&client_id={DISK_CLIENT_ID}&scope={chosen_disk_scope}

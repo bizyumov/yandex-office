@@ -12,8 +12,15 @@ A collection of [agentskills.io](https://agentskills.io/specification)-compliant
 | [directory](directory/) | Directory / Директория: Yandex 360 Directory API — users, departments, groups, and org-aware identity data |
 | [telemost](telemost/) | Telemost / Телемост: process Telemost emails, manage real conferences, and admin Telemost org defaults |
 | [disk](disk/) | Disk / Диск: download files, upload files, and manage public or organization-only share links |
-| [search](search/) | Search / Поиск: web search via Yandex Cloud Search API v2 |
 | [cloud](cloud/) | Cloud / Облако: deploy serverless functions to Yandex Cloud |
+
+## Migration Note
+
+Yandex Search has moved to the standalone `yandex-search-skill` repository:
+
+- https://github.com/bizyumov/yandex-search-skill
+
+This repository now covers the remaining shared Yandex service skills only.
 
 ## Shared Configuration
 
@@ -157,32 +164,100 @@ python telemost/scripts/migrate_meeting_dirs.py
 
 ## OAuth Setup
 
+### Mental Model
+
+```text
+OpenClaw cwd
+  -> {cwd}/yandex-data/config.agent.json
+     -> mailboxes + service-specific overrides
+
+Skill config.json
+  -> oauth_apps.service_defaults.<service> selects the default app_id
+  -> oauth_apps.catalog.<app_id> stores app name, client_id, service, and baked-in scopes
+
+python scripts/oauth_setup.py --service <service> [--app <app_id>] --account <account> --email <email>
+  -> resolves app_id from oauth_apps.service_defaults unless --app is passed
+  -> reads oauth_apps.catalog.<app_id>
+  -> generates approval URL
+  -> stores token under auth/{account}.token as token.<service>
+
+runtime clients
+  -> resolve token.<service>
+  -> verify scopes from token_meta.token.<service>.scopes
+```
+
+### Default Service Scopes
+
+| Service | Default scopes | Typical use |
+|---------|----------------|-------------|
+| `mail` | `mail:imap_ro` | Read-only IMAP fetch |
+| `disk` | `cloud_api:disk.read` | Download/read-only links |
+| `telemost` | `telemost-api:conferences.create`, `telemost-api:conferences.delete`, `telemost-api:conferences.read`, `telemost-api:conferences.update` | Conference lifecycle |
+| `tracker` | `tracker:read` | Read/search issues |
+| `forms` | `forms:read` | Export/discover forms |
+| `directory` | `directory:read_users`, `directory:read_departments`, `directory:read_groups`, `directory:read_domains`, `directory:read_external_contacts`, `directory:read_organization` | Org graph reads |
+| `calendar` | `calendar:all` | User calendar access |
+| `contacts` | `addressbook:all` | Contacts read/write |
+
+### Recommended Preconfigured App Set
+
+Use one preconfigured app per capability family instead of one universal app:
+
+| App scenario | Service key | Recommended scopes | Why |
+|-------------|-------------|--------------------|-----|
+| Mail read-only | `mail` | `mail:imap_ro` | Safest default for fetchers |
+| Disk read-only | `disk` | `cloud_api:disk.read` | Covers downloads and Telemost media reads |
+| Telemost conference admin | `telemost` | `telemost-api:conferences.create`, `telemost-api:conferences.delete`, `telemost-api:conferences.read`, `telemost-api:conferences.update` | Full meeting lifecycle |
+| Tracker read-only | `tracker` | `tracker:read` | Search and inspect issues |
+| Forms export | `forms` | `forms:read` | Form discovery and export |
+| Directory read-only | `directory` | `directory:read_users`, `directory:read_departments`, `directory:read_groups`, `directory:read_domains`, `directory:read_external_contacts`, `directory:read_organization` | Org lookups without broader admin write access |
+| Calendar user access | `calendar` | `calendar:all` | Current user calendar operations |
+
+If you want write-capable variants later, keep them as separate app scenarios instead of broadening the default read-only app.
+
 ### Token Format
 
 ```json
 {
   "email": "user@yandex.ru",
-  "token.auth": "y0_...",
   "token.mail": "y0_...",
   "token.disk": "y0_..."
 }
 ```
 
-Canonical convention is `token.<skill>` for every sub-skill. Legacy aliases are migrated in place where needed (`token.org` -> `token.directory`, contacts currently duplicates calendar auth into `token.contacts`).
+Canonical convention is `token.<service>`. Each service stores and resolves its own token directly.
 
 ### Generate a Token
 
 ```bash
-# Mail token (use Client ID from an OAuth app that has mail/IMAP scope)
-python mail/scripts/oauth_setup.py --client-id MAIL_CLIENT_ID --email user@yandex.ru --account bdi --service mail
+# Recommended: default preconfigured app from config.json, ready approval link
+python scripts/oauth_setup.py --email user@yandex.ru --account bdi --service mail
 
-# Disk token (you MAY use a different Client ID from an app that has Disk scope)
-python mail/scripts/oauth_setup.py --client-id DISK_CLIENT_ID --email user@yandex.ru --account bdi --service disk
+# Recommended: choose a non-default preconfigured app variant
+python scripts/oauth_setup.py --email user@yandex.ru --account bdi --service disk --app disk-full
+
+# Advanced: explicit client ID and explicit scope override
+python scripts/oauth_setup.py --client-id DISK_CLIENT_ID --scope cloud_api:disk.write --scope cloud_api:disk.app_folder --email user@yandex.ru --account bdi --service disk
 ```
 
-> Important: Mail and Disk can use different OAuth apps and therefore different Client IDs.
-> Use a Client ID that is configured for the requested service scope.
-> For mail fetching, prefer read-only scope (`mail:imap_ro`).
+Recommended flow:
+
+- keep the checked-in app catalog in `config.json` under `oauth_apps.catalog`
+- keep service defaults in `config.json` under `oauth_apps.service_defaults`
+- use `--app <app_id>` only when you need a non-default variant such as `disk-full`, `forms-full`, `tracker-full`, or `directory-full`
+- run `python scripts/oauth_setup.py --service <name> ...`
+- the generated URL omits `scope=` by default and relies on the OAuth app's baked-in permissions
+
+Advanced flow:
+
+- pass `--client-id` explicitly
+- optionally add `--scope` overrides for debugging or one-off operator flows
+
+Important:
+
+- Mail and Disk can use different OAuth apps and therefore different Client IDs.
+- If an OAuth app's permissions change later, previously issued tokens must be reissued.
+- For mail fetching, prefer read-only scope (`mail:imap_ro`).
 
 ### OAuth App Registration
 
@@ -198,7 +273,6 @@ python mail/scripts/oauth_setup.py --client-id DISK_CLIENT_ID --email user@yande
 |---------|---------------|
 | Yandex Disk API | https://yandex.ru/dev/disk-api/doc/ru/concepts/quickstart |
 | Yandex Mail IMAP | https://yandex.ru/support/mail/mail-clients/others.html |
-| Yandex Cloud Search API | https://yandex.cloud/ru/docs/search-api/ |
 | Yandex Cloud CLI | https://cloud.yandex.com/docs/cli/quickstart |
 
 ## License

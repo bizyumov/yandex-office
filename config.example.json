@@ -11,6 +11,150 @@
     "server": "imap.yandex.com",
     "port": 993
   },
+  "oauth_apps": {
+    "service_defaults": {
+      "calendar": "calendar-user",
+      "cloud": "cloud-auth",
+      "contacts": "contacts-default",
+      "directory": "directory-read",
+      "disk": "disk-read",
+      "forms": "forms-read",
+      "mail": "mail-readonly",
+      "telemost": "telemost-default",
+      "tracker": "tracker-read"
+    },
+    "catalog": {
+      "mail-readonly": {
+        "service": "mail",
+        "app_name": "OpenClaw Yandex Mail Readonly",
+        "client_id": "660686ff45f947f2ac6e3f6495a9ec74",
+        "scopes": ["mail:imap_ro"],
+        "omit_scope_in_url": true
+      },
+      "mail-readwrite": {
+        "service": "mail",
+        "app_name": "OpenClaw Yandex Mail ReadWrite",
+        "client_id": "8d5b8d107dce4df59cdf9ca036f39865",
+        "scopes": ["mail:imap_full"],
+        "omit_scope_in_url": true
+      },
+      "disk-read": {
+        "service": "disk",
+        "app_name": "OpenClaw Yandex Disk Read",
+        "client_id": "77e3afdd648b4fcfa0737436b86cb19c",
+        "scopes": ["cloud_api:disk.read"],
+        "omit_scope_in_url": true
+      },
+      "telemost-default": {
+        "service": "telemost",
+        "app_name": "OpenClaw Yandex Telemost Default",
+        "client_id": "f6954a7ec2724e0f963dbeb273046d0e",
+        "scopes": [
+          "telemost-api:conferences.create",
+          "telemost-api:conferences.delete",
+          "telemost-api:conferences.read",
+          "telemost-api:conferences.update"
+        ],
+        "omit_scope_in_url": true
+      },
+      "tracker-read": {
+        "service": "tracker",
+        "app_name": "OpenClaw Yandex Tracker Read",
+        "client_id": "38475479379c43bea3b8b29e418a1170",
+        "scopes": ["tracker:read"],
+        "omit_scope_in_url": true
+      },
+      "calendar-user": {
+        "service": "calendar",
+        "app_name": "OpenClaw Yandex Calendar User",
+        "client_id": "902e7ef779014d31b94d69d8cc863034",
+        "scopes": ["calendar:all"],
+        "omit_scope_in_url": true
+      },
+      "contacts-default": {
+        "service": "contacts",
+        "app_name": "OpenClaw Yandex Contacts",
+        "client_id": "8355899cad4f443bbb81a8ca3955b67f",
+        "scopes": ["addressbook:all"],
+        "omit_scope_in_url": true
+      },
+      "directory-read": {
+        "service": "directory",
+        "app_name": "OpenClaw Yandex Directory Read",
+        "client_id": "7c5dbfed815c4d20a8375d58d8a0d90e",
+        "scopes": [
+          "directory:read_departments",
+          "directory:read_domains",
+          "directory:read_external_contacts",
+          "directory:read_groups",
+          "directory:read_organization",
+          "directory:read_users"
+        ],
+        "omit_scope_in_url": true
+      },
+      "forms-read": {
+        "service": "forms",
+        "app_name": "OpenClaw Yandex Forms Read",
+        "client_id": "24f7b757a90749dfb3039bbac2d3c350",
+        "scopes": ["forms:read"],
+        "omit_scope_in_url": true
+      },
+      "cloud-auth": {
+        "service": "cloud",
+        "app_name": "OpenClaw Yandex Cloud Auth",
+        "client_id": "2d2f4835dcd74ca0a3548bc18ffe9cbf",
+        "scopes": ["cloud:auth"],
+        "omit_scope_in_url": true
+      },
+      "disk-full": {
+        "service": "disk",
+        "app_name": "OpenClaw Yandex Disk Full",
+        "client_id": "ee412d43563c4a08b81e5dc261e1fadb",
+        "scopes": [
+          "cloud_api:disk.app_folder",
+          "cloud_api:disk.info",
+          "cloud_api:disk.read",
+          "cloud_api:disk.write"
+        ],
+        "omit_scope_in_url": true
+      },
+      "tracker-full": {
+        "service": "tracker",
+        "app_name": "OpenClaw Yandex Tracker Full",
+        "client_id": "d6b2bdbd51d944dd867b3dbc00f27d9b",
+        "scopes": ["tracker:read", "tracker:write"],
+        "omit_scope_in_url": true
+      },
+      "forms-full": {
+        "service": "forms",
+        "app_name": "OpenClaw Yandex Forms Full",
+        "client_id": "7e0af44360ac4943b64ddef2ec3a7004",
+        "scopes": ["forms:read", "forms:write"],
+        "omit_scope_in_url": true
+      },
+      "directory-full": {
+        "service": "directory",
+        "app_name": "OpenClaw Yandex Directory Full",
+        "client_id": "206d528e77424424b3be4c272a621a55",
+        "scopes": [
+          "directory:manage_dns",
+          "directory:read_departments",
+          "directory:read_domains",
+          "directory:read_external_contacts",
+          "directory:read_groups",
+          "directory:read_organization",
+          "directory:read_users",
+          "directory:write_departments",
+          "directory:write_domains",
+          "directory:write_external_contacts",
+          "directory:write_groups",
+          "directory:write_organization",
+          "directory:write_users"
+        ],
+        "omit_scope_in_url": true
+      }
+    }
+  },
   "mail": {
     "since": "off",
     "filters": { "sender": "keeper@telemost.yandex.ru" },

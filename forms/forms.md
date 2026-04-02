@@ -128,13 +128,14 @@ Add to existing token file:
 
 Or generate new token:
 ```bash
-# Using existing OAuth app with forms scope
-python ../mail/scripts/oauth_setup.py \
-  --client-id YOUR_CLIENT_ID \
+# From the Yandex skill root, using the configured default forms app
+python scripts/oauth_setup.py \
   --email user@yandex.ru \
   --account ctiis \
   --service forms
 ```
+
+Recommended: use the default Forms app from root `config.json` (`oauth_apps.service_defaults.forms`, currently `forms-read`) so the default approval link can use the preconfigured app permissions without needing `--client-id` each time. Use `--app forms-full` when you need write access.
 
 ### Multiple Accounts
 

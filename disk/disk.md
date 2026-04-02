@@ -78,11 +78,10 @@ Upload/share-management scopes:
 - `cloud_api:disk.write`
 - `cloud_api:disk.app_folder`
 
-Generate a download token:
+From the Yandex skill root, generate a download token:
 
 ```bash
-python ../mail/scripts/oauth_setup.py \
-  --client-id DISK_CLIENT_ID \
+python scripts/oauth_setup.py \
   --email user@yandex.ru \
   --account bdi \
   --service disk
@@ -91,7 +90,7 @@ python ../mail/scripts/oauth_setup.py \
 Generate an upload/share-management token:
 
 ```bash
-python ../mail/scripts/oauth_setup.py \
+python scripts/oauth_setup.py \
   --client-id DISK_CLIENT_ID \
   --email user@yandex.ru \
   --account bdi \
@@ -100,7 +99,7 @@ python ../mail/scripts/oauth_setup.py \
   --scope cloud_api:disk.app_folder
 ```
 
-Use a Client ID configured for the requested Disk scopes. It can be different from the Mail Client ID.
+Recommended: use the default Disk app from root `config.json` (`oauth_apps.service_defaults.disk`, currently `disk-read`) for the read-only approval link. Use `--app disk-full` for the write-capable preconfigured app, and use explicit `--client-id` plus `--scope` only for advanced/operator flows. If the app's scopes change later, reissue tokens.
 
 ## Important: Telemost Recordings
 

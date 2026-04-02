@@ -15,8 +15,8 @@ Generic email fetcher for Yandex Mail via IMAP XOAUTH2. Saves incoming emails ma
 ## Quick Start
 
 ```bash
-# One-time: set up OAuth token for mail (read-only IMAP scope)
-python scripts/oauth_setup.py --client-id MAIL_CLIENT_ID --email user@yandex.ru --account bdi --service mail
+# From the Yandex skill root: set up OAuth token for mail (read-only IMAP scope)
+python scripts/oauth_setup.py --email user@yandex.ru --account bdi --service mail
 
 # Fetch new emails from the agent workspace
 python scripts/fetch_emails.py
@@ -25,7 +25,7 @@ python scripts/fetch_emails.py
 python scripts/fetch_emails.py --num 20
 ```
 
-> Note: if you also need Disk access, run oauth_setup again with `--service disk` and a Disk-capable Client ID (can be different from mail Client ID).
+> Recommended: use the default Mail app from root `config.json` (`oauth_apps.service_defaults.mail`) so the approval URL can use the app's baked-in scopes without passing `--client-id` each time. If you also need Disk access, run `python scripts/oauth_setup.py --service disk ...` from the Yandex skill root.
 
 ## What It Does
 
@@ -178,5 +178,5 @@ Stored at `{data_dir}/auth/{account}.token` with 600 permissions.
 ## Files
 
 - `scripts/fetch_emails.py` — Main fetcher (CLI + Python API)
-- `scripts/oauth_setup.py` — Interactive OAuth token wizard
+- `scripts/oauth_setup.py` — Shared interactive OAuth token wizard for all Yandex sub-skills (run from the Yandex skill root)
 - `scripts/fetch.sh` — Cron-safe shell wrapper with PID lock (passes `--num` and other args through)
