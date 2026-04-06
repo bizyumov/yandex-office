@@ -732,6 +732,10 @@ def main():
         "--verbose", "-v", action="store_true",
         help="Enable verbose logging"
     )
+    parser.add_argument(
+        "--data-dir", default=None,
+        help="Explicit Yandex data directory override for non-workspace execution"
+    )
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -739,7 +743,12 @@ def main():
         format="%(asctime)s %(name)s %(levelname)s %(message)s",
     )
 
-    runtime = load_runtime_context(__file__)
+    runtime = load_runtime_context(
+        __file__,
+        data_dir_override=args.data_dir,
+        require_agent_config=True,
+        require_external_data_dir=True,
+    )
     data_dir = runtime.data_dir
 
     incoming_dir = Path(args.incoming) if args.incoming else data_dir / "incoming"

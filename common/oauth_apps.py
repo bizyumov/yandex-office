@@ -43,6 +43,17 @@ class OAuthSetupPlan:
     app_name: str | None = None
 
 
+@dataclass(frozen=True)
+class OAuthProfileOption:
+    service: str
+    app_id: str
+    app_name: str | None
+    scopes: list[str]
+    auth_url: str
+    access_class: str
+    is_default: bool
+
+
 def _clean_scopes(scopes: list[str] | None) -> list[str]:
     cleaned = [str(scope).strip() for scope in scopes or [] if str(scope).strip()]
     return sorted(set(cleaned))
@@ -95,6 +106,64 @@ def configured_oauth_app(
         app_name=app_name,
         omit_scope_in_url=bool(omit_scope_in_url),
     )
+
+
+def classify_access(scopes: list[str]) -> str:
+    normalized = [str(scope).strip().lower() for scope in scopes if str(scope).strip()]
+    if not normalized:
+        return "custom"
+    if any(scope.endswith(":all") for scope in normalized):
+        return "full access"
+
+    write_markers = ("write", "delete", "update", "create", "manage", "full")
+    if any(any(marker in scope for marker in write_markers) for scope in normalized):
+        return "write-capable"
+    return "read-only"
+
+
+def list_service_profiles(config: dict[str, Any], service: str) -> list[OAuthProfileOption]:
+    apps = config.get("oauth_apps")
+    if not isinstance(apps, dict):
+        return []
+
+    catalog = apps.get("catalog")
+    service_defaults = apps.get("service_defaults")
+    if not isinstance(catalog, dict) or not isinstance(service_defaults, dict):
+        return []
+
+    default_app_id = str(service_defaults.get(service, "")).strip() or None
+    options: list[OAuthProfileOption] = []
+    for app_id in sorted(catalog):
+        raw = catalog.get(app_id)
+        if not isinstance(raw, dict):
+            continue
+        configured_service = str(raw.get("service", "")).strip()
+        if configured_service != service:
+            continue
+        app = configured_oauth_app(config, service, app_id)
+        if app is None:
+            continue
+        include_scope = not app.omit_scope_in_url
+        auth_url = build_approval_url(
+            config,
+            client_id=app.client_id,
+            scopes=app.scopes,
+            include_scope=include_scope,
+        )
+        options.append(
+            OAuthProfileOption(
+                service=service,
+                app_id=app.app_id,
+                app_name=app.app_name,
+                scopes=app.scopes,
+                auth_url=auth_url,
+                access_class=classify_access(app.scopes),
+                is_default=app.app_id == default_app_id,
+            )
+        )
+
+    options.sort(key=lambda option: (not option.is_default, option.app_id))
+    return options
 
 
 def plan_oauth_setup(

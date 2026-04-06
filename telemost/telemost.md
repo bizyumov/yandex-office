@@ -15,27 +15,27 @@ Process Telemost meeting transcripts and recordings into structured documents, a
 
 ```bash
 # Create a real conference (defaults: PUBLIC access, PUBLIC waiting room, no cohosts)
-python3 scripts/conference.py create --account ctiis
+python3 scripts/conference.py create --account mary
 
 # Read conference info
-python3 scripts/conference.py get --account ctiis --id <conference_id>
+python3 scripts/conference.py get --account mary --id <conference_id>
 
 # Update conference settings
-python3 scripts/conference.py update --account ctiis --id <conference_id> --waiting-room ADMINS
+python3 scripts/conference.py update --account mary --id <conference_id> --waiting-room ADMINS
 
-# From the Yandex skill root: reuse an existing conference when creating a calendar event
+# From the agent workspace CWD: reuse an existing conference when creating a calendar event
 python3 calendar/scripts/create_event.py \
-  --account ctiis \
+  --account mary \
   --summary "Проектный созвон" \
   --start "2026-03-12T10:00:00" \
   --duration 45 \
   --telemost-conference-id <conference_id>
 
 # Read organization defaults applied to new conferences
-python3 scripts/settings.py get --account ctiis
+python3 scripts/settings.py get --account mary
 
 # Update organization defaults
-python3 scripts/settings.py update --account ctiis --waiting-room-calendar ORGANIZATION
+python3 scripts/settings.py update --account mary --waiting-room-calendar ORGANIZATION
 
 # Process all unprocessed meetings (uses shared config discovery from the workspace)
 python3 scripts/process_meeting.py
@@ -181,9 +181,9 @@ Directory naming:
 
 - Month bucket folder: `YYYY-MM` (derived from first-seen meeting timestamp)
 - Meeting folder prefix: `YYYY-MM-DD_HH-MM`
-- Prefix must be followed by mailbox tag (e.g. `bdi`, `ctiis`)
+- Prefix must be followed by mailbox tag (e.g. `alex`, `mary`)
 - Final segment is meeting UID: `_{MEETING_UID}` (or `_unknown`)
-- Example: `2026-02/2026-02-24_18-19_bdi_1000349120`
+- Example: `2026-02/2026-02-24_18-19_alex_1000349120`
 
 Directory routing rule (same-day wildcard, single-candidate invariant):
 

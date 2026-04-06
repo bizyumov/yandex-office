@@ -1,5 +1,4 @@
 {
-  "data_dir": "yandex-data",
   "urls": {
     "oauth": "https://oauth.yandex.ru/authorize",
     "disk_api": "https://cloud-api.yandex.net",
