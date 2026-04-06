@@ -2,7 +2,7 @@
 
 A collection of [agentskills.io](https://agentskills.io/specification)-compliant skills for working with Yandex platform services.
 
-## Skills
+## Sub-Skills
 
 | Skill | Description |
 |-------|-------------|
@@ -11,8 +11,21 @@ A collection of [agentskills.io](https://agentskills.io/specification)-compliant
 | [contacts](contacts/) | Contacts / Контакты: CardDAV integration for Yandex Contacts — fuzzy lookup, create/update contacts |
 | [directory](directory/) | Directory / Директория: Yandex 360 Directory API — users, departments, groups, and org-aware identity data |
 | [telemost](telemost/) | Telemost / Телемост: process Telemost emails, manage real conferences, and admin Telemost org defaults |
-| [disk](disk/) | Disk / Диск: download files, upload files, and manage public or organization-only share links |
+| [disk](disk/) | Disk / Диск: download files from Yandex Disk, upload files to Disk, and manage public or organization-only share links (Telemost links may require OAuth) |
 | [cloud](cloud/) | Cloud / Облако: deploy serverless functions to Yandex Cloud |
+| [forms](forms/) | Forms / Формы: export form responses from Yandex Forms — download results as XLSX or JSON |
+| [tracker](tracker/) | Tracker / Трекер: manage tasks in Yandex Tracker — create, search, update issues, manage Agile boards |
+
+## User Scenarios
+
+This skill pack is designed to address the needs like:
+
+- Receive recent yandex mail and process transcripts. Analyze today's morning daily transcript and submit tasks as github / gitlab issues
+- Prepare action plan (or another doc) and put it on yandex disk, give me a public link
+- Schedule a meeting in yandex calendar, invite Alex and Mary (get their emails from directory), attach a telemost link with public access
+- ...and so on
+
+If you want support for other scenarios, you are welcome to submit them under **Issues**.
 
 ## Migration Note
 
@@ -70,6 +83,35 @@ Workspace `{data_dir}/config.agent.json`:
 
 During first onboarding, OpenClaw must invoke the full path to `scripts/oauth_setup.py` with no account arguments while the current process CWD is still the agent workspace. Bootstrap resolves `data_dir` as `./yandex-data` from that workspace CWD, creates `{data_dir}/config.agent.json` and runtime directories there, and normal runtime then requires that initialized data dir. If you run a script manually from the shared skill root, pass `--data-dir`.
 
+## Onboarding
+
+### First run
+
+1. Check `./yandex-data` in the current agent workspace CWD.
+2. If it does not exist, run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py` from that CWD with no extra arguments.
+3. Do not inspect other workspaces.
+4. Do not create bootstrap files or directories manually.
+
+### Adding Yandex accounts
+
+```bash
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email user@yandex.ru --account alex
+```
+
+This updates `{data_dir}/config.agent.json` and does not prompt for a token.
+
+### Issuing Service Tokens
+
+```bash
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email user@yandex.ru --account alex --service mail
+```
+
+Behavior:
+
+- the script prints the default OAuth profile and any other configured profiles for that service
+- after OAuth is completed and an `access_token` is returned, save it to `./yandex-data/auth/<account>.token`
+- use `--app <profile_id>` when you need a non-default profile
+
 ### Data Directory
 
 Runtime data lives **outside** the repo at `{data_dir}/`:
@@ -119,11 +161,20 @@ git sparse-checkout add telemost disk
 2. **telemost** enriches Telemost emails, groups by meeting UID, merges + transforms
 3. **disk** (optional) downloads video/audio from yadi.sk links
 
+Important: for "what is new", always run `mail/scripts/fetch_emails.py` first. Do not treat `archive/` or `meetings/` as the source of truth for new messages.
+
 Disk note:
 
 - organization-only sharing is live-verified for the documented `public_settings.accesses[].macros` payload
 - `available_until` behaves as an absolute Unix timestamp; omitting it means infinite sharing
 - metadata does not reliably echo ACLs back, so share verification depends on public-resource endpoint behavior
+
+Telemost recording OAuth caveat:
+
+- links that look public (`yadi.sk/d/...`) may still require OAuth
+- with token: API may return a downloadable link
+- without token: API may return `404` for an existing Telemost resource
+- `HEAD` requests are not a reliable availability probe
 
 Telemost calendar note:
 
