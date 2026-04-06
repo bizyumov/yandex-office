@@ -89,9 +89,9 @@ Rules:
 
 - Parent folder is a month bucket (`YYYY-MM`).
 - Meeting folder must start with local date/time prefix (`YYYY-MM-DD_HH-MM`).
-- Date/time prefix must be followed by mailbox tag from source email metadata (`bdi`, `ctiis`, etc.).
+- Date/time prefix must be followed by mailbox tag from source email metadata (`alex`, `mary`, etc.).
 - Suffix must include meeting UID (`_{MEETING_UID}`), or `_unknown` when UID is absent.
 
 Example:
 
-`meetings/2026-02/2026-02-24_18-19_bdi_1000349120/`
+`meetings/2026-02/2026-02-24_18-19_alex_1000349120/`

@@ -105,7 +105,7 @@ Returns list of organizations accessible to the token.
 **CLI:**
 ```bash
 python3 directory/scripts/search.py \
-  --account ctiis \
+  --account mary \
   --query "Лебедев"
 ```
 
@@ -143,7 +143,7 @@ def search_user(token, org_id, query):
 **CLI:**
 ```bash
 python3 directory/scripts/find_slot.py \
-  --account ctiis \
+  --account mary \
   --attendee "user@example.com" \
   --date 2026-03-04 \
   --duration 60
@@ -205,10 +205,10 @@ directory/
 from directory.skill_api import resolve_user, find_common_slot
 
 # Resolve "Лебедев" → email + ID
-contact = resolve_user("ctiis", "Лебедев")
+contact = resolve_user("mary", "Лебедев")
 
 # Check free/busy
-slot = find_common_slot("ctiis", ["user@example.com", contact.email])
+slot = find_common_slot("mary", ["user@example.com", contact.email])
 ```
 
 ### Contacts Skill
@@ -216,7 +216,7 @@ slot = find_common_slot("ctiis", ["user@example.com", contact.email])
 # Sync directory users to CardDAV
 from directory.skill_api import get_all_users
 
-users = get_all_users("ctiis")
+users = get_all_users("mary")
 for u in users:
     contacts.add_if_not_exists(u)
 ```

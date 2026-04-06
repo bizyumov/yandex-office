@@ -42,18 +42,27 @@ def main():
     parser.add_argument(
         "--account",
         required=True,
-        help="Account name (e.g., ctiis)"
+        help="Account name (e.g., mary)"
     )
     parser.add_argument(
         "--output",
         type=Path,
         help="Output file for form list (JSON)"
     )
+    parser.add_argument(
+        "--data-dir",
+        help="Explicit Yandex data directory override for non-workspace execution",
+    )
     
     args = parser.parse_args()
     
     try:
-        runtime = load_runtime_context(__file__)
+        runtime = load_runtime_context(
+            __file__,
+            data_dir_override=args.data_dir,
+            require_agent_config=True,
+            require_external_data_dir=True,
+        )
         token = resolve_token(
             account=args.account,
             skill="forms",

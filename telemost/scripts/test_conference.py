@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -57,6 +58,14 @@ class FakeSession:
 
 @pytest.fixture(autouse=True)
 def stub_token(monkeypatch):
+    monkeypatch.setattr(
+        telemost_client,
+        "load_runtime_context",
+        lambda _path, **_: SimpleNamespace(
+            data_dir=Path("/tmp/workspace/yandex-data"),
+            config={"urls": {}},
+        ),
+    )
     monkeypatch.setattr(
         telemost_client,
         "resolve_token",

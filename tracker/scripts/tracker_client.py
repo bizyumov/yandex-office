@@ -405,6 +405,7 @@ def load_tracker_client(
     account: str,
     *,
     required_scopes: Optional[list[str]] = None,
+    data_dir: str | None = None,
 ) -> TrackerClient:
     """
     Load tracker client from config and token file.
@@ -414,7 +415,12 @@ def load_tracker_client(
     Returns:
         Configured TrackerClient instance
     """
-    runtime = load_runtime_context(__file__)
+    runtime = load_runtime_context(
+        __file__,
+        data_dir_override=data_dir,
+        require_agent_config=True,
+        require_external_data_dir=True,
+    )
     try:
         token_info = resolve_token(
             account=account,
@@ -444,11 +450,15 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description="Test Tracker API connection")
     parser.add_argument("--account", required=True, help="Account name")
+    parser.add_argument(
+        "--data-dir",
+        help="Explicit Yandex data directory override for non-workspace execution",
+    )
     
     args = parser.parse_args()
     
     try:
-        client = load_tracker_client(args.account)
+        client = load_tracker_client(args.account, data_dir=args.data_dir)
         myself = client.get_myself()
         print(f"Connected as: {myself.get('display', 'Unknown')}")
         print(f"UID: {myself.get('passportUid')}")
