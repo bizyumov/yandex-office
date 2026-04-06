@@ -1,7 +1,7 @@
 ---
-name: yandex
+name: yandex-office
 description: Shared Yandex skill pack for Mail, Disk, Telemost, Calendar, Contacts, Directory, Cloud, Forms, and Tracker on this OpenClaw host. Yandex Search now lives in a separate standalone skill repo.
-homepage: https://github.com/bizyumov/yandex-skills
+homepage: https://github.com/bizyumov/yandex-office
 license: MIT
 compatibility: Python 3.10+, per-skill dependencies, network access for Yandex APIs
 metadata:
@@ -14,9 +14,9 @@ metadata:
         - python3
 ---
 
-# yandex
+# yandex-office
 
-A collection of [agentskills.io](https://agentskills.io/specification)-compliant skills for working with Yandex platform services.
+A collection of [agentskills.io](https://agentskills.io/specification)-compliant skills for working with Yandex platform services. Like `gog`, but for Yandex.
 
 ## Sub-Skills
 
@@ -39,7 +39,7 @@ A collection of [agentskills.io](https://agentskills.io/specification)-compliant
 When the user asks to onboard Yandex skills for the first time:
 
 1. Check `./yandex-data` in the current agent workspace CWD.
-2. If it does not exist, run `python3 <full-path-to-yandex-skills>/scripts/oauth_setup.py` from that CWD with no extra arguments.
+2. If it does not exist, run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py` from that CWD with no extra arguments.
 3. Do not inspect other workspaces.
 4. Do not create bootstrap files or directories manually.
 
@@ -57,7 +57,7 @@ Bootstrap/runtime contract:
 When the user wants to add another Yandex account:
 
 1. Stay in the same workspace CWD.
-2. Run `python3 <full-path-to-yandex-skills>/scripts/oauth_setup.py --email <email> --account <name>`.
+2. Run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <name>`.
 3. Do not recreate or replace `./yandex-data` manually.
 4. If `./yandex-data` does not exist yet, the script bootstraps it first.
 5. The script updates `./yandex-data/config.agent.json`.
@@ -67,7 +67,7 @@ When the user wants to add another Yandex account:
 When the account already exists and the user wants to add a service token:
 
 1. Stay in the same workspace CWD.
-2. Run `python3 <full-path-to-yandex-skills>/scripts/oauth_setup.py --email <email> --account <name> --service <service>`.
+2. Run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <name> --service <service>`.
 3. The script prints the default OAuth profile and any other configured profiles for that service.
 4. Tell the user which profile is the default and which other profiles are available.
 5. After OAuth is completed and an `access_token` is returned, save it to `./yandex-data/auth/<account>.token`.
@@ -81,7 +81,7 @@ NB: instructions for token revocation are in the Onboarding.md file.
 This is a meta-skill containing multiple Yandex service integrations:
 
 ```text
-yandex/
+yandex-office/
 ├── SKILL.md                  (this file: root index)
 ├── config.json               (shared defaults)
 ├── config.agent.example.json (workspace override example)
@@ -121,7 +121,7 @@ Yandex Search moved to the standalone `yandex-search-skill` repository:
 
 - https://github.com/bizyumov/yandex-search-skill
 
-Use that skill when you need Yandex Cloud Search API v2. This `yandex` meta-skill no longer includes search instructions.
+Use that skill when you need Yandex Cloud Search API v2. This `yandex-office` meta-skill no longer includes search instructions.
 
 ## Shared Configuration
 
@@ -262,14 +262,14 @@ Use token-based auth when handling Telemost media links.
 ### Full clone
 
 ```bash
-git clone https://github.com/bizyumov/yandex-skills.git
+git clone https://github.com/bizyumov/yandex-office.git
 ```
 
 ### Single skill (sparse checkout)
 
 ```bash
-git clone --filter=blob:none --sparse https://github.com/bizyumov/yandex-skills.git
-cd yandex
+git clone --filter=blob:none --sparse https://github.com/bizyumov/yandex-office.git
+cd yandex-office
 git sparse-checkout set mail
 
 # Add more skills later
@@ -301,13 +301,13 @@ Canonical convention is `token.<service>`. Each service stores and resolves its 
 
 ```bash
 # From the agent workspace CWD, using the full path to the shared Yandex skill:
-python3 <full-path-to-yandex-skills>/scripts/oauth_setup.py --email user@yandex.ru --account alex --service mail
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email user@yandex.ru --account alex --service mail
 
 # Recommended: choose a non-default preconfigured app variant
-python3 <full-path-to-yandex-skills>/scripts/oauth_setup.py --email user@yandex.ru --account alex --service disk --app disk-full
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email user@yandex.ru --account alex --service disk --app disk-full
 
 # Advanced: explicit client ID and explicit scope override
-python3 <full-path-to-yandex-skills>/scripts/oauth_setup.py --client-id DISK_CLIENT_ID --scope cloud_api:disk.write --scope cloud_api:disk.app_folder --email user@yandex.ru --account alex --service disk
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --client-id DISK_CLIENT_ID --scope cloud_api:disk.write --scope cloud_api:disk.app_folder --email user@yandex.ru --account alex --service disk
 ```
 
 Recommended flow:
@@ -315,8 +315,8 @@ Recommended flow:
 - keep the app catalog in root `config.json` under `oauth_apps.catalog`
 - keep default app bindings in root `config.json` under `oauth_apps.service_defaults`
 - use `--app <app_id>` only when selecting a non-default variant
-- add the account first with `python3 <full-path-to-yandex-skills>/scripts/oauth_setup.py --email <email> --account <name>` when needed
-- then run `python3 <full-path-to-yandex-skills>/scripts/oauth_setup.py --email <email> --account <name> --service <name>`
+- add the account first with `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <name>` when needed
+- then run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <name> --service <name>`
 - the generated URL omits `scope=` by default and uses the app's baked-in permissions
 - new token files are created automatically on first save
 

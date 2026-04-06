@@ -60,7 +60,7 @@ Add to existing token file:
 
 Or generate new token:
 ```bash
-python3 <full-path-to-yandex-skills>/scripts/oauth_setup.py \
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py \
   --email user@yandex.ru \
   --account mary \
   --service tracker

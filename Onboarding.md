@@ -1,4 +1,4 @@
-# Yandex Onboarding Notes
+# Yandex Office Onboarding Notes
 
 This file is optional operator guidance.
 

@@ -21,7 +21,7 @@ Ask the user to verify that IMAP + OAuth is enabled for the target mailbox first
 
 ```bash
 # From the agent workspace CWD, using the full path to the shared Yandex skill:
-python3 <full-path-to-yandex-skills>/scripts/oauth_setup.py --email user@yandex.ru --account alex --service mail
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email user@yandex.ru --account alex --service mail
 
 # Fetch new emails
 python3 scripts/fetch_emails.py
@@ -30,7 +30,7 @@ python3 scripts/fetch_emails.py
 python3 scripts/fetch_emails.py --num 20
 ```
 
-> Recommended: use the default Mail app from root `config.json` (`oauth_apps.service_defaults.mail`) so the approval URL can use the app's baked-in scopes without passing `--client-id` each time. If you also need Disk access, run `python3 <full-path-to-yandex-skills>/scripts/oauth_setup.py --email <email> --account <name> --service disk` from the agent workspace CWD.
+> Recommended: use the default Mail app from root `config.json` (`oauth_apps.service_defaults.mail`) so the approval URL can use the app's baked-in scopes without passing `--client-id` each time. If you also need Disk access, run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <name> --service disk` from the agent workspace CWD.
 
 ## What It Does
 

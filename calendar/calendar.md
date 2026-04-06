@@ -383,7 +383,7 @@ Add shared defaults to root `config.json` and per-agent overrides to `yandex-dat
 ## Error Handling
 
 ### Common Error Cases
-1. **Token expired** → Prompt for re-auth via `python3 <full-path-to-yandex-skills>/scripts/oauth_setup.py --email <email> --account <name> --service calendar` from the agent workspace CWD
+1. **Token expired** → Prompt for re-auth via `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <name> --service calendar` from the agent workspace CWD
 2. **Calendar not found** → List available calendars
 3. **Event not found** → Suggest similar titles, show events for that date
 4. **Conflict detected** → Show conflicting events, ask for confirmation
