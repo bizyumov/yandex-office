@@ -1,4 +1,4 @@
-# yandex
+# yandex-office
 
 A collection of [agentskills.io](https://agentskills.io/specification)-compliant skills for working with Yandex platform services.
 
@@ -93,14 +93,14 @@ Runtime data lives **outside** the repo at `{data_dir}/`:
 ### Full clone
 
 ```bash
-git clone https://github.com/bizyumov/yandex-skills.git
+git clone https://github.com/bizyumov/yandex-office.git
 ```
 
 ### Single skill (sparse checkout)
 
 ```bash
-git clone --filter=blob:none --sparse https://github.com/bizyumov/yandex-skills.git
-cd yandex
+git clone --filter=blob:none --sparse https://github.com/bizyumov/yandex-office.git
+cd yandex-office
 git sparse-checkout set mail
 
 # Add more skills later
@@ -177,7 +177,7 @@ Skill config.json
   -> oauth_apps.service_defaults.<service> selects the default app_id
   -> oauth_apps.catalog.<app_id> stores app name, client_id, service, and baked-in scopes
 
-python3 <full-path-to-yandex-skills>/scripts/oauth_setup.py --service <service> [--app <app_id>] --account <account> --email <email>
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --service <service> [--app <app_id>] --account <account> --email <email>
   -> resolves app_id from oauth_apps.service_defaults unless --app is passed
   -> reads oauth_apps.catalog.<app_id>
   -> generates approval URL
@@ -242,7 +242,7 @@ Canonical convention is `token.<service>`. Each service stores and resolves its 
 ### Add an Account
 
 ```bash
-python3 <full-path-to-yandex-skills>/scripts/oauth_setup.py --email user@yandex.ru --account alex
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email user@yandex.ru --account alex
 ```
 
 This updates `{data_dir}/config.agent.json` and does not prompt for a token.
@@ -251,13 +251,13 @@ This updates `{data_dir}/config.agent.json` and does not prompt for a token.
 
 ```bash
 # Recommended: default preconfigured app from config.json, ready approval link
-python3 <full-path-to-yandex-skills>/scripts/oauth_setup.py --email user@yandex.ru --account alex --service mail
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email user@yandex.ru --account alex --service mail
 
 # Recommended: choose a non-default preconfigured app variant
-python3 <full-path-to-yandex-skills>/scripts/oauth_setup.py --email user@yandex.ru --account alex --service disk --app disk-full
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email user@yandex.ru --account alex --service disk --app disk-full
 
 # Advanced: explicit client ID and explicit scope override
-python3 <full-path-to-yandex-skills>/scripts/oauth_setup.py --client-id DISK_CLIENT_ID --scope cloud_api:disk.write --scope cloud_api:disk.app_folder --email user@yandex.ru --account alex --service disk
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --client-id DISK_CLIENT_ID --scope cloud_api:disk.write --scope cloud_api:disk.app_folder --email user@yandex.ru --account alex --service disk
 ```
 
 Recommended flow:
@@ -266,8 +266,8 @@ Recommended flow:
 - keep service defaults in `config.json` under `oauth_apps.service_defaults`
 - when `--service` is used, `oauth_setup.py` prints the default profile and any other configured profiles for that service
 - use `--app <app_id>` only when you need a non-default variant such as `disk-full`, `forms-full`, `tracker-full`, or `directory-full`
-- add the account first with `python3 <full-path-to-yandex-skills>/scripts/oauth_setup.py --email <email> --account <name>` when needed
-- then run `python3 <full-path-to-yandex-skills>/scripts/oauth_setup.py --email <email> --account <name> --service <name>`
+- add the account first with `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <name>` when needed
+- then run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <name> --service <name>`
 - the generated URL omits `scope=` by default and relies on the OAuth app's baked-in permissions
 
 Advanced flow:

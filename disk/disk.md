@@ -81,7 +81,7 @@ Upload/share-management scopes:
 From the agent workspace CWD, using the full path to the shared Yandex skill, generate a download token:
 
 ```bash
-python3 <full-path-to-yandex-skills>/scripts/oauth_setup.py \
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py \
   --email user@yandex.ru \
   --account alex \
   --service disk
@@ -90,7 +90,7 @@ python3 <full-path-to-yandex-skills>/scripts/oauth_setup.py \
 Generate an upload/share-management token:
 
 ```bash
-python3 <full-path-to-yandex-skills>/scripts/oauth_setup.py \
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py \
   --client-id DISK_CLIENT_ID \
   --email user@yandex.ru \
   --account alex \

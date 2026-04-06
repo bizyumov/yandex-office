@@ -129,7 +129,7 @@ Add to existing token file:
 Or generate new token:
 ```bash
 # From the agent workspace CWD, using the full path to the shared Yandex skill:
-python3 <full-path-to-yandex-skills>/scripts/oauth_setup.py \
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py \
   --email user@yandex.ru \
   --account mary \
   --service forms
