@@ -40,9 +40,14 @@ logger = logging.getLogger("mail")
 
 
 class EmailFetcher:
-    def __init__(self):
+    def __init__(self, *, data_dir: str | None = None):
         """Initialize fetcher from shared + agent config."""
-        self.runtime = load_runtime_context(__file__)
+        self.runtime = load_runtime_context(
+            __file__,
+            data_dir_override=data_dir,
+            require_agent_config=True,
+            require_external_data_dir=True,
+        )
         self.config_path = self.runtime.global_config_path
         self.config = self.runtime.config
         self.data_dir = self.runtime.data_dir
@@ -463,7 +468,7 @@ class EmailFetcher:
         remaining = num_messages
         self.mailbox_counts = {}
 
-        for mailbox_config in self.config["mailboxes"]:
+        for mailbox_config in self.config["accounts"]:
             if remaining is not None and remaining <= 0:
                 logger.info("Reached --num cap; stopping mailbox scan")
                 self.mailbox_counts[mailbox_config["name"]] = 0
@@ -495,6 +500,10 @@ def main():
         action="store_true",
         help="Show pending emails without writing incoming/ or updating state",
     )
+    parser.add_argument(
+        "--data-dir",
+        help="Explicit Yandex data directory override for non-workspace execution",
+    )
     args = parser.parse_args()
 
     if args.num is not None and args.num <= 0:
@@ -505,7 +514,7 @@ def main():
         format="%(asctime)s %(name)s %(levelname)s %(message)s",
     )
 
-    fetcher = EmailFetcher()
+    fetcher = EmailFetcher(data_dir=args.data_dir)
     results = fetcher.fetch_all(num_messages=args.num, dry_run=args.dry_run)
 
     pending_rows = []

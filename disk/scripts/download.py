@@ -65,6 +65,7 @@ class YandexDisk:
         token_file: str | None = None,
         account: str | None = None,
         auth_dir: str | None = None,
+        data_dir: str | None = None,
         required_scopes: list[str] | None = None,
     ):
         """Initialize with token resolution chain.
@@ -73,7 +74,14 @@ class YandexDisk:
 
         If auth_dir is None, resolves from shared config's data_dir.
         """
-        self.runtime = load_runtime_context(__file__)
+        data_dir_override = data_dir
+        if data_dir_override is None and auth_dir is not None:
+            data_dir_override = str(Path(auth_dir).resolve().parent)
+        self.runtime = load_runtime_context(
+            __file__,
+            data_dir_override=data_dir_override,
+            require_external_data_dir=data_dir_override is not None,
+        )
         self._config = self.runtime.config
         self._data_dir = self.runtime.data_dir
         self.api_base = self._config.get("urls", {}).get("disk_api", API_BASE)
@@ -796,6 +804,11 @@ def main():
         "--auth-dir", default=None, help="Auth directory (default: from config)"
     )
     parser.add_argument(
+        "--data-dir",
+        default=None,
+        help="Explicit Yandex data directory override for non-workspace execution",
+    )
+    parser.add_argument(
         "--meta", action="store_true", help="Print file metadata as JSON"
     )
     parser.add_argument(
@@ -823,6 +836,7 @@ def main():
         token_file=args.token_file,
         account=args.account,
         auth_dir=args.auth_dir,
+        data_dir=args.data_dir,
     )
     if args.force_auth and args.anonymous:
         print("--force-auth and --anonymous are mutually exclusive.", file=sys.stderr)

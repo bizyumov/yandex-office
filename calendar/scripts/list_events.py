@@ -92,7 +92,7 @@ def format_event(event: dict, index: int, show_attendees: bool = False) -> str:
 
 def main():
     parser = argparse.ArgumentParser(description="List Yandex Calendar events")
-    parser.add_argument('--account', '-a', required=True, help='Account name (e.g., ctiis, bdi)')
+    parser.add_argument('--account', '-a', required=True, help='Account name (e.g., mary, alex)')
     parser.add_argument('--date', '-d', default='today', help='Date to query (today, tomorrow, YYYY-MM-DD, DD.MM.YYYY)')
     parser.add_argument('--calendar', '-c', help='Calendar name (default: first available)')
     parser.add_argument('--json', '-j', action='store_true', help='Output as JSON')

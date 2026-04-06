@@ -29,7 +29,12 @@ class YandexCalendarClient:
         required_scopes: list[str] | None = None,
     ):
         self.account = account
-        self.runtime = load_runtime_context(__file__)
+        self.runtime = load_runtime_context(
+            __file__,
+            data_dir_override=data_dir,
+            require_agent_config=True,
+            require_external_data_dir=True,
+        )
         self.data_dir = Path(data_dir).resolve() if data_dir else self.runtime.data_dir
         self.required_scopes = required_scopes or ["calendar"]
         self.email, self.token = self._load_credentials()
