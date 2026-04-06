@@ -41,7 +41,7 @@ def build_fetcher() -> mail_fetch.EmailFetcher:
         }
     }
     fetcher.data_dir = Path("/tmp/yandex-data")
-    fetcher.state = {"mailboxes": {"bdi": {"last_uid": 10}}}
+    fetcher.state = {"mailboxes": {"alex": {"last_uid": 10}}}
     fetcher.downloaded = []
     fetcher.mailbox_counts = {}
     return fetcher
@@ -71,17 +71,17 @@ def test_fetch_mailbox_dry_run_collects_headers(monkeypatch) -> None:
     fetcher._search_emails = lambda *_args, **_kwargs: [(11, b"11")]
 
     count = fetcher.fetch_mailbox(
-        {"name": "bdi", "email": "user@example.com"},
+        {"name": "alex", "email": "user@example.com"},
         dry_run=True,
     )
 
     assert count == 0
     assert conn.logged_out is True
-    assert fetcher.state["mailboxes"]["bdi"]["last_uid"] == 10
+    assert fetcher.state["mailboxes"]["alex"]["last_uid"] == 10
     assert fetcher.downloaded == [
         {
             "imap_uid": 11,
-            "mailbox": "bdi",
+            "mailbox": "alex",
             "subject": "Тест",
             "sender": "news@example.com",
             "timestamp": "2026-03-12T10:00:00Z",
@@ -92,7 +92,7 @@ def test_fetch_mailbox_dry_run_collects_headers(monkeypatch) -> None:
 
 def test_fetch_all_respects_global_cap() -> None:
     fetcher = build_fetcher()
-    fetcher.config["mailboxes"] = [
+    fetcher.config["accounts"] = [
         {"name": "one", "email": "user@example.com"},
         {"name": "two", "email": "contact@example.com"},
     ]

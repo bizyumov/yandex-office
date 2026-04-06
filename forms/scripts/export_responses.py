@@ -130,7 +130,8 @@ def export_form_responses(
     fmt: str = "xlsx",
     poll_interval: int = 5,
     max_wait: int = 300,
-    config: Optional[dict] = None
+    config: Optional[dict] = None,
+    data_dir_override: str | None = None,
 ) -> dict:
     """
     Export form responses and save to disk.
@@ -147,7 +148,12 @@ def export_form_responses(
     Returns:
         Dict with export metadata
     """
-    runtime = load_runtime_context(__file__)
+    runtime = load_runtime_context(
+        __file__,
+        data_dir_override=data_dir_override,
+        require_agent_config=True,
+        require_external_data_dir=True,
+    )
     runtime_config = config or runtime.config
     data_dir = output_dir or runtime.data_dir
     token = resolve_token(
@@ -198,7 +204,7 @@ def main():
     parser.add_argument(
         "--account",
         required=True,
-        help="Account name (e.g., ctiis)"
+        help="Account name (e.g., mary)"
     )
     parser.add_argument(
         "--output",
@@ -223,6 +229,10 @@ def main():
         default=300,
         help="Maximum wait time in seconds (default: 300)"
     )
+    parser.add_argument(
+        "--data-dir",
+        help="Explicit Yandex data directory override for non-workspace execution",
+    )
     
     args = parser.parse_args()
     
@@ -233,7 +243,8 @@ def main():
             output_dir=args.output,
             fmt=args.format,
             poll_interval=args.wait,
-            max_wait=args.max_wait
+            max_wait=args.max_wait,
+            data_dir_override=args.data_dir,
         )
         
         # Output result as JSON

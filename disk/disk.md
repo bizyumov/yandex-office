@@ -18,19 +18,19 @@ Download public files from Yandex Disk, upload files to Disk, and manage share l
 python3 scripts/download.py "https://yadi.sk/d/x4dG3ImjPMSvzg" --output ./downloads/
 
 # Publish a Disk file for public read access
-python3 scripts/share.py publish --account bdi --path "disk:/Docs/report.pdf" --access all --rights read
+python3 scripts/share.py publish --account alex --path "disk:/Docs/report.pdf" --access all --rights read
 
 # Upload a local file and auto-create missing parent folders
-python3 scripts/upload.py --account bdi --local ./photo.jpg --remote "disk:/Проекты/photo.jpg"
+python3 scripts/upload.py --account alex --local ./photo.jpg --remote "disk:/Проекты/photo.jpg"
 
 # Upload and publish in one step
-python3 scripts/upload.py --account bdi --local ./photo.jpg --remote "disk:/Проекты/photo.jpg" --publish --access all --rights read
+python3 scripts/upload.py --account alex --local ./photo.jpg --remote "disk:/Проекты/photo.jpg" --publish --access all --rights read
 
 # Inspect current share settings
-python3 scripts/share.py info --account bdi --path "disk:/Docs/report.pdf"
+python3 scripts/share.py info --account alex --path "disk:/Docs/report.pdf"
 
 # Revoke access
-python3 scripts/share.py unpublish --account bdi --path "disk:/Docs/report.pdf"
+python3 scripts/share.py unpublish --account alex --path "disk:/Docs/report.pdf"
 ```
 
 ## Python API
@@ -78,22 +78,22 @@ Upload/share-management scopes:
 - `cloud_api:disk.write`
 - `cloud_api:disk.app_folder`
 
-From the Yandex skill root, generate a download token:
+From the agent workspace CWD, using the full path to the shared Yandex skill, generate a download token:
 
 ```bash
-python3 scripts/oauth_setup.py \
+python3 <full-path-to-yandex-skills>/scripts/oauth_setup.py \
   --email user@yandex.ru \
-  --account bdi \
+  --account alex \
   --service disk
 ```
 
 Generate an upload/share-management token:
 
 ```bash
-python3 scripts/oauth_setup.py \
+python3 <full-path-to-yandex-skills>/scripts/oauth_setup.py \
   --client-id DISK_CLIENT_ID \
   --email user@yandex.ru \
-  --account bdi \
+  --account alex \
   --service disk \
   --scope cloud_api:disk.write \
   --scope cloud_api:disk.app_folder
@@ -180,7 +180,7 @@ Public share:
 
 ```bash
 python3 scripts/share.py publish \
-  --account bdi \
+  --account alex \
   --path "disk:/Docs/report.pdf" \
   --access all \
   --rights read
@@ -190,7 +190,7 @@ Organization-only share:
 
 ```bash
 python3 scripts/share.py publish \
-  --account ctiis \
+  --account mary \
   --path "disk:/Docs/report.pdf" \
   --access employees \
   --rights read
@@ -204,7 +204,7 @@ Password-protected share:
 
 ```bash
 python3 scripts/share.py publish \
-  --account bdi \
+  --account alex \
   --path "disk:/Docs/report.pdf" \
   --access all \
   --rights read_with_password \
@@ -215,7 +215,7 @@ Expiring public share:
 
 ```bash
 python3 scripts/share.py update \
-  --account bdi \
+  --account alex \
   --path "disk:/Docs/report.pdf" \
   --access all \
   --rights write \
@@ -241,7 +241,7 @@ Upload into a new nested folder:
 
 ```bash
 python3 scripts/upload.py \
-  --account bdi \
+  --account alex \
   --local ./build/report.pdf \
   --remote "disk:/Projects/2026/report.pdf"
 ```
@@ -250,7 +250,7 @@ Upload with overwrite:
 
 ```bash
 python3 scripts/upload.py \
-  --account bdi \
+  --account alex \
   --local ./build/report.pdf \
   --remote "disk:/Projects/2026/report.pdf" \
   --overwrite
@@ -260,7 +260,7 @@ Disable parent auto-creation:
 
 ```bash
 python3 scripts/upload.py \
-  --account bdi \
+  --account alex \
   --local ./build/report.pdf \
   --remote "disk:/Projects/2026/report.pdf" \
   --no-create-parents
@@ -272,7 +272,7 @@ Upload and immediately publish a public read link:
 
 ```bash
 python3 scripts/upload.py \
-  --account bdi \
+  --account alex \
   --local ./photo.jpg \
   --remote "disk:/Проекты/photo.jpg" \
   --publish \
@@ -284,7 +284,7 @@ Upload and attempt an org-only link:
 
 ```bash
 python3 scripts/upload.py \
-  --account ctiis \
+  --account mary \
   --local ./report.pdf \
   --remote "disk:/Проекты/Какой-то проект на русском/report.pdf" \
   --publish \
@@ -299,7 +299,7 @@ This flow is live-verified with the documented request shape:
 Inspect current share settings after upload:
 
 ```bash
-python3 scripts/share.py info --account bdi --path "disk:/Проекты/photo.jpg"
+python3 scripts/share.py info --account alex --path "disk:/Проекты/photo.jpg"
 ```
 
 ## Live Verification Matrix

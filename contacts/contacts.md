@@ -61,7 +61,7 @@ Token stored per-account at: `{data_dir}/auth/{account}.token`
 ```json
 {
   "query": "Ivan",
-  "account": "ctiis",
+  "account": "mary",
   "total_results": 3,
   "results": [
     {
@@ -83,9 +83,9 @@ Token stored per-account at: `{data_dir}/auth/{account}.token`
 
 **CLI Interface:**
 ```bash
-python3 contacts/scripts/search.py --account ctiis --query "Иван"
-python3 contacts/scripts/search.py --account ctiis --query "Ivanov" --json
-python3 contacts/scripts/search.py --account ctiis --domain "transneft.ru"
+python3 contacts/scripts/search.py --account mary --query "Иван"
+python3 contacts/scripts/search.py --account mary --query "Ivanov" --json
+python3 contacts/scripts/search.py --account mary --domain "transneft.ru"
 ```
 
 ### 2. Add New Contact
@@ -116,7 +116,7 @@ python3 contacts/scripts/search.py --account ctiis --domain "transneft.ru"
 **CLI Interface:**
 ```bash
 python3 contacts/scripts/add.py \
-  --account ctiis \
+  --account mary \
   --first-name "Иван" \
   --last-name "Иванов" \
   --middle-name "Сергеевич" \
@@ -124,7 +124,7 @@ python3 contacts/scripts/add.py \
   --org "Транснефть"
 
 # Batch import
-python3 contacts/scripts/add.py --account ctiis --from-json contacts.json
+python3 contacts/scripts/add.py --account mary --from-json contacts.json
 ```
 
 ### 3. Update Existing Contact
@@ -144,14 +144,14 @@ python3 contacts/scripts/add.py --account ctiis --from-json contacts.json
 **CLI Interface:**
 ```bash
 python3 contacts/scripts/update.py \
-  --account ctiis \
+  --account mary \
   --search "Иванов" \
   --phone "+79161234567" \
   --phone-type "mobile"
 
 # Update by UID
 python3 contacts/scripts/update.py \
-  --account ctiis \
+  --account mary \
   --uid "uuid-here" \
   --org "Новая компания"
 ```
@@ -170,8 +170,8 @@ python3 contacts/scripts/update.py \
 
 **CLI Interface:**
 ```bash
-python3 contacts/scripts/delete.py --account ctiis --search "Иванов"
-python3 contacts/scripts/delete.py --account ctiis --uid "uuid" --force
+python3 contacts/scripts/delete.py --account mary --search "Иванов"
+python3 contacts/scripts/delete.py --account mary --uid "uuid" --force
 ```
 
 ### 5. Sync Contacts from Email History
@@ -197,13 +197,13 @@ python3 contacts/scripts/delete.py --account ctiis --uid "uuid" --force
 **CLI Interface:**
 ```bash
 python3 contacts/scripts/sync_from_email.py \
-  --account ctiis \
+  --account mary \
   --domain "transneft.ru" \
   --require-full-name \
   --dry-run
 
 # Full sync
-python3 contacts/scripts/sync_from_email.py --account ctiis --all
+python3 contacts/scripts/sync_from_email.py --account mary --all
 ```
 
 ### 6. List All Contacts
@@ -221,9 +221,9 @@ python3 contacts/scripts/sync_from_email.py --account ctiis --all
 
 **CLI Interface:**
 ```bash
-python3 contacts/scripts/list.py --account ctiis
-python3 contacts/scripts/list.py --account ctiis --source Personal --json
-python3 contacts/scripts/list.py --account ctiis --export contacts_backup.json
+python3 contacts/scripts/list.py --account mary
+python3 contacts/scripts/list.py --account mary --source Personal --json
+python3 contacts/scripts/list.py --account mary --export contacts_backup.json
 ```
 
 ---
@@ -248,7 +248,7 @@ def suggest_attendees(account: str, partial_name: str, limit: int = 5) -> List[C
 **Usage in Calendar:**
 ```bash
 python3 calendar/scripts/create_event.py \
-  --account ctiis \
+  --account mary \
   --contact "Иванов" \
   --start "2026-03-04T11:00:00" \
   --duration 60

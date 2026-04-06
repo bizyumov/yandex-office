@@ -80,11 +80,20 @@ def main():
         type=Path,
         help="Save form structure to file"
     )
+    parser.add_argument(
+        "--data-dir",
+        help="Explicit Yandex data directory override for non-workspace execution",
+    )
     
     args = parser.parse_args()
     
     try:
-        runtime = load_runtime_context(__file__)
+        runtime = load_runtime_context(
+            __file__,
+            data_dir_override=args.data_dir,
+            require_agent_config=True,
+            require_external_data_dir=True,
+        )
         token = resolve_token(
             account=args.account,
             skill="forms",

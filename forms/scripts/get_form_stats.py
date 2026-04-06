@@ -230,7 +230,7 @@ def main():
     parser.add_argument(
         "--account",
         required=True,
-        help="Account name (e.g., ctiis)"
+        help="Account name (e.g., mary)"
     )
     parser.add_argument(
         "--limit",
@@ -248,17 +248,26 @@ def main():
         action="store_true",
         help="Output as JSON"
     )
+    parser.add_argument(
+        "--data-dir",
+        help="Explicit Yandex data directory override for non-workspace execution",
+    )
     
     args = parser.parse_args()
     
     if not args.form_id:
         print("Error: At least one --form-id is required", file=sys.stderr)
         print("\nUsage examples:", file=sys.stderr)
-        print(f"  {sys.argv[0]} --form-id FORM_ID_1 --form-id FORM_ID_2 --account ctiis", file=sys.stderr)
+        print(f"  {sys.argv[0]} --form-id FORM_ID_1 --form-id FORM_ID_2 --account mary", file=sys.stderr)
         sys.exit(1)
     
     try:
-        runtime = load_runtime_context(__file__)
+        runtime = load_runtime_context(
+            __file__,
+            data_dir_override=args.data_dir,
+            require_agent_config=True,
+            require_external_data_dir=True,
+        )
         data_dir = runtime.data_dir
         token = resolve_token(
             account=args.account,

@@ -49,7 +49,12 @@ class YandexTelemostClient:
         session: requests.Session | None = None,
     ) -> None:
         self.account = account
-        self.runtime = load_runtime_context(__file__)
+        self.runtime = load_runtime_context(
+            __file__,
+            data_dir_override=data_dir,
+            require_agent_config=True,
+            require_external_data_dir=True,
+        )
         self.data_dir = Path(data_dir).resolve() if data_dir else self.runtime.data_dir
         self.config = self.runtime.config
         self.api_base = self.config.get("urls", {}).get("telemost_api", DEFAULT_API_BASE).rstrip("/")

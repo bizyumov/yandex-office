@@ -448,7 +448,7 @@ def test_share_cli_parses_and_prints_json():
     parser = share.build_parser()
     args = parser.parse_args([
         "publish",
-        "--account", "bdi",
+        "--account", "alex",
         "--path", "disk:/team/report.txt",
         "--access", "all",
         "--rights", "read",
@@ -461,7 +461,7 @@ def test_share_cli_parses_and_prints_json():
         mock_disk = mock_disk_cls.return_value
         mock_disk.publish_file.return_value = {"path": "disk:/team/report.txt", "public_key": "pk", "public_url": "url", "public_settings": {}}
         with patch.object(share, "build_parser", return_value=parser), \
-             patch("sys.argv", ["share.py", "publish", "--account", "bdi", "--path", "disk:/team/report.txt", "--access", "all", "--rights", "read", "--user-ids", "1,2"]):
+             patch("sys.argv", ["share.py", "publish", "--account", "alex", "--path", "disk:/team/report.txt", "--access", "all", "--rights", "read", "--user-ids", "1,2"]):
             code = share.main()
         assert code == 0
         mock_disk.publish_file.assert_called_once_with(
@@ -485,7 +485,7 @@ def test_share_cli_returns_nonzero_on_validation_error():
     with patch("share.YandexDisk") as mock_disk_cls, \
          patch("sys.stderr", fake_stderr), \
          patch.object(share, "build_parser", return_value=parser), \
-         patch("sys.argv", ["share.py", "info", "--account", "bdi", "--path", "disk:/team/report.txt"]):
+         patch("sys.argv", ["share.py", "info", "--account", "alex", "--path", "disk:/team/report.txt"]):
         mock_disk = mock_disk_cls.return_value
         mock_disk.get_share_info.side_effect = RuntimeError("boom")
         code = share.main()
@@ -594,7 +594,7 @@ def test_upload_cli_parses_publish_and_prints_json():
     fake_stdout = StringIO()
     argv = [
         "upload.py",
-        "--account", "bdi",
+        "--account", "alex",
         "--local", "./photo.jpg",
         "--remote", "disk:/Проекты/photo.jpg",
         "--publish",
@@ -634,7 +634,7 @@ def test_upload_cli_returns_nonzero_on_error():
     fake_stderr = StringIO()
     argv = [
         "upload.py",
-        "--account", "bdi",
+        "--account", "alex",
         "--local", "./photo.jpg",
         "--remote", "disk:/Проекты/photo.jpg",
     ]
