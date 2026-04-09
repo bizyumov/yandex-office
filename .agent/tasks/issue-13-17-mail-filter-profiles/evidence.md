@@ -69,6 +69,18 @@ Result:
 clean
 ```
 
+### PR check
+
+```bash
+gh pr view 27 --repo bizyumov/yandex-office --json number,url,state,headRefName,baseRefName,title
+```
+
+Result:
+
+```json
+{"baseRefName":"main","headRefName":"issue-13-17-mail-filter-profiles","number":27,"state":"OPEN","title":"feat(mail): add filter profiles and ad-hoc fetch overrides","url":"https://github.com/bizyumov/yandex-office/pull/27"}
+```
+
 ## Files Touched
 
 - `README.md`
@@ -91,5 +103,5 @@ clean
 - `AC8`: PASS
 - `AC9`: PASS
 - `AC10`: PASS
-- `AC11`: IN_PROGRESS
-  - pending fresh verification pass, branch push, and PR creation
+- `AC11`: PASS
+  - PR opened: https://github.com/bizyumov/yandex-office/pull/27

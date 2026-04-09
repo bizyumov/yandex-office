@@ -33,6 +33,11 @@
       "command": "git diff --check",
       "status": "PASS",
       "summary": "clean"
+    },
+    {
+      "command": "gh pr view 27 --repo bizyumov/yandex-office --json number,url,state,headRefName,baseRefName,title",
+      "status": "PASS",
+      "summary": "PR #27 is open against main"
     }
   ],
   "files_touched": [
@@ -55,6 +60,14 @@
     "AC8": "PASS",
     "AC9": "PASS",
     "AC10": "PASS",
-    "AC11": "IN_PROGRESS"
+    "AC11": "PASS"
+  },
+  "pull_request": {
+    "number": 27,
+    "state": "OPEN",
+    "head": "issue-13-17-mail-filter-profiles",
+    "base": "main",
+    "title": "feat(mail): add filter profiles and ad-hoc fetch overrides",
+    "url": "https://github.com/bizyumov/yandex-office/pull/27"
   }
 }
