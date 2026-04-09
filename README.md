@@ -58,7 +58,14 @@ Root `config.json`:
   "imap": { "server": "imap.yandex.com", "port": 993 },
   "mail": {
     "since": "off",
-    "filters": { "sender": "keeper@telemost.yandex.ru" },
+    "filters": {
+      "default": "telemost",
+      "profiles": {
+        "telemost": {
+          "sender": "keeper@telemost.yandex.ru"
+        }
+      }
+    },
     "fetch": { "sleep_seconds": 0.5 },
     "state_file": "state.json"
   }
@@ -77,9 +84,26 @@ Workspace `{data_dir}/config.agent.json`:
 
 ```json
 {
-  "accounts": [{ "name": "alex", "email": "user@example.com" }]
+  "accounts": [{ "name": "alex", "email": "user@example.com" }],
+  "mail": {
+    "filters": {
+      "profiles": {
+        "forms-debug": {
+          "sender": "forms@yandex.ru",
+          "subject": "New response"
+        }
+      }
+    }
+  }
 }
 ```
+
+Mail filter notes:
+
+- legacy `mail.filters.sender` still works as the implicit default filter
+- named filter profiles live under `mail.filters.profiles`
+- `python3 mail/scripts/fetch_emails.py --filter <name>` runs a persistent profile
+- raw CLI overrides such as `--sender` / `--subject` are treated as ad-hoc and do not advance persistent cursors
 
 During first onboarding, OpenClaw must invoke the full path to `scripts/oauth_setup.py` with no account arguments while the current process CWD is still the agent workspace. Bootstrap resolves `data_dir` as `./yandex-data` from that workspace CWD, creates `{data_dir}/config.agent.json` and runtime directories there, and normal runtime then requires that initialized data dir. If you run a script manually from the shared skill root, pass `--data-dir`.
 

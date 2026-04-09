@@ -146,7 +146,14 @@ Root `config.json`:
   "imap": { "server": "imap.yandex.com", "port": 993 },
   "mail": {
     "since": "off",
-    "filters": { "sender": "keeper@telemost.yandex.ru" },
+    "filters": {
+      "default": "telemost",
+      "profiles": {
+        "telemost": {
+          "sender": "keeper@telemost.yandex.ru"
+        }
+      }
+    },
     "fetch": { "sleep_seconds": 0.5 },
     "state_file": "state.json"
   }
@@ -157,9 +164,26 @@ Agent override example `{data_dir}/config.agent.json`:
 
 ```json
 {
-  "accounts": [{ "name": "primary", "email": "user@example.com" }]
+  "accounts": [{ "name": "primary", "email": "user@example.com" }],
+  "mail": {
+    "filters": {
+      "profiles": {
+        "forms-debug": {
+          "sender": "forms@yandex.ru",
+          "subject": "New response"
+        }
+      }
+    }
+  }
 }
 ```
+
+Mail filter notes:
+
+- legacy `mail.filters.sender` still works as the implicit default profile
+- named filter profiles live under `mail.filters.profiles`
+- `mail/scripts/fetch_emails.py --filter <name>` runs a persistent profile with its own cursor state
+- raw CLI overrides such as `--sender`, `--subject`, `--since-date`, and `--before-date` are treated as ad-hoc and do not advance persistent cursors
 
 ## Regression Tests
 

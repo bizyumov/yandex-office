@@ -1,6 +1,14 @@
 {
   "accounts": [],
   "mail": {
+    "filters": {
+      "profiles": {
+        "forms-debug": {
+          "sender": "forms@yandex.ru",
+          "subject": "New response"
+        }
+      }
+    },
     "fetch": {
       "sleep_seconds": 0.0
     }

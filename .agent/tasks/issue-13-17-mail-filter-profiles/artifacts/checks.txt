@@ -1,0 +1,29 @@
+Command: pytest -q mail/scripts/test_fetch_emails.py
+Result:
+...........                                                              [100%]
+11 passed in 0.07s
+
+Command: ./scripts/test_regression.sh
+Result:
+........................................................................ [ 71%]
+.............................                                            [100%]
+=============================== warnings summary ===============================
+forms/scripts/test_discover_forms.py::test_discover_forms_merges_registry_and_api_stats
+  /opt/openclaw/shared/skills/yandex-office/forms/scripts/discover_forms.py:233: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "discovered_at": datetime.utcnow().isoformat() + "Z",
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+101 passed, 1 warning in 1.58s
+
+Command: python3 -m compileall common scripts mail
+Result:
+Listing 'common'...
+Listing 'common/tests'...
+Listing 'scripts'...
+Listing 'mail'...
+Listing 'mail/references'...
+Listing 'mail/scripts'...
+
+Command: git diff --check
+Result:
+clean
