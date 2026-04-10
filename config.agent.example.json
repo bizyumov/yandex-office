@@ -1,6 +1,11 @@
 {
   "accounts": [],
   "mail": {
+    "filters": {
+      "forms": {
+        "enabled": false
+      }
+    },
     "fetch": {
       "sleep_seconds": 0.0
     }

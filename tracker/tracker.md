@@ -5,7 +5,7 @@ license: MIT
 compatibility: Python 3.10+, network access to api.tracker.yandex.net
 metadata:
   author: bizyumov
-  version: "0.1"
+  version: "2026.04.10"
 ---
 
 # Yandex Tracker / Трекер

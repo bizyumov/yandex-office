@@ -5,7 +5,7 @@ license: MIT
 compatibility: Python 3.10+, network access to api.forms.yandex.net
 metadata:
   author: bizyumov
-  version: "1.1"
+  version: "2026.04.10"
 ---
 
 # Yandex Forms / Формы

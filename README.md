@@ -2,6 +2,20 @@
 
 A collection of [agentskills.io](https://agentskills.io/specification)-compliant skills for working with Yandex platform services.
 
+Current release:
+
+- version: `2026.04.10`
+- version file: `VERSION`
+- cumulative release notes: `CHANGELOG.md`
+
+## Versioning
+
+`yandex-office` uses dated skill versions in `YYYY.MM.DD` format.
+
+- current released version lives in `VERSION`
+- cumulative downloader-facing notes live in `CHANGELOG.md`
+- release procedure lives in `RELEASING.md`
+
 ## Sub-Skills
 
 | Skill | Description |
@@ -58,7 +72,11 @@ Root `config.json`:
   "imap": { "server": "imap.yandex.com", "port": 993 },
   "mail": {
     "since": "off",
-    "filters": { "sender": "keeper@telemost.yandex.ru" },
+    "filters": {
+      "telemost": {
+        "sender": "keeper@telemost.yandex.ru"
+      }
+    },
     "fetch": { "sleep_seconds": 0.5 },
     "state_file": "state.json"
   }
@@ -77,9 +95,32 @@ Workspace `{data_dir}/config.agent.json`:
 
 ```json
 {
-  "accounts": [{ "name": "alex", "email": "user@example.com" }]
+  "accounts": [{ "name": "alex", "email": "user@example.com" }],
+  "mail": {
+    "filters": {
+      "telemost": {
+        "sender": "keeper@telemost.yandex.ru"
+      },
+      "forms": {
+        "sender": "forms@yandex.ru",
+        "subject": "New response"
+      }
+    }
+  }
 }
 ```
+
+Mail filter notes:
+
+- configured entries under `mail.filters` are peer filters such as `telemost` and `forms`
+- legacy top-level keys like `mail.filters.sender` are still upgraded in-memory into `mail.filters.telemost`
+- named filters support `enabled: false`; bare runs execute all enabled filters
+- filter keys must be lowercase English schema keys because they are also used as incoming subdirectory names
+- `default` is reserved for ad-hoc one-off runs and must not be used as a configured filter key
+- `python3 mail/scripts/fetch_emails.py --filter <name>` runs exactly that named filter, even if it is disabled for bare runs
+- raw CLI overrides such as `--sender` / `--subject` are treated as ad-hoc, do not advance persistent cursors, and search mailbox history by default when no `--filter` is selected
+- sender and subject filters are literal IMAP substring matches; no extra query language is implemented
+- large dry-run result sets spill into `{data_dir}/latest-query/`; the next spilled run replaces the previous artifact, so copy it elsewhere if you need to keep it
 
 During first onboarding, OpenClaw must invoke the full path to `scripts/oauth_setup.py` with no account arguments while the current process CWD is still the agent workspace. Bootstrap resolves `data_dir` as `./yandex-data` from that workspace CWD, creates `{data_dir}/config.agent.json` and runtime directories there, and normal runtime then requires that initialized data dir. If you run a script manually from the shared skill root, pass `--data-dir`.
 
@@ -120,7 +161,7 @@ Runtime data lives **outside** the repo at `{data_dir}/`:
 {data_dir}/
 ├── auth/alex.token      # OAuth tokens (per-account)
 ├── incoming/           # mail writes here
-├── state.json          # UID/date tracking keyed by mailbox name
+├── state.json          # UID/date tracking keyed by filter and mailbox
 ├── meetings/ # telemost output (bucketed by month)
 │   └── 2026-02/
 │       └── 2026-02-24_18-19_alex_1000349120/
@@ -157,7 +198,7 @@ git sparse-checkout add telemost disk
                              [Yandex Disk] (download recordings)
 ```
 
-1. **mail** fetches emails on a cron schedule, saves to `{data_dir}/incoming/`
+1. **mail** fetches emails on a cron schedule, saves to `{data_dir}/incoming/<filter>/`
 2. **telemost** enriches Telemost emails, groups by meeting UID, merges + transforms
 3. **disk** (optional) downloads video/audio from yadi.sk links
 

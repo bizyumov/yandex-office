@@ -5,7 +5,7 @@ license: MIT
 compatibility: Requires yc CLI, network access to Yandex Cloud
 metadata:
   author: bizyumov
-  version: "1.0"
+  version: "2026.04.10"
 ---
 
 # Yandex Cloud / Облако

@@ -4,7 +4,7 @@ description: 'Telemost / Телемост — process Yandex Telemost meeting da
 license: MIT
 metadata:
   author: bizyumov
-  version: "2.5"
+  version: "2026.04.10"
 ---
 
 # Yandex Telemost / Телемост

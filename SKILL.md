@@ -6,7 +6,7 @@ license: MIT
 compatibility: Python 3.10+, per-skill dependencies, network access for Yandex APIs
 metadata:
   author: bizyumov
-  version: "1.1"
+  version: "2026.04.10"
   openclaw:
     emoji: "🟡"
     requires:
@@ -17,6 +17,23 @@ metadata:
 # yandex-office
 
 A collection of [agentskills.io](https://agentskills.io/specification)-compliant skills for working with Yandex platform services. Like `gog`, but for Yandex.
+
+Current release surface:
+
+- version is stored in `VERSION`
+- cumulative downloader-facing release notes are stored in `CHANGELOG.md`
+- public skill versions use the `YYYY.MM.DD` format
+
+## Reading Map
+
+- Need the right sub-skill doc first? See `Where To Read Each Sub-Skill`, lines 52-62 below.
+- Need the config/data flow (`config.json` -> `{data_dir}/config.agent.json` -> `state.json`)? See `Shared Configuration`, lines 108-172 below, and `Data Directory`, lines 181-201 below.
+- Need first-time setup or account/token onboarding? See `Onboarding`, lines 64-106 below.
+- Need the most common operator sequence? See `Typical Workflow`, lines 203-226 below.
+- Need install instructions? See `Installation`, lines 269-286 below.
+- Need OAuth details? See `OAuth Setup`, lines 288-342 below, and `OAuth App Registration`, lines 343-349 below.
+- Need release/version pointers? See `Versioning`, lines 394-400 below.
+- Need to know where Yandex Search went? See `Migration Note`, lines 386-392 below.
 
 ## Sub-Skills
 
@@ -31,6 +48,18 @@ A collection of [agentskills.io](https://agentskills.io/specification)-compliant
 | [cloud](cloud/) | Cloud / Облако: deploy serverless functions to Yandex Cloud |
 | [forms](forms/) | Forms / Формы: export form responses from Yandex Forms — download results as XLSX or JSON |
 | [tracker](tracker/) | Tracker / Трекер: manage tasks in Yandex Tracker — create, search, update issues, manage Agile boards |
+
+## Where To Read Each Sub-Skill
+
+- Mail: `mail/mail.md`
+- Calendar: `calendar/calendar.md`
+- Contacts: `contacts/contacts.md`
+- Directory: `directory/directory.md`
+- Disk: `disk/disk.md`
+- Telemost: `telemost/telemost.md`
+- Cloud: `cloud/cloud.md`
+- Forms: `forms/forms.md`
+- Tracker: `tracker/tracker.md`
 
 ## Onboarding
 
@@ -76,53 +105,6 @@ When the account already exists and the user wants to add a service token:
 
 NB: instructions for token revocation are in the Onboarding.md file.
 
-## Structure
-
-This is a meta-skill containing multiple Yandex service integrations:
-
-```text
-yandex-office/
-├── SKILL.md                  (this file: root index)
-├── config.json               (shared defaults)
-├── config.agent.example.json (workspace override example)
-├── mail/
-│   └── mail.md
-├── calendar/
-│   └── calendar.md
-├── contacts/
-│   └── contacts.md
-├── directory/
-│   └── directory.md
-├── disk/
-│   └── disk.md
-├── telemost/
-│   └── telemost.md
-├── cloud/
-│   └── cloud.md
-└── forms/
-    └── forms.md
-```
-
-## Where To Read Each Sub-Skill
-
-- Mail: `mail/mail.md`
-- Calendar: `calendar/calendar.md`
-- Contacts: `contacts/contacts.md`
-- Directory: `directory/directory.md`
-- Disk: `disk/disk.md`
-- Telemost: `telemost/telemost.md`
-- Cloud: `cloud/cloud.md`
-- Forms: `forms/forms.md`
-- Tracker: `tracker/tracker.md`
-
-## Migration Note
-
-Yandex Search moved to the standalone `yandex-search-skill` repository:
-
-- https://github.com/bizyumov/yandex-search-skill
-
-Use that skill when you need Yandex Cloud Search API v2. This `yandex-office` meta-skill no longer includes search instructions.
-
 ## Shared Configuration
 
 All Yandex sub-skills use the same two-level config:
@@ -146,7 +128,11 @@ Root `config.json`:
   "imap": { "server": "imap.yandex.com", "port": 993 },
   "mail": {
     "since": "off",
-    "filters": { "sender": "keeper@telemost.yandex.ru" },
+    "filters": {
+      "telemost": {
+        "sender": "keeper@telemost.yandex.ru"
+      }
+    },
     "fetch": { "sleep_seconds": 0.5 },
     "state_file": "state.json"
   }
@@ -157,9 +143,32 @@ Agent override example `{data_dir}/config.agent.json`:
 
 ```json
 {
-  "accounts": [{ "name": "primary", "email": "user@example.com" }]
+  "accounts": [{ "name": "primary", "email": "user@example.com" }],
+  "mail": {
+    "filters": {
+      "telemost": {
+        "sender": "keeper@telemost.yandex.ru"
+      },
+      "forms": {
+        "sender": "forms@yandex.ru",
+        "subject": "New response"
+      }
+    }
+  }
 }
 ```
+
+Mail filter notes:
+
+- configured entries under `mail.filters` are peer filters such as `telemost` and `forms`
+- legacy top-level keys like `mail.filters.sender` are still upgraded in-memory into `mail.filters.telemost`
+- named filters support `enabled: false`; bare runs execute all enabled filters
+- filter keys must be lowercase English schema keys because they are also used as incoming subdirectory names
+- `default` is reserved for ad-hoc one-off runs and must not be used as a configured filter key
+- `mail/scripts/fetch_emails.py --filter <name>` runs exactly that named filter, even if it is disabled for bare runs
+- raw CLI overrides such as `--sender`, `--subject`, `--since-date`, and `--before-date` are treated as ad-hoc, do not advance persistent cursors, and search mailbox history by default when no `--filter` is selected
+- sender and subject filters are literal IMAP substring matches; no extra query language is implemented
+- large dry-run result sets spill into `{data_dir}/latest-query/`; the next spilled run replaces the previous artifact, so copy it elsewhere if you need to keep it
 
 ## Regression Tests
 
@@ -177,7 +186,7 @@ Runtime data lives **outside** the repo at `{data_dir}/`:
 {data_dir}/
 ├── auth/alex.token      # OAuth tokens (per-account)
 ├── incoming/           # mail writes here
-├── state.json          # UID tracking
+├── state.json          # UID/date tracking keyed by filter and mailbox
 ├── meetings/           # telemost output (bucketed by month)
 │   └── 2026-02/
 │       └── 2026-02-24_18-19_alex_1000349120/
@@ -199,7 +208,7 @@ Runtime data lives **outside** the repo at `{data_dir}/`:
                            +-> [Disk] (optional recording downloads)
 ```
 
-1. `mail` fetches emails on a cron schedule, saves to `{data_dir}/incoming/`
+1. `mail` fetches emails on a cron schedule, saves to `{data_dir}/incoming/<filter>/`
 2. `telemost` enriches Telemost emails, groups by meeting UID, merges + transforms
 3. `disk` (optional) downloads recording links
 
@@ -346,6 +355,49 @@ Important:
 | Yandex Disk API | https://yandex.ru/dev/disk-api/doc/ru/concepts/quickstart |
 | Yandex Mail IMAP | https://yandex.ru/support/mail/mail-clients/others.html |
 | Yandex Cloud CLI | https://cloud.yandex.com/docs/cli/quickstart |
+
+## Structure
+
+This is a meta-skill containing multiple Yandex service integrations:
+
+```text
+yandex-office/
+├── SKILL.md                  (this file: root index)
+├── config.json               (shared defaults)
+├── config.agent.example.json (workspace override example)
+├── mail/
+│   └── mail.md
+├── calendar/
+│   └── calendar.md
+├── contacts/
+│   └── contacts.md
+├── directory/
+│   └── directory.md
+├── disk/
+│   └── disk.md
+├── telemost/
+│   └── telemost.md
+├── cloud/
+│   └── cloud.md
+└── forms/
+    └── forms.md
+```
+
+## Migration Note
+
+Yandex Search moved to the standalone `yandex-search-skill` repository:
+
+- https://github.com/bizyumov/yandex-search-skill
+
+Use that skill when you need Yandex Cloud Search API v2. This `yandex-office` meta-skill no longer includes search instructions.
+
+## Versioning
+
+`yandex-office` uses dated skill versions in `YYYY.MM.DD` format.
+
+- current released version lives in `VERSION`
+- cumulative downloader-facing notes live in `CHANGELOG.md`
+- maintainer release procedure lives in `RELEASING.md`
 
 ## License
 

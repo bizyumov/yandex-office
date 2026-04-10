@@ -156,9 +156,21 @@
   },
   "mail": {
     "since": "off",
-    "filters": { "sender": "keeper@telemost.yandex.ru" },
+    "filters": {
+      "telemost": {
+        "sender": "keeper@telemost.yandex.ru"
+      },
+      "forms": {
+        "sender": "forms@yandex.ru",
+        "subject": "New response"
+      }
+    },
     "fetch": {
       "sleep_seconds": 0.5
+    },
+    "output": {
+      "max_inline_symbols": 2000,
+      "spill_dir": "latest-query"
     },
     "state_file": "state.json"
   }
