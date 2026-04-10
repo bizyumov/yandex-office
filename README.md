@@ -12,22 +12,9 @@ Current release:
 
 `yandex-office` uses dated skill versions in `YYYY.MM.DD` format.
 
-Release policy:
-
-- one public release version per calendar day
-- if multiple changes land on the same day, batch them into the same dated release instead of inventing suffixes
-- keep the current released version in `VERSION`
-- keep cumulative downloader-facing release notes in `CHANGELOG.md`
-- publish the same dated notes in the GitHub Release body when cutting a tag
-
-Recommended release steps:
-
-1. Merge the verified PR to `main`.
-2. Update `VERSION`.
-3. Append the new dated section to `CHANGELOG.md`.
-4. Commit the release metadata update.
-5. Tag the repo with `yandex-office/YYYY.MM.DD`.
-6. Publish a GitHub Release from that tag using the matching changelog section.
+- current released version lives in `VERSION`
+- cumulative downloader-facing notes live in `CHANGELOG.md`
+- release procedure lives in `RELEASING.md`
 
 ## Sub-Skills
 
