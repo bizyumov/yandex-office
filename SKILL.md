@@ -24,13 +24,16 @@ Current release surface:
 - cumulative downloader-facing release notes are stored in `CHANGELOG.md`
 - public skill versions use the `YYYY.MM.DD` format
 
-## Versioning
+## Reading Map
 
-`yandex-office` uses dated skill versions in `YYYY.MM.DD` format.
-
-- current released version lives in `VERSION`
-- cumulative downloader-facing notes live in `CHANGELOG.md`
-- maintainer release procedure lives in `RELEASING.md`
+- Need the right sub-skill doc first? See `Where To Read Each Sub-Skill`, lines 52-62 below.
+- Need the config/data flow (`config.json` -> `{data_dir}/config.agent.json` -> `state.json`)? See `Shared Configuration`, lines 108-172 below, and `Data Directory`, lines 181-201 below.
+- Need first-time setup or account/token onboarding? See `Onboarding`, lines 64-106 below.
+- Need the most common operator sequence? See `Typical Workflow`, lines 203-226 below.
+- Need install instructions? See `Installation`, lines 269-286 below.
+- Need OAuth details? See `OAuth Setup`, lines 288-342 below, and `OAuth App Registration`, lines 343-349 below.
+- Need release/version pointers? See `Versioning`, lines 394-400 below.
+- Need to know where Yandex Search went? See `Migration Note`, lines 386-392 below.
 
 ## Sub-Skills
 
@@ -45,6 +48,18 @@ Current release surface:
 | [cloud](cloud/) | Cloud / Облако: deploy serverless functions to Yandex Cloud |
 | [forms](forms/) | Forms / Формы: export form responses from Yandex Forms — download results as XLSX or JSON |
 | [tracker](tracker/) | Tracker / Трекер: manage tasks in Yandex Tracker — create, search, update issues, manage Agile boards |
+
+## Where To Read Each Sub-Skill
+
+- Mail: `mail/mail.md`
+- Calendar: `calendar/calendar.md`
+- Contacts: `contacts/contacts.md`
+- Directory: `directory/directory.md`
+- Disk: `disk/disk.md`
+- Telemost: `telemost/telemost.md`
+- Cloud: `cloud/cloud.md`
+- Forms: `forms/forms.md`
+- Tracker: `tracker/tracker.md`
 
 ## Onboarding
 
@@ -89,53 +104,6 @@ When the account already exists and the user wants to add a service token:
 7. If the account is missing, the same command adds it first and then continues into the OAuth flow.
 
 NB: instructions for token revocation are in the Onboarding.md file.
-
-## Structure
-
-This is a meta-skill containing multiple Yandex service integrations:
-
-```text
-yandex-office/
-├── SKILL.md                  (this file: root index)
-├── config.json               (shared defaults)
-├── config.agent.example.json (workspace override example)
-├── mail/
-│   └── mail.md
-├── calendar/
-│   └── calendar.md
-├── contacts/
-│   └── contacts.md
-├── directory/
-│   └── directory.md
-├── disk/
-│   └── disk.md
-├── telemost/
-│   └── telemost.md
-├── cloud/
-│   └── cloud.md
-└── forms/
-    └── forms.md
-```
-
-## Where To Read Each Sub-Skill
-
-- Mail: `mail/mail.md`
-- Calendar: `calendar/calendar.md`
-- Contacts: `contacts/contacts.md`
-- Directory: `directory/directory.md`
-- Disk: `disk/disk.md`
-- Telemost: `telemost/telemost.md`
-- Cloud: `cloud/cloud.md`
-- Forms: `forms/forms.md`
-- Tracker: `tracker/tracker.md`
-
-## Migration Note
-
-Yandex Search moved to the standalone `yandex-search-skill` repository:
-
-- https://github.com/bizyumov/yandex-search-skill
-
-Use that skill when you need Yandex Cloud Search API v2. This `yandex-office` meta-skill no longer includes search instructions.
 
 ## Shared Configuration
 
@@ -387,6 +355,49 @@ Important:
 | Yandex Disk API | https://yandex.ru/dev/disk-api/doc/ru/concepts/quickstart |
 | Yandex Mail IMAP | https://yandex.ru/support/mail/mail-clients/others.html |
 | Yandex Cloud CLI | https://cloud.yandex.com/docs/cli/quickstart |
+
+## Structure
+
+This is a meta-skill containing multiple Yandex service integrations:
+
+```text
+yandex-office/
+├── SKILL.md                  (this file: root index)
+├── config.json               (shared defaults)
+├── config.agent.example.json (workspace override example)
+├── mail/
+│   └── mail.md
+├── calendar/
+│   └── calendar.md
+├── contacts/
+│   └── contacts.md
+├── directory/
+│   └── directory.md
+├── disk/
+│   └── disk.md
+├── telemost/
+│   └── telemost.md
+├── cloud/
+│   └── cloud.md
+└── forms/
+    └── forms.md
+```
+
+## Migration Note
+
+Yandex Search moved to the standalone `yandex-search-skill` repository:
+
+- https://github.com/bizyumov/yandex-search-skill
+
+Use that skill when you need Yandex Cloud Search API v2. This `yandex-office` meta-skill no longer includes search instructions.
+
+## Versioning
+
+`yandex-office` uses dated skill versions in `YYYY.MM.DD` format.
+
+- current released version lives in `VERSION`
+- cumulative downloader-facing notes live in `CHANGELOG.md`
+- maintainer release procedure lives in `RELEASING.md`
 
 ## License
 
