@@ -15,14 +15,14 @@
   ],
   "checks": [
     {
-      "command": "pytest -q mail/scripts/test_fetch_emails.py",
+      "command": "pytest -q mail/scripts/test_fetch_emails.py common/tests",
       "status": "PASS",
-      "summary": "11 passed in 0.07s"
+      "summary": "45 passed in 0.20s"
     },
     {
       "command": "./scripts/test_regression.sh",
       "status": "PASS",
-      "summary": "101 passed, 1 warning in 1.58s"
+      "summary": "116 passed, 1 warning in 0.90s"
     },
     {
       "command": "python3 -m compileall common scripts mail",
@@ -37,10 +37,58 @@
     {
       "command": "gh pr view 27 --repo bizyumov/yandex-office --json number,url,state,headRefName,baseRefName,title",
       "status": "PASS",
-      "summary": "PR #27 is open against main"
+      "summary": "PR #27 is open against main with the current title"
+    }
+  ],
+  "live_checks": [
+    {
+      "command": "python3 mail/scripts/fetch_emails.py --mailbox work --dry-run --sender 'Евгений Войтенков'",
+      "status": "PASS",
+      "summary": "2 matches; newest 2026-04-03T14:10:04Z"
+    },
+    {
+      "command": "python3 mail/scripts/fetch_emails.py --mailbox work --dry-run --sender 'eurochem.ru'",
+      "status": "PASS",
+      "summary": "178 matches; spill file created; expected eurochem senders confirmed"
+    },
+    {
+      "command": "python3 mail/scripts/fetch_emails.py --mailbox work --dry-run --subject 'Подготовка материалов по планам работ Консорциума на 2026г.'",
+      "status": "PASS",
+      "summary": "3 matches"
+    },
+    {
+      "command": "python3 mail/scripts/fetch_emails.py --mailbox work --dry-run --subject 'СТО ИНТИ' --since-date 2025-01-01 --before-date 2026-01-01",
+      "status": "PASS",
+      "summary": "12 matches; spill file created"
+    },
+    {
+      "command": "python3 mail/scripts/fetch_emails.py --mailbox work --dry-run --sender 'inti.expert' --since-date 2026-03-12",
+      "status": "PASS",
+      "summary": "9 matches; spill file created"
+    },
+    {
+      "command": "python3 mail/scripts/fetch_emails.py --mailbox work --sender 'Евгений Войтенков' --num 1 --no-persist",
+      "status": "PASS",
+      "summary": "fetched_total=1; persist_state=false; state.json hash unchanged"
+    },
+    {
+      "command": "python3 mail/scripts/fetch_emails.py --filter assignment --mailbox work --from-uid 1 --num 1",
+      "status": "PASS",
+      "summary": "fetched_total=1; persist_state=false; state.json hash unchanged"
+    },
+    {
+      "command": "python3 mail/scripts/fetch_emails.py --mailbox nonexistent --dry-run",
+      "status": "PASS",
+      "summary": "fails fast with available mailbox names"
+    },
+    {
+      "command": "python3 mail/scripts/fetch_emails.py --mailbox work --dry-run",
+      "status": "PASS",
+      "summary": "bare run resolves all enabled filters in this workspace: telemost, assignment"
     }
   ],
   "files_touched": [
+    ".agent/tasks/issue-13-17-mail-filter-profiles/spec.md",
     "README.md",
     "SKILL.md",
     "config.agent.example.json",
@@ -54,20 +102,27 @@
     "AC2": "PASS",
     "AC3": "PASS",
     "AC4": "PASS",
+    "AC4a": "PASS",
     "AC5": "PASS",
     "AC6": "PASS",
     "AC7": "PASS",
     "AC8": "PASS",
     "AC9": "PASS",
     "AC10": "PASS",
-    "AC11": "PASS"
+    "AC11": "PASS",
+    "AC12": "PASS",
+    "AC13": "PASS",
+    "AC14": "PASS"
   },
   "pull_request": {
     "number": 27,
     "state": "OPEN",
     "head": "issue-13-17-mail-filter-profiles",
     "base": "main",
-    "title": "feat(mail): add filter profiles and ad-hoc fetch overrides",
+    "title": "feat(mail): add named filters and ad-hoc fetch overrides",
     "url": "https://github.com/bizyumov/yandex-office/pull/27"
-  }
+  },
+  "notes": [
+    "The live velizar workspace still contains a stale historical state bucket named 'assignments' while the active config key is 'assignment'. This is a workspace rename residue, not a repo codepath failure."
+  ]
 }
