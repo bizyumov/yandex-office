@@ -18,6 +18,31 @@ metadata:
 
 A collection of [agentskills.io](https://agentskills.io/specification)-compliant skills for working with Yandex platform services. Like `gog`, but for Yandex.
 
+Current release surface:
+
+- version is stored in `VERSION`
+- cumulative downloader-facing release notes are stored in `CHANGELOG.md`
+- public skill versions use the `YYYY.MM.DD` format
+
+## Versioning
+
+Maintain `yandex-office` as a dated skill release stream:
+
+- version format: `YYYY.MM.DD`
+- one public release version per day
+- batch same-day fixes into the same dated release instead of adding suffixes
+- update `VERSION` and `CHANGELOG.md` together
+- publish the same dated notes in the GitHub Release body when tagging
+
+Release checklist:
+
+1. Merge the verified PR to `main`.
+2. Update `VERSION`.
+3. Append the dated release section to `CHANGELOG.md`.
+4. Commit the release metadata update.
+5. Tag `yandex-office/YYYY.MM.DD`.
+6. Publish a GitHub Release from that tag.
+
 ## Sub-Skills
 
 | Sub-Skill | Description |
