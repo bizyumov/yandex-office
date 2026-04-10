@@ -5,7 +5,7 @@ license: MIT
 compatibility: Requires Python 3.10+, network access to imap.yandex.ru
 metadata:
   author: bizyumov
-  version: "2.4"
+  version: "2026.04.10"
 ---
 
 # Yandex Mail / Почта

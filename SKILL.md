@@ -6,7 +6,7 @@ license: MIT
 compatibility: Python 3.10+, per-skill dependencies, network access for Yandex APIs
 metadata:
   author: bizyumov
-  version: "1.1"
+  version: "2026.04.10"
   openclaw:
     emoji: "🟡"
     requires:
