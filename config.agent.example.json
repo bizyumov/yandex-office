@@ -2,11 +2,8 @@
   "accounts": [],
   "mail": {
     "filters": {
-      "profiles": {
-        "forms-debug": {
-          "sender": "forms@yandex.ru",
-          "subject": "New response"
-        }
+      "forms": {
+        "enabled": false
       }
     },
     "fetch": {

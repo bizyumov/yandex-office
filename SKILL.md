@@ -147,11 +147,8 @@ Root `config.json`:
   "mail": {
     "since": "off",
     "filters": {
-      "default": "telemost",
-      "profiles": {
-        "telemost": {
-          "sender": "keeper@telemost.yandex.ru"
-        }
+      "telemost": {
+        "sender": "keeper@telemost.yandex.ru"
       }
     },
     "fetch": { "sleep_seconds": 0.5 },
@@ -167,11 +164,12 @@ Agent override example `{data_dir}/config.agent.json`:
   "accounts": [{ "name": "primary", "email": "user@example.com" }],
   "mail": {
     "filters": {
-      "profiles": {
-        "forms-debug": {
-          "sender": "forms@yandex.ru",
-          "subject": "New response"
-        }
+      "telemost": {
+        "sender": "keeper@telemost.yandex.ru"
+      },
+      "forms": {
+        "sender": "forms@yandex.ru",
+        "subject": "New response"
       }
     }
   }
@@ -180,10 +178,15 @@ Agent override example `{data_dir}/config.agent.json`:
 
 Mail filter notes:
 
-- legacy `mail.filters.sender` still works as the implicit default profile
-- named filter profiles live under `mail.filters.profiles`
-- `mail/scripts/fetch_emails.py --filter <name>` runs a persistent profile with its own cursor state
-- raw CLI overrides such as `--sender`, `--subject`, `--since-date`, and `--before-date` are treated as ad-hoc and do not advance persistent cursors
+- configured entries under `mail.filters` are peer filters such as `telemost` and `forms`
+- legacy top-level keys like `mail.filters.sender` are still upgraded in-memory into `mail.filters.telemost`
+- named filters support `enabled: false`; bare runs execute all enabled filters
+- filter keys must be lowercase English schema keys because they are also used as incoming subdirectory names
+- `default` is reserved for ad-hoc one-off runs and must not be used as a configured filter key
+- `mail/scripts/fetch_emails.py --filter <name>` runs exactly that named filter, even if it is disabled for bare runs
+- raw CLI overrides such as `--sender`, `--subject`, `--since-date`, and `--before-date` are treated as ad-hoc, do not advance persistent cursors, and search mailbox history by default when no `--filter` is selected
+- sender and subject filters are literal IMAP substring matches; no extra query language is implemented
+- large dry-run result sets spill into `{data_dir}/latest-query/`; the next spilled run replaces the previous artifact, so copy it elsewhere if you need to keep it
 
 ## Regression Tests
 
@@ -201,7 +204,7 @@ Runtime data lives **outside** the repo at `{data_dir}/`:
 {data_dir}/
 ├── auth/alex.token      # OAuth tokens (per-account)
 ├── incoming/           # mail writes here
-├── state.json          # UID tracking
+├── state.json          # UID/date tracking keyed by filter and mailbox
 ├── meetings/           # telemost output (bucketed by month)
 │   └── 2026-02/
 │       └── 2026-02-24_18-19_alex_1000349120/
@@ -223,7 +226,7 @@ Runtime data lives **outside** the repo at `{data_dir}/`:
                            +-> [Disk] (optional recording downloads)
 ```
 
-1. `mail` fetches emails on a cron schedule, saves to `{data_dir}/incoming/`
+1. `mail` fetches emails on a cron schedule, saves to `{data_dir}/incoming/<filter>/`
 2. `telemost` enriches Telemost emails, groups by meeting UID, merges + transforms
 3. `disk` (optional) downloads recording links
 

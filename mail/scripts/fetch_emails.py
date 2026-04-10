@@ -9,7 +9,7 @@ Designed to be run as a cron job. State is persisted after each email
 to prevent data loss on interruption.
 
 Output structure per email:
-    {data_dir}/incoming/{YYYY-MM-DD}_{mailbox}_uid{N}/
+    {data_dir}/incoming/{filter}/{YYYY-MM-DD}_{mailbox}_uid{N}/
         {original_attachment_filename}   # Preserved original name
         email_body.txt                   # HTML→text converted body
         email_body.html                  # Raw HTML body (if available)
@@ -41,6 +41,10 @@ from common.auth import resolve_token
 from common.config import load_runtime_context
 
 logger = logging.getLogger("mail")
+FILTER_KEY_RE = re.compile(r"^[a-z][a-z0-9_]*$")
+LEGACY_FILTER_NAME = "telemost"
+AD_HOC_FILTER_NAME = "default"
+REMOVED_FILTER_SCHEMA_KEY = "profiles"
 
 
 class EmailFetcher:
@@ -70,6 +74,7 @@ class EmailFetcher:
         self.state = self._load_state()
         self.downloaded: list[dict[str, Any]] = []
         self.mailbox_counts: dict[str, int] = {}
+        self.filter_counts: dict[str, int] = {}
         self.run_options = {
             "filter": self._clean_value(filter_name),
             "sender": self._clean_value(sender),
@@ -80,7 +85,9 @@ class EmailFetcher:
             "from_uid": from_uid,
             "no_persist": bool(no_persist),
         }
-        self.active_filter = self._resolve_active_filter()
+        self.named_filters = self._resolve_named_filters()
+        self.run_filters = self._resolve_run_filters()
+        self.active_filter = self.run_filters[0] if len(self.run_filters) == 1 else None
 
     @staticmethod
     def _clean_value(raw: Any) -> str | None:
@@ -88,6 +95,23 @@ class EmailFetcher:
             return None
         value = str(raw).strip()
         return value or None
+
+    @staticmethod
+    def _validate_filter_key(name: str) -> str:
+        if name == AD_HOC_FILTER_NAME:
+            raise ValueError(
+                f'"{AD_HOC_FILTER_NAME}" is reserved for ad-hoc runs; use a real filter key such as "{LEGACY_FILTER_NAME}"'
+            )
+        if name == REMOVED_FILTER_SCHEMA_KEY:
+            raise ValueError(
+                f'"{REMOVED_FILTER_SCHEMA_KEY}" was removed; define filters directly under mail.filters'
+            )
+        if not FILTER_KEY_RE.fullmatch(name):
+            raise ValueError(
+                "Filter names must use lowercase English schema keys only: "
+                "letters, digits, and underscores, starting with a letter"
+            )
+        return name
 
     def _load_config(self) -> dict:
         return self.runtime.config
@@ -103,14 +127,20 @@ class EmailFetcher:
                     mailboxes_raw = filter_state.get("mailboxes", {})
                     if isinstance(mailboxes_raw, dict):
                         mailboxes = mailboxes_raw
-                normalized_filters[str(filter_name)] = {"mailboxes": mailboxes}
+                normalized_name = (
+                    LEGACY_FILTER_NAME if str(filter_name) == AD_HOC_FILTER_NAME else str(filter_name)
+                )
+                bucket = normalized_filters.setdefault(normalized_name, {"mailboxes": {}})
+                bucket_mailboxes = bucket.setdefault("mailboxes", {})
+                for mailbox_name, mailbox_state in mailboxes.items():
+                    bucket_mailboxes.setdefault(mailbox_name, mailbox_state)
             if normalized_filters:
                 return {"filters": normalized_filters}
 
         mailboxes = raw.get("mailboxes", {})
         if not isinstance(mailboxes, dict):
             mailboxes = {}
-        return {"filters": {"default": {"mailboxes": mailboxes}}}
+        return {"filters": {LEGACY_FILTER_NAME: {"mailboxes": mailboxes}}}
 
     def _load_state(self) -> dict[str, Any]:
         state_file = self.config.get("mail", {}).get("state_file", "state.json")
@@ -196,60 +226,86 @@ class EmailFetcher:
         except ValueError:
             return None
 
-    def _resolve_filter_profiles(self) -> tuple[str, dict[str, dict[str, str]]]:
+    def _resolve_named_filters(self) -> dict[str, dict[str, Any]]:
         filters_cfg = self.config.get("mail", {}).get("filters", {})
-        profiles: dict[str, dict[str, str]] = {}
+        filters: dict[str, dict[str, Any]] = {}
+        legacy_keys = {"sender", "subject", "since_date", "before_date"}
 
-        explicit_profiles = filters_cfg.get("profiles", {})
-        if isinstance(explicit_profiles, dict):
-            for name, raw_profile in explicit_profiles.items():
-                if not isinstance(raw_profile, dict):
-                    continue
-                profiles[str(name)] = {
+        for name, raw_filter in filters_cfg.items():
+            if name in legacy_keys or not isinstance(raw_filter, dict):
+                continue
+            raw_name = str(name)
+            key_name = self._validate_filter_key(raw_name)
+            existing = filters.get(key_name, {})
+            merged_filter = {
+                "name": key_name,
+                "enabled": bool(raw_filter.get("enabled", existing.get("enabled", True))),
+                **{
                     key: value
                     for key in ("sender", "subject", "since_date", "before_date")
-                    if (value := self._clean_value(raw_profile.get(key))) is not None
-                }
+                    if (value := self._clean_value(existing.get(key))) is not None
+                },
+                **{
+                    key: value
+                    for key in ("sender", "subject", "since_date", "before_date")
+                    if (value := self._clean_value(raw_filter.get(key))) is not None
+                },
+            }
+            filters[key_name] = merged_filter
 
         legacy_profile = {
             key: value
             for key in ("sender", "subject", "since_date", "before_date")
             if (value := self._clean_value(filters_cfg.get(key))) is not None
         }
-        if "default" in profiles:
-            merged_default = dict(legacy_profile)
-            merged_default.update(profiles["default"])
-            profiles["default"] = merged_default
-        elif legacy_profile:
-            profiles["default"] = legacy_profile
+        if legacy_profile:
+            merged_legacy = {
+                "name": LEGACY_FILTER_NAME,
+                "enabled": filters.get(LEGACY_FILTER_NAME, {}).get("enabled", True),
+                **legacy_profile,
+                **{
+                    key: value
+                    for key, value in filters.get(LEGACY_FILTER_NAME, {}).items()
+                    if key not in {"name", "enabled"}
+                },
+            }
+            filters[LEGACY_FILTER_NAME] = merged_legacy
 
-        if not profiles:
-            profiles["default"] = {}
+        return filters
 
-        default_name = self._clean_value(filters_cfg.get("default")) or "default"
-        if default_name not in profiles:
-            available = ", ".join(sorted(profiles))
-            raise ValueError(
-                f'Default filter "{default_name}" is not configured. Available filters: {available}'
-            )
-        return default_name, profiles
+    def _resolve_run_filters(self) -> list[dict[str, Any]]:
+        explicit_filter = self.run_options.get("filter")
+        has_raw_overrides = any(
+            self.run_options.get(key) is not None
+            for key in ("sender", "subject", "since_date", "before_date")
+        )
 
-    def _resolve_active_filter(self) -> dict[str, str]:
-        default_name, profiles = self._resolve_filter_profiles()
-        selected_name = self.run_options.get("filter") or default_name
-        if selected_name not in profiles:
-            available = ", ".join(sorted(profiles))
-            raise ValueError(
-                f'Unknown filter "{selected_name}". Available filters: {available}'
-            )
+        if explicit_filter is not None:
+            if explicit_filter not in self.named_filters:
+                available = ", ".join(sorted(self.named_filters))
+                raise ValueError(
+                    f'Unknown filter "{explicit_filter}". Available filters: {available}'
+                )
+            selected = dict(self.named_filters[explicit_filter])
+            for key in ("sender", "subject", "since_date", "before_date"):
+                override = self.run_options.get(key)
+                if override is not None:
+                    selected[key] = override
+            return [selected]
 
-        active = dict(profiles[selected_name])
-        for key in ("sender", "subject", "since_date", "before_date"):
-            override = self.run_options.get(key)
-            if override is not None:
-                active[key] = override
-        active["name"] = selected_name
-        return active
+        if has_raw_overrides:
+            ad_hoc = {"name": AD_HOC_FILTER_NAME, "enabled": True}
+            for key in ("sender", "subject", "since_date", "before_date"):
+                override = self.run_options.get(key)
+                if override is not None:
+                    ad_hoc[key] = override
+            return [ad_hoc]
+
+        return [
+            dict(filter_def)
+            for filter_def in self.named_filters.values()
+            if filter_def.get("enabled", True)
+        ]
 
     def _uses_ad_hoc_overrides(self) -> bool:
         return any(
@@ -268,8 +324,13 @@ class EmailFetcher:
             return False
         return True
 
-    def _effective_since(self, mailbox_name: str, filter_name: str) -> str | None:
-        explicit_since = self.active_filter.get("since_date")
+    def _effective_since(
+        self,
+        mailbox_name: str,
+        filter_name: str,
+        run_filter: dict[str, Any],
+    ) -> str | None:
+        explicit_since = run_filter.get("since_date")
         if explicit_since:
             return explicit_since
         if self._uses_ad_hoc_overrides():
@@ -282,6 +343,8 @@ class EmailFetcher:
     def _effective_last_uid(self, mailbox_name: str, filter_name: str) -> int:
         if self.run_options.get("from_uid") is not None:
             return int(self.run_options["from_uid"])
+        if self._uses_ad_hoc_overrides() and self.run_options.get("filter") is None:
+            return 1
         return self._get_last_uid(mailbox_name, filter_name)
 
     def _connect_imap(self, email_addr: str, token: str) -> imaplib.IMAP4_SSL:
@@ -298,6 +361,10 @@ class EmailFetcher:
 
     @staticmethod
     def _decode_header(header_value: str) -> str:
+        if header_value is None:
+            return ""
+        if not isinstance(header_value, (str, bytes)):
+            header_value = str(header_value)
         if not header_value:
             return ""
         decoded_parts = decode_header(header_value)
@@ -305,6 +372,8 @@ class EmailFetcher:
         for content, encoding in decoded_parts:
             if isinstance(content, bytes):
                 content = content.decode(encoding or "utf-8", errors="replace")
+            else:
+                content = str(content)
             result.append(content)
         return " ".join(result)
 
@@ -352,18 +421,69 @@ class EmailFetcher:
         if not fetch_response:
             return None
         for item in fetch_response:
-            if not isinstance(item, tuple) or not item:
+            if isinstance(item, tuple):
+                candidates = [part for part in item if isinstance(part, (bytes, str))]
+            elif isinstance(item, (bytes, str)):
+                candidates = [item]
+            else:
                 continue
-            header = item[0]
-            if isinstance(header, bytes):
-                match = re.search(rb"UID (\d+)", header)
-                if match:
-                    return int(match.group(1))
-            elif isinstance(header, str):
-                match = re.search(r"UID (\d+)", header)
-                if match:
-                    return int(match.group(1))
+
+            for candidate in candidates:
+                if isinstance(candidate, bytes):
+                    match = re.search(rb"UID (\d+)", candidate)
+                    if match:
+                        return int(match.group(1))
+                else:
+                    match = re.search(r"UID (\d+)", candidate)
+                    if match:
+                        return int(match.group(1))
         return None
+
+    @staticmethod
+    def _extract_message_bytes(fetch_response: Any) -> bytes | None:
+        if not fetch_response:
+            return None
+
+        for item in fetch_response:
+            if isinstance(item, tuple):
+                for part in item[1:]:
+                    if isinstance(part, bytes):
+                        return part
+                    if isinstance(part, bytearray):
+                        return bytes(part)
+            elif isinstance(item, bytes) and b":" in item:
+                return item
+            elif isinstance(item, bytearray) and b":" in item:
+                return bytes(item)
+
+        return None
+
+    def _get_output_max_inline_symbols(self) -> int:
+        raw = self.config.get("mail", {}).get("output", {}).get("max_inline_symbols", 2000)
+        try:
+            value = int(raw)
+        except (TypeError, ValueError):
+            value = 2000
+        return max(1, value)
+
+    def _get_output_dir(self) -> Path:
+        raw = self.config.get("mail", {}).get("output", {}).get("spill_dir", "latest-query")
+        name = str(raw).strip() or "latest-query"
+        path = self.data_dir / name
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    def _spill_payload_to_file(self, payload: dict[str, Any], *, prefix: str) -> Path:
+        output_dir = self._get_output_dir()
+        for existing in output_dir.glob("*.json"):
+            existing.unlink(missing_ok=True)
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+        output_path = output_dir / f"{prefix}_{timestamp}.json"
+        output_path.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        return output_path
 
     def _search_uids(self, conn, criteria: list[str]) -> list[bytes]:
         if not criteria:
@@ -427,7 +547,14 @@ class EmailFetcher:
 
         return sorted(result, key=lambda item: item[0])
 
-    def _process_email(self, conn, uid_bytes: bytes, uid: int, mailbox_name: str) -> dict | None:
+    def _process_email(
+        self,
+        conn,
+        uid_bytes: bytes,
+        uid: int,
+        mailbox_name: str,
+        filter_name: str,
+    ) -> dict | None:
         """Fetch a single email and write to incoming/ directory.
 
         Saves email body (text + HTML), attachments, and generic metadata.
@@ -441,6 +568,7 @@ class EmailFetcher:
         meta = {
             "imap_uid": uid,
             "mailbox": mailbox_name,
+            "filter": filter_name,
             "subject": "",
             "sender": "",
             "timestamp": now_utc,
@@ -469,13 +597,19 @@ class EmailFetcher:
                 date_formatted = now_date
 
             # Create canonical directory once (no temporary/orphan dir).
-            email_dir = self.data_dir / "incoming" / f"{date_formatted}_{mailbox_name}_uid{uid}"
+            email_dir = (
+                self.data_dir
+                / "incoming"
+                / filter_name
+                / f"{date_formatted}_{mailbox_name}_uid{uid}"
+            )
             email_dir.mkdir(parents=True, exist_ok=True)
 
             meta["subject"] = subject
             meta["sender"] = sender
             meta["timestamp"] = timestamp
             meta["dir_name"] = email_dir.name
+            meta["dir_relpath"] = str(email_dir.relative_to(self.data_dir / "incoming"))
 
             # Extract email body (prefer text/plain, fallback to text/html)
             email_body_text = None
@@ -531,9 +665,15 @@ class EmailFetcher:
         finally:
             # Always persist metadata, even for partial/failed message processing.
             if email_dir is None:
-                email_dir = self.data_dir / "incoming" / f"{now_date}_{mailbox_name}_uid{uid}"
+                email_dir = (
+                    self.data_dir
+                    / "incoming"
+                    / filter_name
+                    / f"{now_date}_{mailbox_name}_uid{uid}"
+                )
                 email_dir.mkdir(parents=True, exist_ok=True)
                 meta["dir_name"] = email_dir.name
+                meta["dir_relpath"] = str(email_dir.relative_to(self.data_dir / "incoming"))
             (email_dir / "meta.json").write_text(
                 json.dumps(meta, ensure_ascii=False, indent=2),
                 encoding="utf-8",
@@ -557,6 +697,7 @@ class EmailFetcher:
     def fetch_mailbox(
         self,
         mailbox_config: dict,
+        run_filter: dict[str, Any],
         max_messages: int | None = None,
         dry_run: bool = False,
     ) -> int:
@@ -571,7 +712,7 @@ class EmailFetcher:
         """
         mailbox_name = mailbox_config["name"]
         email_addr = mailbox_config["email"]
-        filter_name = self.active_filter["name"]
+        filter_name = run_filter["name"]
 
         logger.info(
             f"Checking mailbox: {email_addr} ({mailbox_name}) using filter {filter_name}"
@@ -609,10 +750,10 @@ class EmailFetcher:
         last_uid = self._effective_last_uid(mailbox_name, filter_name)
         logger.info(f"Last processed UID: {last_uid}")
 
-        sender = self.active_filter.get("sender")
-        subject = self.active_filter.get("subject")
-        since = self._effective_since(mailbox_name, filter_name)
-        before = self.active_filter.get("before_date")
+        sender = run_filter.get("sender")
+        subject = run_filter.get("subject")
+        since = self._effective_since(mailbox_name, filter_name, run_filter)
+        before = run_filter.get("before_date")
         if not any([sender, subject, since, before]):
             logger.error("No mail filter criteria configured for this run")
             conn.logout()
@@ -646,7 +787,9 @@ class EmailFetcher:
                         uid_bytes,
                         "(BODY.PEEK[HEADER.FIELDS (SUBJECT FROM DATE)])",
                     )
-                    raw_header = msg_data[0][1]
+                    raw_header = self._extract_message_bytes(msg_data)
+                    if raw_header is None:
+                        raise ValueError("No header payload returned by IMAP FETCH")
                     msg = email.message_from_bytes(raw_header)
                     subject_value = self._decode_header(msg.get("Subject", ""))
                     sender_value = self._decode_header(msg.get("From", ""))
@@ -684,9 +827,8 @@ class EmailFetcher:
         for idx, (uid, uid_bytes) in enumerate(matching):
             logger.info(f"Processing UID {uid}...")
             try:
-                meta = self._process_email(conn, uid_bytes, uid, mailbox_name)
+                meta = self._process_email(conn, uid_bytes, uid, mailbox_name, filter_name)
                 if meta:
-                    meta["filter"] = filter_name
                     self.downloaded.append(meta)
                     if persist_state:
                         self._update_last_uid(mailbox_name, filter_name, uid)
@@ -720,21 +862,32 @@ class EmailFetcher:
         """
         remaining = num_messages
         self.mailbox_counts = {}
+        self.filter_counts = {}
 
         for mailbox_config in self._resolve_mailboxes():
-            if remaining is not None and remaining <= 0:
-                logger.info("Reached --num cap; stopping mailbox scan")
-                self.mailbox_counts[mailbox_config["name"]] = 0
-                break
+            self.mailbox_counts[mailbox_config["name"]] = 0
 
-            fetched = self.fetch_mailbox(
-                mailbox_config,
-                max_messages=remaining,
-                dry_run=dry_run,
-            )
-            self.mailbox_counts[mailbox_config["name"]] = fetched
-            if remaining is not None:
-                remaining -= fetched if not dry_run else 0
+        for run_filter in self.run_filters:
+            filter_name = run_filter["name"]
+            self.filter_counts[filter_name] = 0
+            for mailbox_config in self._resolve_mailboxes():
+                if remaining is not None and remaining <= 0:
+                    logger.info("Reached --num cap; stopping mailbox scan")
+                    break
+
+                fetched = self.fetch_mailbox(
+                    mailbox_config,
+                    run_filter,
+                    max_messages=remaining,
+                    dry_run=dry_run,
+                )
+                self.mailbox_counts[mailbox_config["name"]] += fetched
+                self.filter_counts[filter_name] += fetched
+                if remaining is not None:
+                    remaining -= fetched if not dry_run else 0
+
+            if remaining is not None and remaining <= 0:
+                break
 
         return self.downloaded
 
@@ -838,21 +991,35 @@ def main() -> None:
             for item in results
         ]
 
-    print(
-        json.dumps(
-            {
-                "dry_run": bool(args.dry_run),
-                "filter": fetcher.active_filter["name"],
-                "persist_state": fetcher._should_persist_state(dry_run=args.dry_run),
-                "fetched_total": 0 if args.dry_run else len(results),
-                "pending_total": len(pending_rows) if args.dry_run else 0,
-                "pending": pending_rows if args.dry_run else [],
-                "mailboxes": fetcher.mailbox_counts,
-            },
-            ensure_ascii=False,
-            indent=2,
-        )
-    )
+    response = {
+        "dry_run": bool(args.dry_run),
+        "filter": fetcher.active_filter["name"] if fetcher.active_filter else None,
+        "filters": [item["name"] for item in fetcher.run_filters],
+        "persist_state": fetcher._should_persist_state(dry_run=args.dry_run),
+        "fetched_total": 0 if args.dry_run else len(results),
+        "pending_total": len(pending_rows) if args.dry_run else 0,
+        "pending": pending_rows if args.dry_run else [],
+        "mailboxes": fetcher.mailbox_counts,
+        "filter_counts": fetcher.filter_counts,
+    }
+
+    if args.dry_run:
+        pending_json = json.dumps(pending_rows, ensure_ascii=False, indent=2)
+        threshold = fetcher._get_output_max_inline_symbols()
+        if len(pending_json) > threshold:
+            full_payload = dict(response)
+            full_payload["pending"] = pending_rows
+            output_path = fetcher._spill_payload_to_file(full_payload, prefix="mail_dry_run")
+            response["pending"] = []
+            response["output_file"] = str(output_path)
+            response["output_spilled"] = True
+            response["inline_threshold_symbols"] = threshold
+            response["output_notice"] = (
+                "Copy this file if you need to keep it. The next spilled run replaces "
+                "the previous spill artifact."
+            )
+
+    print(json.dumps(response, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":
