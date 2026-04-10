@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document contains all discovered issues and required changes for the yandex suite based on production testing. Items are prioritized by severity.
+This document contains all discovered issues and required changes for the yandex-office suite based on production testing. Items are prioritized by severity.
 
 ---
 
@@ -87,7 +87,7 @@ The relationship between `fetch_emails.py`, `incoming/` directory, and downstrea
 ## 🟡 MEDIUM: Meta-Skill Structure Documentation
 
 ### Problem
-`yandex` is a meta-skill containing multiple sub-skills (mail, disk, telemost, cloud). The structure is not immediately obvious, and users may look for `mail` as a separate top-level skill.
+`yandex-office` is a meta-skill containing multiple sub-skills (mail, disk, telemost, cloud). The structure is not immediately obvious, and users may look for `mail` as a separate top-level skill.
 
 ### Required Changes
 
@@ -98,7 +98,7 @@ The relationship between `fetch_emails.py`, `incoming/` directory, and downstrea
    This is a meta-skill containing multiple Yandex service integrations:
    
    ```
-   yandex/
+   yandex-office/
    ├── SKILL.md              (this file - overview)
    ├── config.json           (shared configuration)
    ├── mail/          (IMAP email fetching)
@@ -119,7 +119,7 @@ The relationship between `fetch_emails.py`, `incoming/` directory, and downstrea
    Rename sub-skill folders and their docs for clarity:
    ```
    BEFORE:                    AFTER:
-   yandex/             yandex/
+   yandex-office/      yandex-office/
    ├── mail/           ├── SKILL.md (root index)
    │   └── SKILL.md           ├── mail/
    ├── disk/               └── mail.md
@@ -184,11 +184,11 @@ Before marking these tasks complete, verify:
 
 ## Related Files
 
-- `/home/velizar/src/migrate-openclaw/skills/yandex/config.json` - Shared config
-- `/home/velizar/src/migrate-openclaw/skills/yandex/disk/scripts/download.py` - Needs OAuth fix
-- `/home/velizar/src/migrate-openclaw/skills/yandex/disk/disk.md` - Needs Telemost docs
-- `/home/velizar/src/migrate-openclaw/skills/yandex/mail/scripts/fetch_emails.py` - Needs `--dry-run` (NOTE: `migrate_meeting_dirs.py` already has it)
-- `/home/velizar/src/migrate-openclaw/skills/yandex/SKILL.md` - Needs structure diagram
+- `/home/velizar/src/migrate-openclaw/skills/yandex-office/config.json` - Shared config
+- `/home/velizar/src/migrate-openclaw/skills/yandex-office/disk/scripts/download.py` - Needs OAuth fix
+- `/home/velizar/src/migrate-openclaw/skills/yandex-office/disk/disk.md` - Needs Telemost docs
+- `/home/velizar/src/migrate-openclaw/skills/yandex-office/mail/scripts/fetch_emails.py` - Needs `--dry-run` (NOTE: `migrate_meeting_dirs.py` already has it)
+- `/home/velizar/src/migrate-openclaw/skills/yandex-office/SKILL.md` - Needs structure diagram
 
 ---
 

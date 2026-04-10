@@ -22,24 +22,22 @@ from common.auth import (
     save_token_file,
     set_token_metadata,
 )
-from common.config import load_runtime_context
-from common.oauth_setup import SERVICE_SCOPES, plan_oauth_setup
+from common.config import bootstrap_runtime_context
+from common.oauth_apps import SERVICE_SCOPES, list_service_profiles, plan_oauth_setup
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Set up Yandex OAuth token (per-account, per-service)",
+        description="Bootstrap Yandex data dir or set up a per-account, per-service OAuth token",
     )
     parser.add_argument("--client-id", help="OAuth ClientID")
-    parser.add_argument("--email", required=True, help="Yandex email address")
+    parser.add_argument("--email", help="Yandex email address")
     parser.add_argument(
         "--account",
-        required=True,
         help="Account name used as token filename",
     )
     parser.add_argument(
         "--service",
-        required=True,
         choices=sorted(SERVICE_SCOPES.keys()),
         help="Service token to authorize",
     )
@@ -54,11 +52,56 @@ def main() -> None:
         default=[],
         help="Explicit OAuth scope override",
     )
+    parser.add_argument(
+        "--data-dir",
+        help="Explicit Yandex data directory override for non-workspace execution",
+    )
     args = parser.parse_args()
 
-    runtime = load_runtime_context(__file__)
+    has_identity_args = any(value is not None for value in (args.email, args.account))
+    if has_identity_args and not all(value is not None for value in (args.email, args.account)):
+        parser.error("--email and --account must be provided together")
+    if args.service is not None and not has_identity_args:
+        parser.error("--service requires --email and --account")
+
+    runtime = bootstrap_runtime_context(
+        __file__,
+        account=args.account,
+        email=args.email,
+        cwd=Path.cwd(),
+        data_dir_override=args.data_dir,
+    )
     config = runtime.config
     data_dir = runtime.data_dir
+
+    if not has_identity_args:
+        print("=" * 70)
+        print("Yandex bootstrap complete")
+        print("=" * 70)
+        print(f"\nData dir: {data_dir}")
+        print(f"Agent config: {runtime.agent_config_path}")
+        print("\nNext step:")
+        print(
+            "  Re-run this script with --email and --account to add a Yandex account, "
+            "or add --service to issue a service token immediately."
+        )
+        print("=" * 70)
+        return
+
+    if args.service is None:
+        print("=" * 70)
+        print("Yandex account added")
+        print("=" * 70)
+        print(f"\nData dir: {data_dir}")
+        print(f"Account:  {args.account}")
+        print(f"Email:    {args.email}")
+        print("\nNext step:")
+        print(
+            "  Re-run this script with --email, --account, and --service to issue "
+            "a service token for this account."
+        )
+        print("=" * 70)
+        return
 
     try:
         plan = plan_oauth_setup(
@@ -78,6 +121,26 @@ def main() -> None:
     print(f"\nEmail:   {args.email}")
     print(f"Account: {args.account}")
     print(f"Service: {args.service}")
+
+    if plan.mode == "configured_app":
+        profiles = list_service_profiles(config, args.service)
+        default_profile = next((item for item in profiles if item.is_default), None)
+        other_profiles = [item for item in profiles if not item.is_default]
+        if default_profile is not None:
+            print("\nDefault profile:")
+            print(f"  - {default_profile.app_id}")
+            print(f"  - {default_profile.access_class}")
+            print(f"  - {default_profile.auth_url}")
+        if other_profiles:
+            print("\nOther profiles:")
+            for profile in other_profiles:
+                print(f"  - {profile.app_id} — {profile.access_class}")
+                print(f"    {profile.auth_url}")
+            print(
+                "\nIf you choose another profile, re-run this script with "
+                f"--app <profile_id> before saving the token."
+            )
+
     print(f"Mode:    {plan.mode}")
     if plan.app_id:
         print(f"App ID:  {plan.app_id}")

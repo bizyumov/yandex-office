@@ -1,7 +1,7 @@
 ---
-name: yandex
+name: yandex-office
 description: Shared Yandex skill pack for Mail, Disk, Telemost, Calendar, Contacts, Directory, Cloud, Forms, and Tracker on this OpenClaw host. Yandex Search now lives in a separate standalone skill repo.
-homepage: https://github.com/bizyumov/yandex-skills
+homepage: https://github.com/bizyumov/yandex-office
 license: MIT
 compatibility: Python 3.10+, per-skill dependencies, network access for Yandex APIs
 metadata:
@@ -14,16 +14,74 @@ metadata:
         - python3
 ---
 
-# yandex
+# yandex-office
 
-A collection of [agentskills.io](https://agentskills.io/specification)-compliant skills for working with Yandex platform services.
+A collection of [agentskills.io](https://agentskills.io/specification)-compliant skills for working with Yandex platform services. Like `gog`, but for Yandex.
+
+## Sub-Skills
+
+| Sub-Skill | Description |
+|-------|-------------|
+| [mail](mail/) | Mail / Почта: generic email fetcher via IMAP XOAUTH2 — saves emails to incoming/ |
+| [calendar](calendar/) | Calendar / Календарь: CalDAV integration for Yandex Calendar — list/create/update events, find slots, Telemost binding |
+| [contacts](contacts/) | Contacts / Контакты: CardDAV integration for Yandex Contacts — fuzzy lookup, create/update contacts |
+| [directory](directory/) | Directory / Директория: Yandex 360 Directory API — users, departments, groups, and org-aware identity data |
+| [telemost](telemost/) | Telemost / Телемост: process Telemost emails, manage real conferences, and admin Telemost org defaults |
+| [disk](disk/) | Disk / Диск: download files from Yandex Disk, upload files to Disk, and manage public or organization-only share links (Telemost links may require OAuth) |
+| [cloud](cloud/) | Cloud / Облако: deploy serverless functions to Yandex Cloud |
+| [forms](forms/) | Forms / Формы: export form responses from Yandex Forms — download results as XLSX or JSON |
+| [tracker](tracker/) | Tracker / Трекер: manage tasks in Yandex Tracker — create, search, update issues, manage Agile boards |
+
+## Onboarding
+
+### First run
+
+When the user asks to onboard Yandex skills for the first time:
+
+1. Check `./yandex-data` in the current agent workspace CWD.
+2. If it does not exist, run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py` from that CWD with no extra arguments.
+3. Do not inspect other workspaces.
+4. Do not create bootstrap files or directories manually.
+
+Bootstrap/runtime contract:
+
+- During first onboarding, OpenClaw must invoke the full filesystem path to `scripts/oauth_setup.py` while the current process CWD is still the agent workspace.
+- If the skill shared defaults `config.json` does not exist yet, onboarding creates it from `config.example.json`.
+- Bootstrap resolves `data_dir` as `./yandex-data` from the current workspace CWD.
+- `scripts/oauth_setup.py` with no account arguments creates `{data_dir}/config.agent.json` and the runtime directories inside that resolved path.
+- Normal runtime requires `{data_dir}/config.agent.json` to exist.
+- Running normal runtime from the skill root is not automatically safe; use the agent workspace CWD or pass `--data-dir`.
+
+### Adding Yandex accounts
+
+When the user wants to add another Yandex account:
+
+1. Stay in the same workspace CWD.
+2. Run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <name>`.
+3. Do not recreate or replace `./yandex-data` manually.
+4. If `./yandex-data` does not exist yet, the script bootstraps it first.
+5. The script updates `./yandex-data/config.agent.json`.
+
+### Issuing Service Tokens
+
+When the account already exists and the user wants to add a service token:
+
+1. Stay in the same workspace CWD.
+2. Run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <name> --service <service>`.
+3. The script prints the default OAuth profile and any other configured profiles for that service.
+4. Tell the user which profile is the default and which other profiles are available.
+5. After OAuth is completed and an `access_token` is returned, save it to `./yandex-data/auth/<account>.token`.
+6. If the user needs another profile later, re-run with optional `--app <profile_id>`.
+7. If the account is missing, the same command adds it first and then continues into the OAuth flow.
+
+NB: instructions for token revocation are in the Onboarding.md file.
 
 ## Structure
 
 This is a meta-skill containing multiple Yandex service integrations:
 
 ```text
-yandex/
+yandex-office/
 ├── SKILL.md                  (this file: root index)
 ├── config.json               (shared defaults)
 ├── config.agent.example.json (workspace override example)
@@ -45,7 +103,7 @@ yandex/
     └── forms.md
 ```
 
-## Where To Read Each Skill
+## Where To Read Each Sub-Skill
 
 - Mail: `mail/mail.md`
 - Calendar: `calendar/calendar.md`
@@ -57,40 +115,27 @@ yandex/
 - Forms: `forms/forms.md`
 - Tracker: `tracker/tracker.md`
 
-## Skills
-
-| Skill | Description |
-|-------|-------------|
-| [mail](mail/) | Mail / Почта: generic email fetcher via IMAP XOAUTH2 — saves emails to incoming/ |
-| [calendar](calendar/) | Calendar / Календарь: CalDAV integration for Yandex Calendar — list/create/update events, find slots, Telemost binding |
-| [contacts](contacts/) | Contacts / Контакты: CardDAV integration for Yandex Contacts — fuzzy lookup, create/update contacts |
-| [directory](directory/) | Directory / Директория: Yandex 360 Directory API — users, departments, groups, and org-aware identity data |
-| [telemost](telemost/) | Telemost / Телемост: process Telemost emails, manage real conferences, and admin Telemost org defaults |
-| [disk](disk/) | Disk / Диск: download files from Yandex Disk, upload files to Disk, and manage public or organization-only share links (Telemost links may require OAuth) |
-| [cloud](cloud/) | Cloud / Облако: deploy serverless functions to Yandex Cloud |
-| [forms](forms/) | Forms / Формы: export form responses from Yandex Forms — download results as XLSX or JSON |
-| [tracker](tracker/) | Tracker / Трекер: manage tasks in Yandex Tracker — create, search, update issues, manage Agile boards |
-
 ## Migration Note
 
 Yandex Search moved to the standalone `yandex-search-skill` repository:
 
 - https://github.com/bizyumov/yandex-search-skill
 
-Use that skill when you need Yandex Cloud Search API v2. This `yandex` meta-skill no longer includes search instructions.
+Use that skill when you need Yandex Cloud Search API v2. This `yandex-office` meta-skill no longer includes search instructions.
 
 ## Shared Configuration
 
 All Yandex sub-skills use the same two-level config:
 
 - root `config.json` for shared defaults
-- `{cwd}/yandex-data/config.agent.json` for agent-specific overrides
+- `{data_dir}/config.agent.json` for agent-specific overrides
+- runtime resolves `{data_dir}` to `./yandex-data` from the agent workspace CWD by default
+- scripts that support `--data-dir` can use an explicit external path instead
 
 Root `config.json`:
 
 ```json
 {
-  "data_dir": "yandex-data",
   "urls": {
     "oauth": "https://oauth.yandex.ru/authorize",
     "disk_api": "https://cloud-api.yandex.net",
@@ -108,6 +153,14 @@ Root `config.json`:
 }
 ```
 
+Agent override example `{data_dir}/config.agent.json`:
+
+```json
+{
+  "accounts": [{ "name": "primary", "email": "user@example.com" }]
+}
+```
+
 ## Regression Tests
 
 Run the checked-in regression suite from the repo root:
@@ -116,28 +169,18 @@ Run the checked-in regression suite from the repo root:
 ./scripts/test_regression.sh
 ```
 
-Agent override example:
-
-```json
-{
-  "mailboxes": [{ "name": "primary", "email": "user@example.com" }]
-}
-```
-
-`data_dir` is resolved from the actual process CWD, so the canonical runtime path is `{cwd}/yandex-data/`.
-
 ## Data Directory
 
 Runtime data lives **outside** the repo at `{data_dir}/`:
 
 ```text
 {data_dir}/
-├── auth/bdi.token      # OAuth tokens (per-account)
+├── auth/alex.token      # OAuth tokens (per-account)
 ├── incoming/           # mail writes here
 ├── state.json          # UID tracking
 ├── meetings/           # telemost output (bucketed by month)
 │   └── 2026-02/
-│       └── 2026-02-24_18-19_bdi_1000349120/
+│       └── 2026-02-24_18-19_alex_1000349120/
 │           ├── transcript.txt
 │           ├── summary.txt
 │           └── meeting.meta.json
@@ -183,7 +226,7 @@ Where:
 
 1. `YYYY-MM` is derived from first-seen meeting timestamp.
 2. Meeting folder starts with local date/time prefix `YYYY-MM-DD_HH-MM`.
-3. Date/time prefix is immediately followed by mailbox tag (`bdi`, `work`, etc.).
+3. Date/time prefix is immediately followed by mailbox tag (`alex`, `work`, etc.).
 4. Folder always ends with meeting UID (`_{MEETING_UID}` or `_unknown`).
 5. Folder routing is constrained by same-day wildcard candidate matching.
 
@@ -219,14 +262,14 @@ Use token-based auth when handling Telemost media links.
 ### Full clone
 
 ```bash
-git clone https://github.com/bizyumov/yandex-skills.git
+git clone https://github.com/bizyumov/yandex-office.git
 ```
 
 ### Single skill (sparse checkout)
 
 ```bash
-git clone --filter=blob:none --sparse https://github.com/bizyumov/yandex-skills.git
-cd yandex
+git clone --filter=blob:none --sparse https://github.com/bizyumov/yandex-office.git
+cd yandex-office
 git sparse-checkout set mail
 
 # Add more skills later
@@ -257,14 +300,14 @@ Canonical convention is `token.<service>`. Each service stores and resolves its 
 ### Generate a Token
 
 ```bash
-# Recommended: default preconfigured app from config.json, ready approval link
-python3 scripts/oauth_setup.py --email user@yandex.ru --account bdi --service mail
+# From the agent workspace CWD, using the full path to the shared Yandex skill:
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email user@yandex.ru --account alex --service mail
 
 # Recommended: choose a non-default preconfigured app variant
-python3 scripts/oauth_setup.py --email user@yandex.ru --account bdi --service disk --app disk-full
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email user@yandex.ru --account alex --service disk --app disk-full
 
 # Advanced: explicit client ID and explicit scope override
-python3 scripts/oauth_setup.py --client-id DISK_CLIENT_ID --scope cloud_api:disk.write --scope cloud_api:disk.app_folder --email user@yandex.ru --account bdi --service disk
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --client-id DISK_CLIENT_ID --scope cloud_api:disk.write --scope cloud_api:disk.app_folder --email user@yandex.ru --account alex --service disk
 ```
 
 Recommended flow:
@@ -272,7 +315,8 @@ Recommended flow:
 - keep the app catalog in root `config.json` under `oauth_apps.catalog`
 - keep default app bindings in root `config.json` under `oauth_apps.service_defaults`
 - use `--app <app_id>` only when selecting a non-default variant
-- run `python3 scripts/oauth_setup.py --service <name> ...`
+- add the account first with `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <name>` when needed
+- then run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <name> --service <name>`
 - the generated URL omits `scope=` by default and uses the app's baked-in permissions
 - new token files are created automatically on first save
 
@@ -302,11 +346,6 @@ Important:
 | Yandex Disk API | https://yandex.ru/dev/disk-api/doc/ru/concepts/quickstart |
 | Yandex Mail IMAP | https://yandex.ru/support/mail/mail-clients/others.html |
 | Yandex Cloud CLI | https://cloud.yandex.com/docs/cli/quickstart |
-
-## Migration Note
-
-This repository now uses `yandex/` with `mail/`, `disk/`, `telemost/`, and `cloud/` plus the other non-search service folders.
-Old `yandex-*` paths are removed as part of hard cutover.
 
 ## License
 

@@ -29,26 +29,26 @@ def test_extract_form_ids_from_file_finds_supported_urls(tmp_path: Path) -> None
 
 
 def test_scan_for_forms_filters_by_account(tmp_path: Path) -> None:
-    msg_dir = tmp_path / "incoming" / "2026-03-12_ctiis_uid15"
+    msg_dir = tmp_path / "incoming" / "2026-03-12_mary_uid15"
     msg_dir.mkdir(parents=True)
     (msg_dir / "email_body.txt").write_text(
         "See https://forms.yandex.ru/u/form123/",
         encoding="utf-8",
     )
-    other_dir = tmp_path / "archive" / "2026-03-12_bdi_uid16"
+    other_dir = tmp_path / "archive" / "2026-03-12_alex_uid16"
     other_dir.mkdir(parents=True)
     (other_dir / "email_body.txt").write_text(
         "See https://forms.yandex.ru/u/form999/",
         encoding="utf-8",
     )
 
-    found = discover_forms.scan_for_forms(tmp_path, account="ctiis")
+    found = discover_forms.scan_for_forms(tmp_path, account="mary")
 
     assert found == {
         "form123": {
-            "sources": ["incoming/2026-03-12_ctiis_uid15/email_body.txt"],
+            "sources": ["incoming/2026-03-12_mary_uid15/email_body.txt"],
             "first_seen": "2026-03-12T00:00:00",
-            "accounts": ["ctiis"],
+            "accounts": ["mary"],
         }
     }
 

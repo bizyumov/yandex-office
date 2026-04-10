@@ -16,19 +16,19 @@ API client for Yandex Forms to download form responses, export results, and disc
 
 ```bash
 # Discover forms and get monthly response statistics
-python3 scripts/discover_forms.py --account ctiis
+python3 scripts/discover_forms.py --account mary
 
 # Get stats for specific form(s)
-python3 scripts/get_form_stats.py --form-id FORM_ID --account ctiis
+python3 scripts/get_form_stats.py --form-id FORM_ID --account mary
 
 # Export form responses to XLSX
-python3 scripts/export_responses.py --form-id FORM_ID --account ctiis
+python3 scripts/export_responses.py --form-id FORM_ID --account mary
 
 # Export to specific directory
-python3 scripts/export_responses.py --form-id FORM_ID --account ctiis --output ./my-forms/
+python3 scripts/export_responses.py --form-id FORM_ID --account mary --output ./my-forms/
 
 # Get single answer by ID
-python3 scripts/get_answer.py --answer-id 2037950340 --account ctiis
+python3 scripts/get_answer.py --answer-id 2037950340 --account mary
 ```
 
 ## What It Does
@@ -128,10 +128,10 @@ Add to existing token file:
 
 Or generate new token:
 ```bash
-# From the Yandex skill root, using the configured default forms app
-python3 scripts/oauth_setup.py \
+# From the agent workspace CWD, using the full path to the shared Yandex skill:
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py \
   --email user@yandex.ru \
-  --account ctiis \
+  --account mary \
   --service forms
 ```
 
@@ -143,7 +143,7 @@ You can add multiple account tokens to access forms from different users:
 
 ```
 {data_dir}/auth/
-├── ctiis.token      # First account
+├── mary.token      # First account
 ├── admin.token      # Admin account with broader access
 └── owner.token      # Form owner account
 ```
@@ -175,7 +175,7 @@ python3 scripts/discover_forms.py --account ACCOUNT [options]
 
 | Argument | Required | Description |
 |----------|----------|-------------|
-| `--account` | Yes | Account name from config (e.g., `ctiis`) |
+| `--account` | Yes | Account name from config (e.g., `mary`) |
 | `--output` | No | Output file for results (JSON) |
 | `--no-scan` | No | Skip workspace scan, use existing registry only |
 | `--json` | No | Output as JSON instead of formatted text |
@@ -183,20 +183,20 @@ python3 scripts/discover_forms.py --account ACCOUNT [options]
 **Example:**
 ```bash
 # Discover forms and display summary
-python3 scripts/discover_forms.py --account ctiis
+python3 scripts/discover_forms.py --account mary
 
 # Save to JSON
-python3 scripts/discover_forms.py --account ctiis --output ./forms-report.json
+python3 scripts/discover_forms.py --account mary --output ./forms-report.json
 
 # Use existing registry without scanning
-python3 scripts/discover_forms.py --account ctiis --no-scan
+python3 scripts/discover_forms.py --account mary --no-scan
 ```
 
 **Output:**
 ```
 ============================================================
 Yandex Forms Discovery Results
-Account: ctiis
+Account: mary
 ============================================================
 
 Total forms in registry: 3
@@ -228,7 +228,7 @@ python3 scripts/get_form_stats.py --form-id FORM_ID [--form-id FORM_ID2 ...] --a
 | Argument | Required | Description |
 |----------|----------|-------------|
 | `--form-id` | Yes | Form ID (can specify multiple) |
-| `--account` | Yes | Account name from config (e.g., `ctiis`) |
+| `--account` | Yes | Account name from config (e.g., `mary`) |
 | `--limit` | No | Max responses to fetch (default: 1000) |
 | `--output` | No | Output file (JSON) |
 | `--json` | No | Output as JSON instead of formatted text |
@@ -236,19 +236,19 @@ python3 scripts/get_form_stats.py --form-id FORM_ID [--form-id FORM_ID2 ...] --a
 **Example:**
 ```bash
 # Get stats for single form
-python3 scripts/get_form_stats.py --form-id 6800cd9202848f10b272a9cc --account ctiis
+python3 scripts/get_form_stats.py --form-id 6800cd9202848f10b272a9cc --account mary
 
 # Get stats for multiple forms
 python3 scripts/get_form_stats.py \
   --form-id FORM_ID_1 \
   --form-id FORM_ID_2 \
   --form-id FORM_ID_3 \
-  --account ctiis
+  --account mary
 
 # Save to JSON
 python3 scripts/get_form_stats.py \
   --form-id 6800cd9202848f10b272a9cc \
-  --account ctiis \
+  --account mary \
   --output ./stats.json
 ```
 
@@ -284,7 +284,7 @@ python3 scripts/export_responses.py --form-id FORM_ID --account ACCOUNT [options
 | Argument | Required | Description |
 |----------|----------|-------------|
 | `--form-id` | Yes | Form ID (e.g., `6800cd9202848f10b272a9cc`) |
-| `--account` | Yes | Account name from config (e.g., `ctiis`) |
+| `--account` | Yes | Account name from config (e.g., `mary`) |
 | `--output` | No | Output directory (default: `{data_dir}/forms/`) |
 | `--format` | No | Export format: `xlsx` or `json` (default: `xlsx`) |
 | `--wait` | No | Poll interval seconds (default: 5) |
@@ -293,7 +293,7 @@ python3 scripts/export_responses.py --form-id FORM_ID --account ACCOUNT [options
 ```bash
 python3 scripts/export_responses.py \
   --form-id 6800cd9202848f10b272a9cc \
-  --account ctiis \
+  --account mary \
   --output ./downloads/ \
   --format xlsx
 ```
@@ -311,7 +311,7 @@ python3 scripts/export_responses.py \
 List forms accessible to the account.
 
 ```bash
-python3 scripts/list_forms.py --account ctiis [--limit 10]
+python3 scripts/list_forms.py --account mary [--limit 10]
 ```
 
 ### get_answer.py
@@ -319,7 +319,7 @@ python3 scripts/list_forms.py --account ctiis [--limit 10]
 Get a single answer by ID.
 
 ```bash
-python3 scripts/get_answer.py --answer-id 2037950340 --account ctiis [--output ./answer.json]
+python3 scripts/get_answer.py --answer-id 2037950340 --account mary [--output ./answer.json]
 ```
 
 ## Output Structure
@@ -339,7 +339,7 @@ python3 scripts/get_answer.py --answer-id 2037950340 --account ctiis [--output .
 ```json
 {
   "form_id": "6800cd9202848f10b272a9cc",
-  "account": "ctiis",
+  "account": "mary",
   "export_format": "xlsx",
   "exported_at": "2026-03-03T08:05:12Z",
   "operation_id": "0946779c-6a57-4070-b062-5d7ebdb65142",
@@ -356,7 +356,7 @@ Schedule weekly exports of survey responses for reporting:
 
 ```bash
 # Cron: Every Monday at 9 AM
-0 9 * * 1 python3 forms/scripts/export_responses.py --form-id SURVEY_ID --account ctiis --output ./reports/
+0 9 * * 1 python3 forms/scripts/export_responses.py --form-id SURVEY_ID --account mary --output ./reports/
 ```
 
 ### 2. Event Registration Processing
@@ -366,7 +366,7 @@ After an event, export all registrations:
 ```bash
 python3 scripts/export_responses.py \
   --form-id EVENT_REG_FORM_ID \
-  --account ctiis \
+  --account mary \
   --format xlsx \
   --output ./events/2026-03-conference/
 ```
@@ -382,7 +382,7 @@ FORMS=("form1_id" "form2_id" "form3_id")
 for FORM_ID in "${FORMS[@]}"; do
   python3 scripts/export_responses.py \
     --form-id "$FORM_ID" \
-    --account ctiis \
+    --account mary \
     --output ./backups/$(date +%Y-%m)/
 done
 ```
@@ -397,7 +397,7 @@ from scripts.export_responses import export_form_responses
 # Export to temporary location
 result = export_form_responses(
     form_id="6800cd9202848f10b272a9cc",
-    account="ctiis",
+    account="mary",
     output_dir="./form_data",
     fmt="json"
 )
@@ -424,14 +424,13 @@ with open(result['json_path']) as f:
 
 Uses shared root `config.json` plus workspace `yandex-data/config.agent.json`. Key fields:
 
-- `data_dir` — Base directory for data (auth, forms exports, state)
 - `forms.state_file` — Export operation tracking file
 - `forms.default_format` — Default export format (xlsx/json)
+- runtime data dir defaults to `./yandex-data` from the agent workspace CWD, or `--data-dir` when explicitly passed
 
 Optional forms-specific config:
 ```json
 {
-  "data_dir": "{cwd}/yandex-data",
   "forms": {
     "state_file": "forms_state.json",
     "default_format": "xlsx",
@@ -479,14 +478,14 @@ Schedule monthly discovery to track all forms and their response statistics acro
 ```bash
 # Monthly discovery job
 python3 scripts/discover_forms.py \
-  --account ctiis \
+  --account mary \
   --output ./reports/forms-$(date +%Y-%m).json
 
 # Export data for each discovered form
 for form_id in $(jq -r '.forms | keys[]' ./reports/forms-$(date +%Y-%m).json); do
   python3 scripts/export_responses.py \
     --form-id "$form_id" \
-    --account ctiis \
+    --account mary \
     --format xlsx \
     --output ./reports/$(date +%Y-%m)/
 done
@@ -500,7 +499,7 @@ A research team uses Yandex Forms for survey data collection. Weekly automated e
 # Weekly export job
 python3 scripts/export_responses.py \
   --form-id RESEARCH_SURVEY_ID \
-  --account ctiis \
+  --account mary \
   --format xlsx \
   --output ./research/data/
 ```
@@ -513,7 +512,7 @@ An event organizer collects registrations via Yandex Forms. After registration c
 # Post-event export
 python3 scripts/export_responses.py \
   --form-id EVENT_REG_ID \
-  --account ctiis \
+  --account mary \
   --format json
 
 # Process with jq
@@ -528,7 +527,7 @@ Support team uses forms for customer feedback. Daily exports feed into a dashboa
 # Daily morning export
 python3 scripts/export_responses.py \
   --form-id FEEDBACK_FORM_ID \
-  --account ctiis \
+  --account mary \
   --output ./dashboard/input/
 ```
 

@@ -14,14 +14,14 @@ Generic email fetcher for Yandex Mail via IMAP XOAUTH2. Saves incoming emails ma
 
 ## Quick Start
 
-Enable IMAP + OAuth in the target mailbox first:
+Ask the user to verify that IMAP + OAuth is enabled for the target mailbox first:
 
 - EN: Open Yandex Mail in a browser, go to Settings → Mail clients (direct URL: `https://mail.yandex.ru/#setup/client`), enable `From imap.yandex.ru server via IMAP` and `App passwords and OAuth tokens`, then save.
 - RU: Откройте Яндекс Почту в браузере, перейдите в Настройки → Почтовые программы (прямая ссылка: `https://mail.yandex.ru/#setup/client`), включите `С сервера imap.yandex.ru по протоколу IMAP` и `Пароли приложений и OAuth-токены`, затем сохраните изменения.
 
 ```bash
-# From the Yandex skill root: set up OAuth token for mail (read-only IMAP scope)
-python3 scripts/oauth_setup.py --email user@yandex.ru --account bdi --service mail
+# From the agent workspace CWD, using the full path to the shared Yandex skill:
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email user@yandex.ru --account alex --service mail
 
 # Fetch new emails
 python3 scripts/fetch_emails.py
@@ -30,12 +30,12 @@ python3 scripts/fetch_emails.py
 python3 scripts/fetch_emails.py --num 20
 ```
 
-> Recommended: use the default Mail app from root `config.json` (`oauth_apps.service_defaults.mail`) so the approval URL can use the app's baked-in scopes without passing `--client-id` each time. If you also need Disk access, run `python3 scripts/oauth_setup.py --service disk ...` from the Yandex skill root.
+> Recommended: use the default Mail app from root `config.json` (`oauth_apps.service_defaults.mail`) so the approval URL can use the app's baked-in scopes without passing `--client-id` each time. If you also need Disk access, run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <name> --service disk` from the agent workspace CWD.
 
 ## What It Does
 
 1. Loads shared root `config.json`
-2. Loads `{cwd}/yandex-data/config.agent.json`
+2. Loads `{data_dir}/config.agent.json` from the resolved runtime data dir
 3. Connects to Yandex Mail via IMAP XOAUTH2
 4. Searches for new emails from configured sender filter
 5. Downloads attachments (preserving original filenames)
@@ -122,8 +122,8 @@ Default stdout is intentionally brief JSON:
 {
   "fetched_total": 12,
   "mailboxes": {
-    "bdi": 4,
-    "ctiis": 8
+    "alex": 4,
+    "mary": 8
   }
 }
 ```
@@ -145,12 +145,12 @@ Verbose mode (`-v`) keeps detailed logs in stderr/logger output.
 ```json
 {
   "imap_uid": 2550,
-  "mailbox": "bdi",
+  "mailbox": "alex",
   "subject": "Конспект встречи от 08.02.2026",
   "sender": "Хранитель встреч Телемоста <keeper@telemost.yandex.ru>",
   "timestamp": "2026-02-08T09:27:00Z",
   "attachments": ["2026-02-08 19:07 (MSK) 5981404294.txt"],
-  "dir_name": "2026-02-08_bdi_uid2550"
+  "dir_name": "2026-02-08_alex_uid2550"
 }
 ```
 
@@ -160,13 +160,13 @@ No business logic fields — downstream skills (telemost, etc.) enrich meta.json
 
 Uses shared root `config.json` plus agent-local `yandex-data/config.agent.json`. Key fields:
 
-- `data_dir` — Base directory for data (auth, incoming, state)
 - `imap.server` / `imap.port` — IMAP connection settings
-- `mailboxes` — Agent-local mailbox list in `config.agent.json`
+- `accounts` — Agent-local account list in `config.agent.json`
 - `mail.filters.sender` — FROM address filter
 - `mail.since` — `"on"`/`"off"` toggle for state-driven IMAP `SINCE` filtering
 - `mail.fetch.sleep_seconds` — Global sleep between `_process_email` iterations (seconds, default `0.5`)
 - `mail.state_file` — UID tracking file
+- runtime data dir defaults to `./yandex-data` from the agent workspace CWD, or `--data-dir` when explicitly passed
 
 ## Token Format
 
@@ -190,5 +190,5 @@ Stored at `{data_dir}/auth/{account}.token` with 600 permissions. New token file
 ## Files
 
 - `scripts/fetch_emails.py` — Main fetcher (CLI + Python API)
-- `scripts/oauth_setup.py` — Shared interactive OAuth token wizard for all Yandex sub-skills (run from the Yandex skill root)
+- `scripts/oauth_setup.py` — Shared bootstrap/account/token setup tool for all Yandex sub-skills (invoke by full path from the agent workspace CWD)
 - `scripts/fetch.sh` — Cron-safe shell wrapper with PID lock (passes `--num` and other args through)

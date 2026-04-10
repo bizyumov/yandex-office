@@ -87,7 +87,7 @@ def scan_for_forms(data_dir: Path, account: Optional[str] = None) -> Dict[str, d
                 elif "_" in item.name:
                     parts = item.name.split("_")
                     if len(parts) >= 2:
-                        dir_account = parts[1]  # e.g., 2025-09-15_ctiis_uid2817
+                        dir_account = parts[1]  # e.g., 2025-09-15_mary_uid2817
                 
                 # Skip if we're filtering by account and this doesn't match
                 if account and dir_account != account:
@@ -327,7 +327,7 @@ def main():
     parser.add_argument(
         "--account",
         required=True,
-        help="Account name (e.g., ctiis)"
+        help="Account name (e.g., mary)"
     )
     parser.add_argument(
         "--output",
@@ -344,11 +344,20 @@ def main():
         action="store_true",
         help="Output as JSON instead of formatted text"
     )
+    parser.add_argument(
+        "--data-dir",
+        help="Explicit Yandex data directory override for non-workspace execution",
+    )
     
     args = parser.parse_args()
     
     try:
-        runtime = load_runtime_context(__file__)
+        runtime = load_runtime_context(
+            __file__,
+            data_dir_override=args.data_dir,
+            require_agent_config=True,
+            require_external_data_dir=True,
+        )
         data_dir = runtime.data_dir
         token = resolve_token(
             account=args.account,

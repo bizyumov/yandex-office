@@ -55,7 +55,7 @@ Token stored per-account at: `{data_dir}/auth/{account}.token`
 ```json
 {
   "date": "2026-03-03",
-  "account": "ctiis",
+  "account": "mary",
   "total_events": 3,
   "events": [
     {
@@ -75,8 +75,8 @@ Token stored per-account at: `{data_dir}/auth/{account}.token`
 
 **CLI Interface:**
 ```bash
-python3 calendar/scripts/list_events.py --account ctiis --date tomorrow
-python3 calendar/scripts/list_events.py --account ctiis --date 2026-03-03 --calendar "Мои события"
+python3 calendar/scripts/list_events.py --account mary --date tomorrow
+python3 calendar/scripts/list_events.py --account mary --date 2026-03-03 --calendar "Мои события"
 ```
 
 ---
@@ -111,7 +111,7 @@ python3 calendar/scripts/list_events.py --account ctiis --date 2026-03-03 --cale
 **CLI Interface:**
 ```bash
 python3 calendar/scripts/create_event.py \
-  --account ctiis \
+  --account mary \
   --summary "Team Sync" \
   --start "2026-03-03T15:00:00" \
   --duration 60 \
@@ -124,7 +124,7 @@ Bind an existing Telemost conference instead of creating a new one:
 
 ```bash
 python3 calendar/scripts/create_event.py \
-  --account ctiis \
+  --account mary \
   --summary "Team Sync" \
   --start "2026-03-12T10:00:00" \
   --duration 60 \
@@ -161,13 +161,13 @@ python3 calendar/scripts/create_event.py \
 **CLI Interface:**
 ```bash
 python3 calendar/scripts/reschedule.py \
-  --account ctiis \
+  --account mary \
   --search "Сбер ЦФА" \
   --date "2026-03-03" \
   --new-start "2026-03-03T16:00:00"
 
 python3 calendar/scripts/reschedule.py \
-  --account ctiis \
+  --account mary \
   --event-uid "uuid-here" \
   --postpone 30  # minutes
 ```
@@ -196,12 +196,12 @@ python3 calendar/scripts/reschedule.py \
 **CLI Interface:**
 ```bash
 python3 calendar/scripts/cancel.py \
-  --account ctiis \
+  --account mary \
   --search "Team Sync" \
   --date "2026-03-03"
 
 python3 calendar/scripts/cancel.py \
-  --account ctiis \
+  --account mary \
   --event-uid "uuid-here" \
   --cancel-series
 ```
@@ -216,7 +216,7 @@ python3 calendar/scripts/cancel.py \
 - "Suggest meeting times for 1 hour next week with these attendees"
 
 **Requirements:**
-- Accept multiple account identifiers (from agent config mailboxes)
+- Accept multiple account identifiers (from agent config accounts)
 - Query across multiple calendars per person
 - Constraints:
   - Duration (required)
@@ -241,7 +241,7 @@ python3 calendar/scripts/cancel.py \
 {
   "query": {
     "duration_minutes": 120,
-    "attendees": ["bdi", "ctiis", "colleague@yandex.ru"],
+    "attendees": ["alex", "mary", "colleague@yandex.ru"],
     "date_range": {"start": "2026-03-03", "end": "2026-03-07"},
     "time_window": {"start": "09:00", "end": "18:00"}
   },
@@ -251,8 +251,8 @@ python3 calendar/scripts/cancel.py \
       "end": "2026-03-04T12:00:00+03:00",
       "all_free": true,
       "attendee_status": {
-        "bdi": "free",
-        "ctiis": "free",
+        "alex": "free",
+        "mary": "free",
         "colleague@yandex.ru": "free"
       }
     },
@@ -271,14 +271,14 @@ python3 calendar/scripts/cancel.py \
 ```bash
 python3 calendar/scripts/find_slots.py \
   --duration 120 \
-  --attendees "bdi,ctiis,colleague@yandex.ru" \
+  --attendees "alex,mary,colleague@yandex.ru" \
   --from "tomorrow" \
   --to "friday" \
   --time-window "9:00-18:00"
 
 python3 calendar/scripts/find_slots.py \
   --duration 60 \
-  --attendees "bdi,ctiis" \
+  --attendees "alex,mary" \
   --next-available
 ```
 
@@ -383,7 +383,7 @@ Add shared defaults to root `config.json` and per-agent overrides to `yandex-dat
 ## Error Handling
 
 ### Common Error Cases
-1. **Token expired** → Prompt for re-auth via `python3 scripts/oauth_setup.py ...` from the Yandex skill root
+1. **Token expired** → Prompt for re-auth via `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <name> --service calendar` from the agent workspace CWD
 2. **Calendar not found** → List available calendars
 3. **Event not found** → Suggest similar titles, show events for that date
 4. **Conflict detected** → Show conflicting events, ask for confirmation

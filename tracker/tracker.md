@@ -16,22 +16,22 @@ API client for Yandex Tracker to manage tasks, projects, and agile workflows. Wo
 
 ```bash
 # Search issues with query language
-python3 scripts/search_issues.py --query "Queue: PROJ Status: open" --account ctiis
+python3 scripts/search_issues.py --query "Queue: PROJ Status: open" --account mary
 
 # Create a new issue
-python3 scripts/create_issue.py --queue PROJ --summary "New task title" --account ctiis
+python3 scripts/create_issue.py --queue PROJ --summary "New task title" --account mary
 
 # Get issue details
-python3 scripts/get_issue.py --issue PROJ-123 --account ctiis
+python3 scripts/get_issue.py --issue PROJ-123 --account mary
 
 # Add comment to issue
-python3 scripts/add_comment.py --issue PROJ-123 --text "Status update" --account ctiis
+python3 scripts/add_comment.py --issue PROJ-123 --text "Status update" --account mary
 
 # List my open issues
-python3 scripts/my_issues.py --account ctiis
+python3 scripts/my_issues.py --account mary
 
 # Get board columns and issues
-python3 scripts/get_board.py --board 123 --account ctiis
+python3 scripts/get_board.py --board 123 --account mary
 ```
 
 ## What It Does
@@ -60,9 +60,9 @@ Add to existing token file:
 
 Or generate new token:
 ```bash
-python3 scripts/oauth_setup.py \
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py \
   --email user@yandex.ru \
-  --account ctiis \
+  --account mary \
   --service tracker
 ```
 
@@ -101,7 +101,7 @@ python3 scripts/search_issues.py --account ACCOUNT [options]
 
 | Argument | Required | Description |
 |----------|----------|-------------|
-| `--account` | Yes | Account name from config (e.g., `ctiis`) |
+| `--account` | Yes | Account name from config (e.g., `mary`) |
 | `--query` | No* | Search query in Tracker query language |
 | `--filter` | No* | JSON filter object (alternative to query) |
 | `--queue` | No | Filter by queue key |
@@ -115,23 +115,23 @@ python3 scripts/search_issues.py --account ACCOUNT [options]
 **Query Language Examples:**
 ```bash
 # My open tasks
-python3 scripts/search_issues.py --account ctiis --query "Assignee: me() Status: open"
+python3 scripts/search_issues.py --account mary --query "Assignee: me() Status: open"
 
 # High priority bugs in specific queue
-python3 scripts/search_issues.py --account ctiis --query 'Queue: PROJ Type: bug Priority: high'
+python3 scripts/search_issues.py --account mary --query 'Queue: PROJ Type: bug Priority: high'
 
 # Overdue tasks
-python3 scripts/search_issues.py --account ctiis --query "Deadline: < today() Status: !closed"
+python3 scripts/search_issues.py --account mary --query "Deadline: < today() Status: !closed"
 
 # Tasks created this week
-python3 scripts/search_issues.py --account ctiis --query 'Created: >= "-7d"'
+python3 scripts/search_issues.py --account mary --query 'Created: >= "-7d"'
 ```
 
 **Output:**
 ```
 ============================================================
 Yandex Tracker Search Results
-Account: ctiis
+Account: mary
 ============================================================
 
 Found 3 issues:
@@ -180,7 +180,7 @@ python3 scripts/create_issue.py --queue QUEUE --summary SUMMARY --account ACCOUN
 **Examples:**
 ```bash
 # Simple task
-python3 scripts/create_issue.py --queue PROJ --summary "Review PR #42" --account ctiis
+python3 scripts/create_issue.py --queue PROJ --summary "Review PR #42" --account mary
 
 # Task with all metadata
 python3 scripts/create_issue.py \
@@ -192,7 +192,7 @@ python3 scripts/create_issue.py \
   --assignee petrov \
   --tags "urgent,backend" \
   --due-date 2026-03-10 \
-  --account ctiis
+  --account mary
 ```
 
 ### get_issue.py
@@ -237,7 +237,7 @@ python3 scripts/add_comment.py \
   --issue PROJ-123 \
   --text "@petrov @ivanov Please review the updated design" \
   --summon petrov,ivanov \
-  --account ctiis
+  --account mary
 ```
 
 ### update_issue.py
@@ -269,17 +269,17 @@ python3 scripts/update_issue.py --issue ISSUE --account ACCOUNT [options]
 **Examples:**
 ```bash
 # Change assignee
-python3 scripts/update_issue.py --issue PROJ-123 --assignee petrov --account ctiis
+python3 scripts/update_issue.py --issue PROJ-123 --assignee petrov --account mary
 
 # Close issue with resolution
 python3 scripts/update_issue.py \
   --issue PROJ-123 \
   --status closed \
   --resolution "fixed" \
-  --account ctiis
+  --account mary
 
 # Add tags
-python3 scripts/update_issue.py --issue PROJ-123 --add-tags "frontend,urgent" --account ctiis
+python3 scripts/update_issue.py --issue PROJ-123 --add-tags "frontend,urgent" --account mary
 
 # Take issue to work
 python3 scripts/update_issue.py \
@@ -287,7 +287,7 @@ python3 scripts/update_issue.py \
   --assignee me() \
   --status "in_progress" \
   --follow \
-  --account ctiis
+  --account mary
 ```
 
 ### my_issues.py
@@ -367,7 +367,7 @@ issue = create_issue(
     description=f"From: {sender}\n\n{email_body}",
     assignee="support-team",
     tags="from-email",
-    account="ctiis"
+    account="mary"
 )
 ```
 
@@ -388,7 +388,7 @@ issue = create_issue(
     assignee="ivanov",
     due_date="2026-03-15",
     tags=f"meeting,{meeting_uid}",
-    account="ctiis"
+    account="mary"
 )
 ```
 
@@ -399,7 +399,7 @@ Cron job to notify about upcoming deadlines:
 ```bash
 # Daily check for tasks due tomorrow
 python3 scripts/search_issues.py \
-  --account ctiis \
+  --account mary \
   --query 'Deadline: "+1d" Status: !closed' \
   --output ./due_tomorrow.json
 
@@ -420,7 +420,7 @@ for response in form_responses:
             description=response["details"],
             priority="high",
             assignee="ops-team",
-            account="ctiis"
+            account="mary"
         )
 ```
 
@@ -432,14 +432,14 @@ Link calendar events with tracker tasks:
 # Before meeting, check for linked tasks
 tasks = search_issues(
     query=f'Tag: "event-{event_id}"',
-    account="ctiis"
+    account="mary"
 )
 
 # Add meeting notes as comment after
 add_comment(
     issue=task_key,
     text=f"Meeting notes: {meeting_summary}",
-    account="ctiis"
+    account="mary"
 )
 ```
 
@@ -458,7 +458,7 @@ create_issue(
     queue="PROJ",
     summary="Technical review needed",
     assignee=assignee,
-    account="ctiis"
+    account="mary"
 )
 ```
 

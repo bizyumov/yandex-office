@@ -75,7 +75,10 @@ def test_load_tracker_client_uses_resolved_token(monkeypatch) -> None:
     monkeypatch.setattr(
         tracker_client,
         "load_runtime_context",
-        lambda _path: SimpleNamespace(data_dir=Path("/tmp/workspace/yandex-data"), config={"urls": {}}),
+        lambda _path, **_: SimpleNamespace(
+            data_dir=Path("/tmp/workspace/yandex-data"),
+            config={"urls": {}},
+        ),
     )
     monkeypatch.setattr(
         tracker_client,
