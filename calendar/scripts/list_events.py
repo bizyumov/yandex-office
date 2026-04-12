@@ -110,7 +110,7 @@ def main():
         client = YandexCalendarClient(
             args.account,
             data_dir=args.data_dir,
-            required_scopes=["calendar"],
+            required_scopes=["calendar:all"],
         )
         events = client.list_events(
             calendar_name=args.calendar,

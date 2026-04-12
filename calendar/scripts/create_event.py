@@ -8,6 +8,7 @@ import json
 import sys
 import uuid
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 import requests
@@ -50,7 +51,7 @@ def create_telemost_event(
     calendar_client = YandexCalendarClient(
         account,
         data_dir=data_dir,
-        required_scopes=["calendar"],
+        required_scopes=["calendar:all"],
     )
     calendar_client.connect()
 
@@ -66,13 +67,17 @@ def create_telemost_event(
     telemost_link = conference["join_url"]
 
     start = datetime.fromisoformat(start_str)
-    end = start + timedelta(minutes=duration_minutes)
+    if start.tzinfo is None:
+        start_local = start.replace(tzinfo=ZoneInfo("Europe/Moscow"))
+    else:
+        start_local = start.astimezone(ZoneInfo("Europe/Moscow"))
+    end_local = start_local + timedelta(minutes=duration_minutes)
     calendar = calendar_client.find_calendar()
 
     uid = str(uuid.uuid4())
     dtstamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    dtstart = start.strftime("%Y%m%dT%H%M%S")
-    dtend = end.strftime("%Y%m%dT%H%M%S")
+    dtstart = start_local.strftime("%Y%m%dT%H%M%S")
+    dtend = end_local.strftime("%Y%m%dT%H%M%S")
     attendee_lines = _build_attendee_lines(attendees)
     method = "REQUEST" if attendees else "PUBLISH"
     organizer_line = (
@@ -122,8 +127,8 @@ END:VCALENDAR"""
         "uid": uid,
         "event_url": event_url,
         "summary": summary,
-        "start": start.isoformat(),
-        "end": end.isoformat(),
+        "start": start_local.isoformat(),
+        "end": end_local.isoformat(),
         "telemost_link": telemost_link,
         "telemost": conference,
         "attendees": attendees,

@@ -380,7 +380,7 @@ class YandexTelemostClient:
         conference_id = created.get("id")
         if not conference_id:
             return self._normalize_conference(created, cohosts=cohosts or [])
-        return self.get_conference(conference_id)
+        return self._normalize_conference(created, cohosts=cohosts or [])
 
     def get_cohosts(self, conference_id: str) -> list[str]:
         response = self._request(
@@ -418,14 +418,16 @@ class YandexTelemostClient:
             cohosts=_UNSET,
             include_cohosts=False,
         )
+        last_response: dict[str, Any] | None = None
         if payload:
-            self._request(
+            last_response = self._request(
                 "PATCH",
                 f"/conferences/{conference_id}",
                 scopes=UPDATE_SCOPES,
                 expected_statuses=(200,),
                 json_body=payload,
-            )
+            ) or {}
+        normalized_cohosts: list[str] | None = None
         if cohosts is not _UNSET and cohosts is not None:
             normalized_cohosts = self._normalize_cohosts(cohosts)
             self._request(
@@ -435,7 +437,9 @@ class YandexTelemostClient:
                 expected_statuses=(204,),
                 json_body={"cohosts": [{"email": email} for email in normalized_cohosts or []]},
             )
-        return self.get_conference(conference_id)
+        if last_response:
+            return self._normalize_conference(last_response, cohosts=normalized_cohosts)
+        return {"id": conference_id, "cohosts": normalized_cohosts or []}
 
     def get_org_settings(self, *, org_id: int | str | None = None) -> dict[str, Any]:
         resolved_org_id = self._resolve_org_id(org_id, scopes=READ_SCOPES)

@@ -36,7 +36,7 @@ class YandexCalendarClient:
             require_external_data_dir=True,
         )
         self.data_dir = Path(data_dir).resolve() if data_dir else self.runtime.data_dir
-        self.required_scopes = required_scopes or ["calendar"]
+        self.required_scopes = required_scopes or ["calendar:all"]
         self.email, self.token = self._load_credentials()
         self.client = None
         self.principal = None
