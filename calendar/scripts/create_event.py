@@ -41,6 +41,8 @@ def create_telemost_event(
     duration_minutes: int,
     attendees: list[str],
     data_dir: str | None = None,
+    event_uid: str | None = None,
+    telemost_link: str | None = None,
     telemost_conference_id: str | None = None,
     telemost_access_level: str | None = "PUBLIC",
     telemost_waiting_room: str | None = "PUBLIC",
@@ -55,15 +57,24 @@ def create_telemost_event(
     )
     calendar_client.connect()
 
-    telemost_client = YandexTelemostClient(account, data_dir=data_dir)
-    if telemost_conference_id:
-        conference = telemost_client.get_conference(telemost_conference_id)
+    conference: dict[str, object] | None = None
+    if telemost_link:
+        conference = {
+            "id": telemost_conference_id,
+            "join_url": telemost_link,
+        }
     else:
-        conference = telemost_client.create_conference(
-            access_level=telemost_access_level,
-            waiting_room_level=telemost_waiting_room,
-            cohosts=telemost_cohosts or [],
-        )
+        telemost_client = YandexTelemostClient(account, data_dir=data_dir)
+        if telemost_conference_id:
+            conference = telemost_client.get_conference(telemost_conference_id)
+        else:
+            conference = telemost_client.create_conference(
+                access_level=telemost_access_level,
+                waiting_room_level=telemost_waiting_room,
+                cohosts=telemost_cohosts or [],
+            )
+    if not conference or not conference.get("join_url"):
+        raise ValueError("Telemost link is missing")
     telemost_link = conference["join_url"]
 
     start = datetime.fromisoformat(start_str)
@@ -74,7 +85,7 @@ def create_telemost_event(
     end_local = start_local + timedelta(minutes=duration_minutes)
     calendar = calendar_client.find_calendar()
 
-    uid = str(uuid.uuid4())
+    uid = event_uid or str(uuid.uuid4())
     dtstamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     dtstart = start_local.strftime("%Y%m%dT%H%M%S")
     dtend = end_local.strftime("%Y%m%dT%H%M%S")
@@ -143,6 +154,8 @@ def main() -> int:
     parser.add_argument("--duration", "-d", type=int, default=60, help="Duration in minutes")
     parser.add_argument("--attendees", help="Comma-separated email addresses")
     parser.add_argument("--data-dir", help="Path to data directory")
+    parser.add_argument("--event-uid", help="Reuse an existing calendar event UID instead of creating a new one")
+    parser.add_argument("--telemost-link", help="Reuse an existing Telemost join URL instead of fetching/creating a conference")
     parser.add_argument("--telemost-conference-id", help="Use an existing Telemost conference instead of creating a new one")
     parser.add_argument(
         "--telemost-access-level",
@@ -168,7 +181,7 @@ def main() -> int:
     telemost_cohosts_raw = getattr(args, "telemost_cohosts", None)
     telemost_cohosts = [email.strip() for email in (telemost_cohosts_raw or "").split(",") if email.strip()]
 
-    if args.telemost_conference_id:
+    if args.telemost_conference_id or args.telemost_link:
         conflicting = []
         if hasattr(args, "telemost_access_level"):
             conflicting.append("--telemost-access-level")
@@ -180,7 +193,7 @@ def main() -> int:
             print(
                 json.dumps(
                     {
-                        "error": "--telemost-conference-id cannot be combined with "
+                        "error": "--telemost-conference-id/--telemost-link cannot be combined with "
                         + ", ".join(conflicting)
                     },
                     ensure_ascii=False,
@@ -198,6 +211,8 @@ def main() -> int:
             args.duration,
             attendees,
             data_dir=args.data_dir,
+            event_uid=args.event_uid,
+            telemost_link=args.telemost_link,
             telemost_conference_id=args.telemost_conference_id,
             telemost_access_level=telemost_access_level,
             telemost_waiting_room=telemost_waiting_room,
