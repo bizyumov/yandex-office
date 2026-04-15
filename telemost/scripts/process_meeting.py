@@ -234,10 +234,28 @@ def resolve_same_day_output_dir(meeting_data: dict, output_base: Path) -> Path:
 
 # ── Enrichment phase ──────────────────────────────────────────────────────────
 
+def _iter_incoming_email_dirs(incoming_dir: Path) -> list[Path]:
+    """Return nested incoming email directories that contain meta.json.
+
+    Incoming mail is stored as `incoming/<filter>/<YYYY-MM-DD_mailbox_uidN>/meta.json`,
+    so a flat first-level scan misses real email dirs and only sees filter buckets.
+    """
+    if not incoming_dir.exists():
+        return []
+
+    dirs = []
+    for meta_path in sorted(incoming_dir.rglob("meta.json")):
+        email_dir = meta_path.parent
+        if email_dir == incoming_dir:
+            continue
+        dirs.append(email_dir)
+    return dirs
+
+
 def enrich_incoming(incoming_dir: Path, sender_filter: str = TELEMOST_SENDER) -> int:
     """Scan incoming/ and enrich Telemost emails with meeting-specific metadata.
 
-    For each email directory with meta.json:
+    For each nested email directory with meta.json:
     1. Check if sender matches (only Telemost emails)
     2. Classify subject -> 'summary' or 'recording'
     3. Extract meeting_uid from plain text body
@@ -253,9 +271,7 @@ def enrich_incoming(incoming_dir: Path, sender_filter: str = TELEMOST_SENDER) ->
         return 0
 
     enriched = 0
-    for entry in sorted(incoming_dir.iterdir()):
-        if not entry.is_dir():
-            continue
+    for entry in _iter_incoming_email_dirs(incoming_dir):
         meta_path = entry / "meta.json"
         if not meta_path.exists():
             continue
@@ -315,7 +331,7 @@ def enrich_incoming(incoming_dir: Path, sender_filter: str = TELEMOST_SENDER) ->
 def scan_incoming(incoming_dir: Path) -> list[dict]:
     """Find enriched Telemost email directories in incoming/.
 
-    Only returns emails that have been enriched (have email_type field).
+    Only returns nested email dirs that have been enriched (have email_type field).
     Each dir must contain a meta.json to be considered valid.
     Returns list of metadata dicts (with 'dir_path' added).
     """
@@ -323,12 +339,9 @@ def scan_incoming(incoming_dir: Path) -> list[dict]:
     if not incoming_dir.exists():
         return results
 
-    for entry in sorted(incoming_dir.iterdir()):
-        if not entry.is_dir():
-            continue
+    for entry in _iter_incoming_email_dirs(incoming_dir):
         meta_path = entry / "meta.json"
         if not meta_path.exists():
-            logger.warning(f"Skipping {entry.name}: no meta.json")
             continue
         meta = json.loads(meta_path.read_text(encoding="utf-8"))
         # Only include enriched Telemost emails
@@ -636,7 +649,13 @@ def download_recordings(meeting_data: dict, meeting_dir: Path) -> list[dict]:
         None,
     )
 
-    disk = YandexDisk(account=account)
+    data_dir = meeting_dir.parents[2] if len(meeting_dir.parents) >= 3 else None
+    token_file = (data_dir / "auth" / f"{account}.token") if data_dir and account else None
+    disk = YandexDisk(
+        account=account,
+        data_dir=str(data_dir) if data_dir else None,
+        token_file=str(token_file) if token_file and token_file.exists() else None,
+    )
     recordings_dir = meeting_dir / "recordings"
     results = []
 
