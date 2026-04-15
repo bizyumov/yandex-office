@@ -1,0 +1,25 @@
+{
+  "id": "yandex-office",
+  "name": "Yandex Office",
+  "description": "Yandex Office OAuth helper plugin for OpenClaw shared skills",
+  "providers": [
+    "yandex-office"
+  ],
+  "providerAuthChoices": [
+    {
+      "provider": "yandex-office",
+      "method": "oauth",
+      "choiceId": "yandex-office",
+      "choiceLabel": "Yandex Office OAuth",
+      "choiceHint": "Browser sign-in via localhost callback",
+      "groupId": "yandex-office",
+      "groupLabel": "Yandex Office",
+      "groupHint": "OAuth helper for shared Yandex skills"
+    }
+  ],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

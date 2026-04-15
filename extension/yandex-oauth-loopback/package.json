@@ -1,0 +1,15 @@
+{
+  "name": "@openclaw/yandex-office",
+  "version": "2026.4.10",
+  "private": true,
+  "description": "OpenClaw Yandex Office auth helper plugin and shared skill pack",
+  "type": "module",
+  "openclaw": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "providers": [
+      "yandex-office"
+    ]
+  }
+}
