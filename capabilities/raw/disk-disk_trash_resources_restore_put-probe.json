@@ -1,0 +1,28 @@
+{
+  "probe": "disk",
+  "timestamp": "2026-04-18T21:30:19.634604+00:00",
+  "fixture": {
+    "id": "disk-method-access-fixture",
+    "variables": "<redacted>"
+  },
+  "rows": [
+    {
+      "timestamp": "2026-04-18T21:30:18.190233+00:00",
+      "method_id": "disk.trash.resources.restore.put",
+      "scope_id": "cloud_api:disk.{read,write}",
+      "status": "works",
+      "http": {
+        "status_code": 201,
+        "ok": true,
+        "content_type": "application/json",
+        "json_keys": [
+          "href",
+          "method",
+          "templated"
+        ]
+      },
+      "request_fixture_id": "disk-trash-restore"
+    }
+  ],
+  "cleanup_errors": []
+}

@@ -1,0 +1,4421 @@
+{
+  "probe": "tracker",
+  "timestamp": "2026-04-20T12:52:20.107185+00:00",
+  "fixture": {
+    "id": "tracker-live-safe-auth-gate",
+    "variables": "<redacted>"
+  },
+  "rows": [
+    {
+      "timestamp": "2026-04-20T12:50:53.195960+00:00",
+      "method_id": "tracker.admin_create_resolution",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-admin_create_resolution"
+    },
+    {
+      "timestamp": "2026-04-20T12:50:53.490141+00:00",
+      "method_id": "tracker.admin_create_resolution",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-admin_create_resolution"
+    },
+    {
+      "timestamp": "2026-04-20T12:50:53.700047+00:00",
+      "method_id": "tracker.admin_create_status",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-admin_create_status"
+    },
+    {
+      "timestamp": "2026-04-20T12:50:54.329961+00:00",
+      "method_id": "tracker.admin_create_status",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-admin_create_status"
+    },
+    {
+      "timestamp": "2026-04-20T12:50:54.531251+00:00",
+      "method_id": "tracker.admin_get_issue_types",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-admin_get_issue_types"
+    },
+    {
+      "timestamp": "2026-04-20T12:50:54.810879+00:00",
+      "method_id": "tracker.admin_get_issue_types",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "tracker-admin_get_issue_types"
+    },
+    {
+      "timestamp": "2026-04-20T12:50:55.037356+00:00",
+      "method_id": "tracker.admin_get_resolutions",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-admin_get_resolutions"
+    },
+    {
+      "timestamp": "2026-04-20T12:50:55.324989+00:00",
+      "method_id": "tracker.admin_get_resolutions",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "tracker-admin_get_resolutions"
+    },
+    {
+      "timestamp": "2026-04-20T12:50:56.158456+00:00",
+      "method_id": "tracker.admin_get_statuses",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-admin_get_statuses"
+    },
+    {
+      "timestamp": "2026-04-20T12:50:56.482325+00:00",
+      "method_id": "tracker.admin_get_statuses",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "tracker-admin_get_statuses"
+    },
+    {
+      "timestamp": "2026-04-20T12:50:56.686014+00:00",
+      "method_id": "tracker.admin_patch_issue_type",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-admin_patch_issue_type"
+    },
+    {
+      "timestamp": "2026-04-20T12:50:56.998029+00:00",
+      "method_id": "tracker.admin_patch_issue_type",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-admin_patch_issue_type"
+    },
+    {
+      "timestamp": "2026-04-20T12:50:57.209521+00:00",
+      "method_id": "tracker.admin_patch_resolution",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-admin_patch_resolution"
+    },
+    {
+      "timestamp": "2026-04-20T12:50:57.471060+00:00",
+      "method_id": "tracker.admin_patch_resolution",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-admin_patch_resolution"
+    },
+    {
+      "timestamp": "2026-04-20T12:50:57.688871+00:00",
+      "method_id": "tracker.admin_patch_status",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-admin_patch_status"
+    },
+    {
+      "timestamp": "2026-04-20T12:50:58.732776+00:00",
+      "method_id": "tracker.admin_patch_status",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-admin_patch_status"
+    },
+    {
+      "timestamp": "2026-04-20T12:50:58.944604+00:00",
+      "method_id": "tracker.boards_delete_board",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-boards_delete_board"
+    },
+    {
+      "timestamp": "2026-04-20T12:50:59.721215+00:00",
+      "method_id": "tracker.boards_delete_board",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-boards_delete_board"
+    },
+    {
+      "timestamp": "2026-04-20T12:50:59.908789+00:00",
+      "method_id": "tracker.boards_delete_column",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-boards_delete_column"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:00.173059+00:00",
+      "method_id": "tracker.boards_delete_column",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-boards_delete_column"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:00.381417+00:00",
+      "method_id": "tracker.boards_get_board",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-boards_get_board"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:00.614344+00:00",
+      "method_id": "tracker.boards_get_board",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-boards_get_board"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:00.830784+00:00",
+      "method_id": "tracker.boards_get_boards",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-boards_get_boards"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:01.224275+00:00",
+      "method_id": "tracker.boards_get_boards",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "tracker-boards_get_boards"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:01.435429+00:00",
+      "method_id": "tracker.boards_get_column",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-boards_get_column"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:01.716405+00:00",
+      "method_id": "tracker.boards_get_column",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-boards_get_column"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:01.937379+00:00",
+      "method_id": "tracker.boards_get_columns",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-boards_get_columns"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:02.501498+00:00",
+      "method_id": "tracker.boards_get_columns",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-boards_get_columns"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:02.720916+00:00",
+      "method_id": "tracker.boards_get_sprint",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-boards_get_sprint"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:02.971222+00:00",
+      "method_id": "tracker.boards_get_sprint",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-boards_get_sprint"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:03.163589+00:00",
+      "method_id": "tracker.boards_get_sprints",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-boards_get_sprints"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:03.402818+00:00",
+      "method_id": "tracker.boards_get_sprints",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-boards_get_sprints"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:03.628133+00:00",
+      "method_id": "tracker.boards_patch_board",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-boards_patch_board"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:03.856792+00:00",
+      "method_id": "tracker.boards_patch_board",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-boards_patch_board"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:04.044442+00:00",
+      "method_id": "tracker.boards_patch_column",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-boards_patch_column"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:04.284122+00:00",
+      "method_id": "tracker.boards_patch_column",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-boards_patch_column"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:04.480070+00:00",
+      "method_id": "tracker.boards_post_board",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-boards_post_board"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:04.723046+00:00",
+      "method_id": "tracker.boards_post_board",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-boards_post_board"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:04.918145+00:00",
+      "method_id": "tracker.boards_post_column",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-boards_post_column"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:05.188238+00:00",
+      "method_id": "tracker.boards_post_column",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-boards_post_column"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:05.393592+00:00",
+      "method_id": "tracker.boards_post_sprint",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-boards_post_sprint"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:05.610413+00:00",
+      "method_id": "tracker.boards_post_sprint",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-boards_post_sprint"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:05.816311+00:00",
+      "method_id": "tracker.bulkchange_bulk_move_info",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-bulkchange_bulk_move_info"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:06.141363+00:00",
+      "method_id": "tracker.bulkchange_bulk_move_info",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-bulkchange_bulk_move_info"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:06.331461+00:00",
+      "method_id": "tracker.bulkchange_bulk_move_issues",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-bulkchange_bulk_move_issues"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:06.599600+00:00",
+      "method_id": "tracker.bulkchange_bulk_move_issues",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-bulkchange_bulk_move_issues"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:06.804191+00:00",
+      "method_id": "tracker.bulkchange_bulk_transition",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-bulkchange_bulk_transition"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:07.076711+00:00",
+      "method_id": "tracker.bulkchange_bulk_transition",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 422,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-bulkchange_bulk_transition"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:07.345631+00:00",
+      "method_id": "tracker.bulkchange_bulk_update_issues",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-bulkchange_bulk_update_issues"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:07.677377+00:00",
+      "method_id": "tracker.bulkchange_bulk_update_issues",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 422,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-bulkchange_bulk_update_issues"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:07.878549+00:00",
+      "method_id": "tracker.dashboards_create_dashboard",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-dashboards_create_dashboard"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:08.134662+00:00",
+      "method_id": "tracker.dashboards_create_dashboard",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-dashboards_create_dashboard"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:08.454238+00:00",
+      "method_id": "tracker.dashboards_create_widget",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-dashboards_create_widget"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:08.710440+00:00",
+      "method_id": "tracker.dashboards_create_widget",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-dashboards_create_widget"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:08.900224+00:00",
+      "method_id": "tracker.delete_macros",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-delete_macros"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:09.198473+00:00",
+      "method_id": "tracker.delete_macros",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-delete_macros"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:09.399513+00:00",
+      "method_id": "tracker.entities_attachments_add_attachment",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-entities_attachments_add_attachment"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:09.713097+00:00",
+      "method_id": "tracker.entities_attachments_add_attachment",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-entities_attachments_add_attachment"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:09.914564+00:00",
+      "method_id": "tracker.entities_attachments_delete_attachment",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-entities_attachments_delete_attachment"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:10.150605+00:00",
+      "method_id": "tracker.entities_attachments_delete_attachment",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-entities_attachments_delete_attachment"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:10.368162+00:00",
+      "method_id": "tracker.entities_attachments_get_all_attachments",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-entities_attachments_get_all_attachments"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:10.629707+00:00",
+      "method_id": "tracker.entities_attachments_get_all_attachments",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-entities_attachments_get_all_attachments"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:11.441611+00:00",
+      "method_id": "tracker.entities_attachments_get_attachment",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-entities_attachments_get_attachment"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:11.694739+00:00",
+      "method_id": "tracker.entities_attachments_get_attachment",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-entities_attachments_get_attachment"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:11.889752+00:00",
+      "method_id": "tracker.entities_bulkchange_entities",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-entities_bulkchange_entities"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:12.159864+00:00",
+      "method_id": "tracker.entities_bulkchange_entities",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-entities_bulkchange_entities"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:12.368517+00:00",
+      "method_id": "tracker.entities_checklists_add_checklist",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-entities_checklists_add_checklist"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:12.585519+00:00",
+      "method_id": "tracker.entities_checklists_add_checklist",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-entities_checklists_add_checklist"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:12.833021+00:00",
+      "method_id": "tracker.entities_checklists_delete_checklist",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-entities_checklists_delete_checklist"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:13.988171+00:00",
+      "method_id": "tracker.entities_checklists_delete_checklist",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-entities_checklists_delete_checklist"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:14.203243+00:00",
+      "method_id": "tracker.entities_checklists_delete_checklist_item",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-entities_checklists_delete_checklist_item"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:14.440103+00:00",
+      "method_id": "tracker.entities_checklists_delete_checklist_item",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-entities_checklists_delete_checklist_item"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:14.721532+00:00",
+      "method_id": "tracker.entities_checklists_move_checklist_item",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-entities_checklists_move_checklist_item"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:14.970211+00:00",
+      "method_id": "tracker.entities_checklists_move_checklist_item",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-entities_checklists_move_checklist_item"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:15.158805+00:00",
+      "method_id": "tracker.entities_checklists_patch_checklist",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-entities_checklists_patch_checklist"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:15.433036+00:00",
+      "method_id": "tracker.entities_checklists_patch_checklist",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-entities_checklists_patch_checklist"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:15.737862+00:00",
+      "method_id": "tracker.entities_checklists_patch_checklist_item",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-entities_checklists_patch_checklist_item"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:15.975516+00:00",
+      "method_id": "tracker.entities_checklists_patch_checklist_item",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-entities_checklists_patch_checklist_item"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:16.188124+00:00",
+      "method_id": "tracker.entities_comments_delete_comment",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-entities_comments_delete_comment"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:16.440753+00:00",
+      "method_id": "tracker.entities_comments_delete_comment",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-entities_comments_delete_comment"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:16.717201+00:00",
+      "method_id": "tracker.entities_comments_get_all_comments",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-entities_comments_get_all_comments"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:16.974613+00:00",
+      "method_id": "tracker.entities_comments_get_all_comments",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-entities_comments_get_all_comments"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:17.259871+00:00",
+      "method_id": "tracker.entities_comments_get_comment",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-entities_comments_get_comment"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:17.514448+00:00",
+      "method_id": "tracker.entities_comments_get_comment",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-entities_comments_get_comment"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:17.702379+00:00",
+      "method_id": "tracker.entities_create_entity",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-entities_create_entity"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:17.936392+00:00",
+      "method_id": "tracker.entities_create_entity",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-entities_create_entity"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:18.900621+00:00",
+      "method_id": "tracker.entities_delete_entity",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-entities_delete_entity"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:19.316163+00:00",
+      "method_id": "tracker.entities_delete_entity",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-entities_delete_entity"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:19.508613+00:00",
+      "method_id": "tracker.entities_get_access",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-entities_get_access"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:19.940269+00:00",
+      "method_id": "tracker.entities_get_access",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-entities_get_access"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:20.169235+00:00",
+      "method_id": "tracker.entities_get_entity",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-entities_get_entity"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:20.416437+00:00",
+      "method_id": "tracker.entities_get_entity",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-entities_get_entity"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:20.679059+00:00",
+      "method_id": "tracker.entities_get_events_relative",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-entities_get_events_relative"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:21.222395+00:00",
+      "method_id": "tracker.entities_get_events_relative",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-entities_get_events_relative"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:21.429221+00:00",
+      "method_id": "tracker.entities_keyresults",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-entities_keyresults"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:21.665024+00:00",
+      "method_id": "tracker.entities_keyresults",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-entities_keyresults"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:21.878450+00:00",
+      "method_id": "tracker.entities_links_add_links",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-entities_links_add_links"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:22.116961+00:00",
+      "method_id": "tracker.entities_links_add_links",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-entities_links_add_links"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:22.540817+00:00",
+      "method_id": "tracker.entities_links_delete_link",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-entities_links_delete_link"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:23.218902+00:00",
+      "method_id": "tracker.entities_links_delete_link",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-entities_links_delete_link"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:23.436321+00:00",
+      "method_id": "tracker.entities_links_get_links",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-entities_links_get_links"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:24.047591+00:00",
+      "method_id": "tracker.entities_links_get_links",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-entities_links_get_links"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:24.492329+00:00",
+      "method_id": "tracker.entities_metric",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-entities_metric"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:25.331079+00:00",
+      "method_id": "tracker.entities_metric",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-entities_metric"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:25.569663+00:00",
+      "method_id": "tracker.entities_patch_access",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-entities_patch_access"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:25.817027+00:00",
+      "method_id": "tracker.entities_patch_access",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-entities_patch_access"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:26.075616+00:00",
+      "method_id": "tracker.entities_search_entities",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-entities_search_entities"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:26.337158+00:00",
+      "method_id": "tracker.entities_search_entities",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "invocation-info",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-entities_search_entities"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:26.602691+00:00",
+      "method_id": "tracker.entities_update_entity",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-entities_update_entity"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:26.867429+00:00",
+      "method_id": "tracker.entities_update_entity",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-entities_update_entity"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:27.098890+00:00",
+      "method_id": "tracker.get_macros",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-get_macros"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:27.764666+00:00",
+      "method_id": "tracker.get_macros",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-get_macros"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:28.049377+00:00",
+      "method_id": "tracker.get_macroses",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-get_macroses"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:28.364633+00:00",
+      "method_id": "tracker.get_macroses",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "invocation-info",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-get_macroses"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:28.880419+00:00",
+      "method_id": "tracker.import_import_attachments",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-import_import_attachments"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:29.118425+00:00",
+      "method_id": "tracker.import_import_attachments",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-import_import_attachments"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:29.375766+00:00",
+      "method_id": "tracker.import_import_comments",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-import_import_comments"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:29.618591+00:00",
+      "method_id": "tracker.import_import_comments",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-import_import_comments"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:29.832098+00:00",
+      "method_id": "tracker.import_import_links",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-import_import_links"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:30.125215+00:00",
+      "method_id": "tracker.import_import_links",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-import_import_links"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:30.387123+00:00",
+      "method_id": "tracker.import_import_ticket",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-import_import_ticket"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:30.641068+00:00",
+      "method_id": "tracker.import_import_ticket",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-import_import_ticket"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:30.851915+00:00",
+      "method_id": "tracker.issues_add_checklist_item",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_add_checklist_item"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:31.083871+00:00",
+      "method_id": "tracker.issues_add_checklist_item",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_add_checklist_item"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:31.323764+00:00",
+      "method_id": "tracker.issues_add_comment",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_add_comment"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:31.606165+00:00",
+      "method_id": "tracker.issues_add_comment",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_add_comment"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:31.791951+00:00",
+      "method_id": "tracker.issues_add_external_link",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_add_external_link"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:32.225257+00:00",
+      "method_id": "tracker.issues_add_external_link",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_add_external_link"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:32.535204+00:00",
+      "method_id": "tracker.issues_count_issues",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_count_issues"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:32.859882+00:00",
+      "method_id": "tracker.issues_count_issues",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_count_issues"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:33.150568+00:00",
+      "method_id": "tracker.issues_create_field",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_create_field"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:33.456355+00:00",
+      "method_id": "tracker.issues_create_field",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_create_field"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:33.697246+00:00",
+      "method_id": "tracker.issues_create_issue",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_create_issue"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:33.953502+00:00",
+      "method_id": "tracker.issues_create_issue",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_create_issue"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:34.392085+00:00",
+      "method_id": "tracker.issues_create_issue_field_category",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_create_issue_field_category"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:34.674009+00:00",
+      "method_id": "tracker.issues_create_issue_field_category",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_create_issue_field_category"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:34.911585+00:00",
+      "method_id": "tracker.issues_delete_attachment",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_delete_attachment"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:35.243425+00:00",
+      "method_id": "tracker.issues_delete_attachment",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_delete_attachment"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:35.458718+00:00",
+      "method_id": "tracker.issues_delete_checklist",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_delete_checklist"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:35.844510+00:00",
+      "method_id": "tracker.issues_delete_checklist",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json",
+        "json_keys": [
+          "commentWithExternalMessageCount",
+          "commentWithoutExternalMessageCount",
+          "createdAt",
+          "createdBy",
+          "description",
+          "favorite",
+          "id",
+          "key",
+          "previousStatus",
+          "priority",
+          "queue",
+          "resolution",
+          "resolvedAt",
+          "resolvedBy",
+          "self",
+          "status",
+          "statusStartTime",
+          "statusType",
+          "summary",
+          "type"
+        ],
+        "description": "## Project Goal\\nEvaluate and set up optimal task tracking system with 4-level hierarchy (space → projects → scenarios → tasks).\\n\\n## Context from Meeting 1508"
+      },
+      "request_fixture_id": "tracker-issues_delete_checklist"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:36.081841+00:00",
+      "method_id": "tracker.issues_delete_checklist_item",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_delete_checklist_item"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:36.295985+00:00",
+      "method_id": "tracker.issues_delete_checklist_item",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_delete_checklist_item"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:36.786450+00:00",
+      "method_id": "tracker.issues_delete_comment",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_delete_comment"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:37.055697+00:00",
+      "method_id": "tracker.issues_delete_comment",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_delete_comment"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:37.282684+00:00",
+      "method_id": "tracker.issues_delete_external_link",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_delete_external_link"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:37.574449+00:00",
+      "method_id": "tracker.issues_delete_external_link",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_delete_external_link"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:37.804981+00:00",
+      "method_id": "tracker.issues_delete_link_issue",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_delete_link_issue"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:38.088945+00:00",
+      "method_id": "tracker.issues_delete_link_issue",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_delete_link_issue"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:38.297128+00:00",
+      "method_id": "tracker.issues_delete_worklog",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_delete_worklog"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:38.575132+00:00",
+      "method_id": "tracker.issues_delete_worklog",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_delete_worklog"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:38.784928+00:00",
+      "method_id": "tracker.issues_edit_checklist",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_edit_checklist"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:39.026635+00:00",
+      "method_id": "tracker.issues_edit_checklist",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_edit_checklist"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:39.574485+00:00",
+      "method_id": "tracker.issues_edit_comment",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_edit_comment"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:39.821927+00:00",
+      "method_id": "tracker.issues_edit_comment",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_edit_comment"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:40.088721+00:00",
+      "method_id": "tracker.issues_get_applications",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_get_applications"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:40.668439+00:00",
+      "method_id": "tracker.issues_get_applications",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "tracker-issues_get_applications"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:40.872398+00:00",
+      "method_id": "tracker.issues_get_attachment",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_get_attachment"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:41.142845+00:00",
+      "method_id": "tracker.issues_get_attachment",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_get_attachment"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:41.343457+00:00",
+      "method_id": "tracker.issues_get_attachment_preview",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_get_attachment_preview"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:41.793382+00:00",
+      "method_id": "tracker.issues_get_attachment_preview",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_get_attachment_preview"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:42.101457+00:00",
+      "method_id": "tracker.issues_get_attachments_list",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_get_attachments_list"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:42.374480+00:00",
+      "method_id": "tracker.issues_get_attachments_list",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "tracker-issues_get_attachments_list"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:42.600199+00:00",
+      "method_id": "tracker.issues_get_changelog",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_get_changelog"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:42.934501+00:00",
+      "method_id": "tracker.issues_get_changelog",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "tracker-issues_get_changelog"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:43.186220+00:00",
+      "method_id": "tracker.issues_get_checklist",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_get_checklist"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:44.054252+00:00",
+      "method_id": "tracker.issues_get_checklist",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "tracker-issues_get_checklist"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:44.252658+00:00",
+      "method_id": "tracker.issues_get_comments",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_get_comments"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:44.514825+00:00",
+      "method_id": "tracker.issues_get_comments",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "tracker-issues_get_comments"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:44.727521+00:00",
+      "method_id": "tracker.issues_get_external_links",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_get_external_links"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:45.060792+00:00",
+      "method_id": "tracker.issues_get_external_links",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "tracker-issues_get_external_links"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:45.252371+00:00",
+      "method_id": "tracker.issues_get_global_fields",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_get_global_fields"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:45.660564+00:00",
+      "method_id": "tracker.issues_get_global_fields",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "tracker-issues_get_global_fields"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:45.904162+00:00",
+      "method_id": "tracker.issues_get_issue",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_get_issue"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:46.178182+00:00",
+      "method_id": "tracker.issues_get_issue",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json",
+        "json_keys": [
+          "commentWithExternalMessageCount",
+          "commentWithoutExternalMessageCount",
+          "createdAt",
+          "createdBy",
+          "description",
+          "favorite",
+          "id",
+          "key",
+          "previousStatus",
+          "priority",
+          "queue",
+          "resolution",
+          "resolvedAt",
+          "resolvedBy",
+          "self",
+          "status",
+          "statusStartTime",
+          "statusType",
+          "summary",
+          "type"
+        ],
+        "description": "## Project Goal\\nEvaluate and set up optimal task tracking system with 4-level hierarchy (space → projects → scenarios → tasks).\\n\\n## Context from Meeting 1508"
+      },
+      "request_fixture_id": "tracker-issues_get_issue"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:46.380799+00:00",
+      "method_id": "tracker.issues_get_issue_fields",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_get_issue_fields"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:46.639984+00:00",
+      "method_id": "tracker.issues_get_issue_fields",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_get_issue_fields"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:46.839448+00:00",
+      "method_id": "tracker.issues_get_links",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_get_links"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:47.236149+00:00",
+      "method_id": "tracker.issues_get_links",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "tracker-issues_get_links"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:47.437557+00:00",
+      "method_id": "tracker.issues_get_priorities",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_get_priorities"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:47.693962+00:00",
+      "method_id": "tracker.issues_get_priorities",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "tracker-issues_get_priorities"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:47.897211+00:00",
+      "method_id": "tracker.issues_get_suggest",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_get_suggest"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:48.109392+00:00",
+      "method_id": "tracker.issues_get_suggest",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_get_suggest"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:48.337911+00:00",
+      "method_id": "tracker.issues_get_transitions",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_get_transitions"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:48.642427+00:00",
+      "method_id": "tracker.issues_get_transitions",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "tracker-issues_get_transitions"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:48.825190+00:00",
+      "method_id": "tracker.issues_get_worklog",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_get_worklog"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:49.070337+00:00",
+      "method_id": "tracker.issues_get_worklog",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 422,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_get_worklog"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:49.265588+00:00",
+      "method_id": "tracker.issues_issue_worklog",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_issue_worklog"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:49.726180+00:00",
+      "method_id": "tracker.issues_issue_worklog",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "tracker-issues_issue_worklog"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:49.933940+00:00",
+      "method_id": "tracker.issues_link_issue",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_link_issue"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:50.177598+00:00",
+      "method_id": "tracker.issues_link_issue",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_link_issue"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:50.403707+00:00",
+      "method_id": "tracker.issues_move_issue",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_move_issue"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:50.639044+00:00",
+      "method_id": "tracker.issues_move_issue",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_move_issue"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:50.883462+00:00",
+      "method_id": "tracker.issues_new_transition",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_new_transition"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:51.155035+00:00",
+      "method_id": "tracker.issues_new_transition",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_new_transition"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:51.359760+00:00",
+      "method_id": "tracker.issues_new_worklog",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_new_worklog"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:51.599876+00:00",
+      "method_id": "tracker.issues_new_worklog",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_new_worklog"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:51.797789+00:00",
+      "method_id": "tracker.issues_patch_issue",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_patch_issue"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:52.027211+00:00",
+      "method_id": "tracker.issues_patch_issue",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_patch_issue"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:52.219647+00:00",
+      "method_id": "tracker.issues_patch_issue_field_category",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_patch_issue_field_category"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:52.445160+00:00",
+      "method_id": "tracker.issues_patch_issue_field_category",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_patch_issue_field_category"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:52.645054+00:00",
+      "method_id": "tracker.issues_patch_issue_field_name",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_patch_issue_field_name"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:53.518453+00:00",
+      "method_id": "tracker.issues_patch_issue_field_name",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_patch_issue_field_name"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:53.763185+00:00",
+      "method_id": "tracker.issues_patch_issue_field_value",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_patch_issue_field_value"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:54.068124+00:00",
+      "method_id": "tracker.issues_patch_issue_field_value",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_patch_issue_field_value"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:54.360022+00:00",
+      "method_id": "tracker.issues_patch_worklog",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_patch_worklog"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:54.599749+00:00",
+      "method_id": "tracker.issues_patch_worklog",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_patch_worklog"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:54.860956+00:00",
+      "method_id": "tracker.issues_post_attachment",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_post_attachment"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:55.081459+00:00",
+      "method_id": "tracker.issues_post_attachment",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_post_attachment"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:55.272619+00:00",
+      "method_id": "tracker.issues_search_issues",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_search_issues"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:55.574681+00:00",
+      "method_id": "tracker.issues_search_issues",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "invocation-info",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_search_issues"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:55.791571+00:00",
+      "method_id": "tracker.issues_search_release",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_search_release"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:56.019653+00:00",
+      "method_id": "tracker.issues_search_release",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_search_release"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:56.231752+00:00",
+      "method_id": "tracker.issues_temp_attachment",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-issues_temp_attachment"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:56.486547+00:00",
+      "method_id": "tracker.issues_temp_attachment",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-issues_temp_attachment"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:56.737001+00:00",
+      "method_id": "tracker.patch_macros",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-patch_macros"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:57.405564+00:00",
+      "method_id": "tracker.patch_macros",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-patch_macros"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:57.592821+00:00",
+      "method_id": "tracker.post_macros",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-post_macros"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:57.823649+00:00",
+      "method_id": "tracker.post_macros",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-post_macros"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:58.028475+00:00",
+      "method_id": "tracker.projects_create_project",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-projects_create_project"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:58.312830+00:00",
+      "method_id": "tracker.projects_create_project",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-projects_create_project"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:58.525478+00:00",
+      "method_id": "tracker.projects_delete_project",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-projects_delete_project"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:58.755598+00:00",
+      "method_id": "tracker.projects_delete_project",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-projects_delete_project"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:58.958501+00:00",
+      "method_id": "tracker.projects_get_project",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-projects_get_project"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:59.233345+00:00",
+      "method_id": "tracker.projects_get_project",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-projects_get_project"
+    },
+    {
+      "timestamp": "2026-04-20T12:51:59.470906+00:00",
+      "method_id": "tracker.projects_get_project_queues",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-projects_get_project_queues"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:00.460882+00:00",
+      "method_id": "tracker.projects_get_project_queues",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-projects_get_project_queues"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:00.650534+00:00",
+      "method_id": "tracker.projects_get_projects",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-projects_get_projects"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:00.946459+00:00",
+      "method_id": "tracker.projects_get_projects",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "tracker-projects_get_projects"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:01.179664+00:00",
+      "method_id": "tracker.projects_update_project",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-projects_update_project"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:01.385849+00:00",
+      "method_id": "tracker.projects_update_project",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-projects_update_project"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:01.589345+00:00",
+      "method_id": "tracker.queues_change_trigger",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-queues_change_trigger"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:01.824569+00:00",
+      "method_id": "tracker.queues_change_trigger",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-queues_change_trigger"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:02.027062+00:00",
+      "method_id": "tracker.queues_create_autoaction",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-queues_create_autoaction"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:02.349695+00:00",
+      "method_id": "tracker.queues_create_autoaction",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-queues_create_autoaction"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:02.543536+00:00",
+      "method_id": "tracker.queues_create_local_field",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-queues_create_local_field"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:02.874174+00:00",
+      "method_id": "tracker.queues_create_local_field",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-queues_create_local_field"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:03.080324+00:00",
+      "method_id": "tracker.queues_create_queue",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-queues_create_queue"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:03.389846+00:00",
+      "method_id": "tracker.queues_create_queue",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-queues_create_queue"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:03.600210+00:00",
+      "method_id": "tracker.queues_create_trigger",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-queues_create_trigger"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:03.841798+00:00",
+      "method_id": "tracker.queues_create_trigger",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-queues_create_trigger"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:04.086806+00:00",
+      "method_id": "tracker.queues_create_version",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-queues_create_version"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:04.382634+00:00",
+      "method_id": "tracker.queues_create_version",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-queues_create_version"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:04.584838+00:00",
+      "method_id": "tracker.queues_delete_tag",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-queues_delete_tag"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:04.832054+00:00",
+      "method_id": "tracker.queues_delete_tag",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-queues_delete_tag"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:05.033865+00:00",
+      "method_id": "tracker.queues_get_autoaction",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-queues_get_autoaction"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:05.268447+00:00",
+      "method_id": "tracker.queues_get_autoaction",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-queues_get_autoaction"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:05.464628+00:00",
+      "method_id": "tracker.queues_get_component_group_access",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-queues_get_component_group_access"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:05.738913+00:00",
+      "method_id": "tracker.queues_get_component_group_access",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-queues_get_component_group_access"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:05.951175+00:00",
+      "method_id": "tracker.queues_get_component_user_access",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-queues_get_component_user_access"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:06.233712+00:00",
+      "method_id": "tracker.queues_get_component_user_access",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-queues_get_component_user_access"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:06.516826+00:00",
+      "method_id": "tracker.queues_get_components",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-queues_get_components"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:06.808189+00:00",
+      "method_id": "tracker.queues_get_components",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "tracker-queues_get_components"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:07.003725+00:00",
+      "method_id": "tracker.queues_get_fields",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-queues_get_fields"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:07.257935+00:00",
+      "method_id": "tracker.queues_get_fields",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-queues_get_fields"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:07.443469+00:00",
+      "method_id": "tracker.queues_get_group_access",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-queues_get_group_access"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:07.688856+00:00",
+      "method_id": "tracker.queues_get_group_access",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-queues_get_group_access"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:07.869239+00:00",
+      "method_id": "tracker.queues_get_info_local_field",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-queues_get_info_local_field"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:08.107398+00:00",
+      "method_id": "tracker.queues_get_info_local_field",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "invocation-info",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-queues_get_info_local_field"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:08.378024+00:00",
+      "method_id": "tracker.queues_get_local_fields",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-queues_get_local_fields"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:08.644470+00:00",
+      "method_id": "tracker.queues_get_local_fields",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-queues_get_local_fields"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:08.839002+00:00",
+      "method_id": "tracker.queues_get_queue",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-queues_get_queue"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:09.085434+00:00",
+      "method_id": "tracker.queues_get_queue",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-queues_get_queue"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:09.345523+00:00",
+      "method_id": "tracker.queues_get_queues",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-queues_get_queues"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:10.066607+00:00",
+      "method_id": "tracker.queues_get_queues",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "tracker-queues_get_queues"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:10.269621+00:00",
+      "method_id": "tracker.queues_get_trigger",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-queues_get_trigger"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:10.546681+00:00",
+      "method_id": "tracker.queues_get_trigger",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-queues_get_trigger"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:10.808656+00:00",
+      "method_id": "tracker.queues_get_user_access",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-queues_get_user_access"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:11.044793+00:00",
+      "method_id": "tracker.queues_get_user_access",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-queues_get_user_access"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:11.262914+00:00",
+      "method_id": "tracker.queues_get_versions",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-queues_get_versions"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:11.612597+00:00",
+      "method_id": "tracker.queues_get_versions",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-queues_get_versions"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:11.790715+00:00",
+      "method_id": "tracker.queues_manage_access",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-queues_manage_access"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:12.117031+00:00",
+      "method_id": "tracker.queues_manage_access",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-queues_manage_access"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:12.388590+00:00",
+      "method_id": "tracker.queues_patch_component",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-queues_patch_component"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:12.656672+00:00",
+      "method_id": "tracker.queues_patch_component",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-queues_patch_component"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:12.839825+00:00",
+      "method_id": "tracker.queues_post_component",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-queues_post_component"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:13.293041+00:00",
+      "method_id": "tracker.queues_post_component",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-queues_post_component"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:13.577564+00:00",
+      "method_id": "tracker.queues_restore_queue",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-queues_restore_queue"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:13.812599+00:00",
+      "method_id": "tracker.queues_restore_queue",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-queues_restore_queue"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:14.017618+00:00",
+      "method_id": "tracker.queues_view_autoaction_logs",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-queues_view_autoaction_logs"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:14.287316+00:00",
+      "method_id": "tracker.queues_view_autoaction_logs",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-queues_view_autoaction_logs"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:14.485366+00:00",
+      "method_id": "tracker.queues_view_trigger_logs",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-queues_view_trigger_logs"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:14.745798+00:00",
+      "method_id": "tracker.queues_view_trigger_logs",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-queues_view_trigger_logs"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:14.972666+00:00",
+      "method_id": "tracker.users_get_user",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-users_get_user"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:15.210432+00:00",
+      "method_id": "tracker.users_get_user",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-users_get_user"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:15.413913+00:00",
+      "method_id": "tracker.users_get_user_info",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-users_get_user_info"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:15.712834+00:00",
+      "method_id": "tracker.users_get_user_info",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json",
+        "json_keys": [
+          "cloudUid",
+          "disableNotifications",
+          "dismissed",
+          "display",
+          "email",
+          "external",
+          "firstLoginDate",
+          "firstName",
+          "hasLicense",
+          "lastLoginDate",
+          "lastName",
+          "login",
+          "passportUid",
+          "self",
+          "sources",
+          "trackerUid",
+          "uid",
+          "useNewFilters",
+          "welcomeMailSent"
+        ]
+      },
+      "request_fixture_id": "tracker-users_get_user_info"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:15.960825+00:00",
+      "method_id": "tracker.users_get_users",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-users_get_users"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:16.798869+00:00",
+      "method_id": "tracker.users_get_users",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "tracker-users_get_users"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:17.335982+00:00",
+      "method_id": "tracker.admin_create_issue_type",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-admin_create_issue_type"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:17.826627+00:00",
+      "method_id": "tracker.admin_create_issue_type",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-admin_create_issue_type"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:18.123790+00:00",
+      "method_id": "tracker.queues_delete_queue",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-queues_delete_queue"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:18.365942+00:00",
+      "method_id": "tracker.queues_delete_queue",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-queues_delete_queue"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:18.565827+00:00",
+      "method_id": "tracker.queues_get_tags",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-queues_get_tags"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:18.816954+00:00",
+      "method_id": "tracker.queues_get_tags",
+      "scope_id": "tracker:read",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "invocation-info",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-queues_get_tags"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:19.359745+00:00",
+      "method_id": "tracker.entities_comments_add_comment",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-entities_comments_add_comment"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:19.657714+00:00",
+      "method_id": "tracker.entities_comments_add_comment",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-entities_comments_add_comment"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:19.872724+00:00",
+      "method_id": "tracker.entities_comments_patch_comment",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "tracker-entities_comments_patch_comment"
+    },
+    {
+      "timestamp": "2026-04-20T12:52:20.107099+00:00",
+      "method_id": "tracker.entities_comments_patch_comment",
+      "scope_id": "tracker:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "errorMessages",
+          "errors",
+          "errorsData",
+          "statusCode"
+        ]
+      },
+      "request_fixture_id": "tracker-entities_comments_patch_comment"
+    }
+  ],
+  "cleanup_errors": []
+}

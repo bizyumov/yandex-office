@@ -1,0 +1,44 @@
+{
+  "probe": "disk",
+  "timestamp": "2026-04-18T21:57:58.430373+00:00",
+  "fixture": {
+    "id": "disk-method-access-fixture",
+    "variables": "<redacted>"
+  },
+  "rows": [
+    {
+      "timestamp": "2026-04-18T21:57:56.734435+00:00",
+      "method_id": "disk.public.resources.get",
+      "scope_id": "public",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json",
+        "json_keys": [
+          "antivirus_status",
+          "comment_ids",
+          "created",
+          "exif",
+          "file",
+          "md5",
+          "media_type",
+          "mime_type",
+          "modified",
+          "name",
+          "path",
+          "public_key",
+          "public_url",
+          "resource_id",
+          "revision",
+          "sha256",
+          "size",
+          "type",
+          "views_count"
+        ]
+      },
+      "request_fixture_id": "disk-public-meta"
+    }
+  ],
+  "cleanup_errors": []
+}

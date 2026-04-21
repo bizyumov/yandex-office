@@ -6,43 +6,9 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
-
-
-DEFAULT_SCOPES = {
-    "mail": {"read": ["mail:imap_ro"], "write": ["mail:imap_full"]},
-    "disk": {
-        "read": ["cloud_api:disk.read"],
-        "write": [
-            "cloud_api:disk.read",
-            "cloud_api:disk.write",
-            "cloud_api:disk.app_folder",
-        ],
-    },
-    "tracker": {"read": ["tracker:read"], "write": ["tracker:write"]},
-    "forms": {"read": ["forms:read"], "write": ["forms:write"]},
-    "directory": {
-        "read": [
-            "directory:read_users",
-            "directory:read_departments",
-            "directory:read_groups",
-            "directory:read_domains",
-            "directory:read_external_contacts",
-            "directory:read_organization",
-        ]
-    },
-    "calendar": {"read": ["calendar:all"], "write": ["calendar:all"]},
-    "contacts": {"read": ["addressbook:all"], "write": ["addressbook:all"]},
-    "telemost": {
-        "read": ["telemost-api:conferences.read"],
-        "write": [
-            "telemost-api:conferences.create",
-            "telemost-api:conferences.delete",
-            "telemost-api:conferences.read",
-            "telemost-api:conferences.update",
-        ],
-    },
-}
+from urllib.request import Request, urlopen
 
 
 class TokenResolutionError(RuntimeError):
@@ -70,15 +36,19 @@ class ResolvedToken:
     email: str | None = None
 
 
+@dataclass(frozen=True)
+class VerifiedTokenIdentity:
+    email: str
+    client_id: str
+    subject_id: str | None = None
+    raw: dict[str, Any] | None = None
+
+
 def canonical_token_key(skill: str) -> str:
     normalized = str(skill).strip().lower()
     if not normalized:
         raise ValueError("Skill name must be non-empty")
     return f"token.{normalized}"
-
-
-def default_scopes(skill: str, mode: str = "read") -> list[str]:
-    return list(DEFAULT_SCOPES.get(skill, {}).get(mode, []))
 
 
 def load_token_file(token_path: str | Path) -> dict[str, Any]:
@@ -120,6 +90,8 @@ def set_token_metadata(
     scopes: list[str] | None = None,
     client_id: str | None = None,
     app_id: str | None = None,
+    verified_email: str | None = None,
+    permissions_note: str | None = None,
 ) -> None:
     meta = dict(_token_meta_store(token_data))
     current = dict(meta.get(token_key) or {})
@@ -129,6 +101,10 @@ def set_token_metadata(
         current["client_id"] = client_id
     if app_id:
         current["app_id"] = app_id
+    if verified_email:
+        current["verified_email"] = verified_email
+    if permissions_note:
+        current["permissions_note"] = permissions_note
     meta[token_key] = current
     token_data["token_meta"] = meta
 
@@ -152,6 +128,52 @@ def build_approval_url(
         params_dict["scope"] = " ".join(sorted(set(scopes)))
     params = urlencode(params_dict)
     return f"{oauth_base}?{params}"
+
+
+def verify_token_identity(
+    config: dict[str, Any],
+    *,
+    token: str,
+    timeout: float = 10.0,
+) -> VerifiedTokenIdentity:
+    raw_token = str(token).strip()
+    if not raw_token:
+        raise RuntimeError("Token cannot be empty")
+
+    info_base = config.get("urls", {}).get("oauth_info", "https://login.yandex.ru/info")
+    separator = "&" if "?" in info_base else "?"
+    info_url = f"{info_base}{separator}{urlencode({'format': 'json'})}"
+    request = Request(
+        info_url,
+        headers={
+            "Authorization": f"OAuth {raw_token}",
+            "Accept": "application/json",
+        },
+    )
+    try:
+        with urlopen(request, timeout=timeout) as response:
+            payload = json.load(response)
+    except HTTPError as exc:
+        raise RuntimeError(f"Yandex token validation failed with HTTP {exc.code}") from exc
+    except URLError as exc:
+        raise RuntimeError(f"Yandex token validation request failed: {exc.reason}") from exc
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("Yandex token validation returned invalid JSON") from exc
+
+    email = str(payload.get("login") or payload.get("default_email") or "").strip()
+    client_id = str(payload.get("client_id") or "").strip()
+    if not email:
+        raise RuntimeError("Yandex token validation response did not include login/email")
+    if not client_id:
+        raise RuntimeError("Yandex token validation response did not include client_id")
+
+    subject_id = str(payload.get("id") or "").strip() or None
+    return VerifiedTokenIdentity(
+        email=email,
+        client_id=client_id,
+        subject_id=subject_id,
+        raw=payload,
+    )
 
 
 def _token_scopes(token_data: dict[str, Any], token_key: str) -> set[str]:

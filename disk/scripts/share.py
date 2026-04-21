@@ -7,7 +7,7 @@ import argparse
 import json
 import logging
 import sys
-from download import DISK_WRITE_SCOPES, YandexDisk
+from download import YandexDisk
 
 
 def _csv_list(value: str | None) -> list[str] | None:
@@ -115,7 +115,6 @@ def main() -> int:
         token_file=args.token_file,
         account=args.account,
         auth_dir=args.auth_dir,
-        required_scopes=DISK_WRITE_SCOPES,
     )
 
     try:

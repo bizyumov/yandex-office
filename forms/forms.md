@@ -135,7 +135,7 @@ python3 <full-path-to-yandex-office>/scripts/oauth_setup.py \
   --service forms
 ```
 
-Recommended: use the default Forms app from root `config.json` (`oauth_apps.service_defaults.forms`, currently `forms-read`) so the default approval link can use the preconfigured app permissions without needing `--client-id` each time. Use `--app forms-full` when you need write access.
+Recommended: use the default Forms app from root `config.skill.json` (the `oauth_apps.catalog` entry with `"service": "forms"` and `"is_default": true`, currently `forms-read`) so the default approval link can use the preconfigured app permissions without needing `--client-id` each time. Use `--app forms-full` when you need write access.
 
 ### Multiple Accounts
 
