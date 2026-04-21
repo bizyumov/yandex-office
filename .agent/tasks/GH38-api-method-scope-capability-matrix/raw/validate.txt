@@ -1,0 +1,4 @@
+Capability validation PASS
+oauth_scopes=134
+auth_contexts=32
+methods=315

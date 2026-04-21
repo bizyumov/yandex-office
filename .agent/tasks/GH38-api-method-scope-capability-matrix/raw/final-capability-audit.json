@@ -1,0 +1,94 @@
+{
+  "checked_at": "2026-04-20",
+  "methods":
+  {
+    "total": 315,
+    "by_service": [
+      {
+        "service": "calendar",
+        "count": 6
+      },
+      {
+        "service": "contacts",
+        "count": 5
+      },
+      {
+        "service": "directory",
+        "count": 49
+      },
+      {
+        "service": "disk",
+        "count": 32
+      },
+      {
+        "service": "forms",
+        "count": 33
+      },
+      {
+        "service": "mail",
+        "count": 32
+      },
+      {
+        "service": "telemost",
+        "count": 9
+      },
+      {
+        "service": "tracker",
+        "count": 149
+      }
+    ],
+    "by_classification": [
+      {
+        "classification": "current_used",
+        "count": 48
+      },
+      {
+        "classification": "implemented_unused",
+        "count": 11
+      },
+      {
+        "classification": "upstream_available",
+        "count": 256
+      }
+    ],
+    "probe_plans": [
+      "calendar",
+      "contacts",
+      "directory",
+      "disk",
+      "forms",
+      "mail",
+      "telemost",
+      "tracker"
+    ]
+  }
+  ,"matrix":
+  {
+    "generated_by": "capabilities/probe.py",
+    "cells": 816,
+    "status_counts": [
+      {
+        "status": "does_not_work",
+        "count": 458
+      },
+      {
+        "status": "unclear_needs_retest",
+        "count": 15
+      },
+      {
+        "status": "works",
+        "count": 343
+      }
+    ],
+    "methods_in_cells": 315,
+    "scopes_or_contexts_in_cells": 30
+  }
+  ,"method_scope_map":
+  {
+    "generated_by": "capabilities/probe.py",
+    "mapped_methods": 309,
+    "public": 2,
+    "one_of": 304,
+    "all_of": 3
+  }
+}

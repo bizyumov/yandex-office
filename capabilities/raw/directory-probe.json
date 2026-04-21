@@ -1,0 +1,1652 @@
+{
+  "probe": "directory",
+  "timestamp": "2026-04-20T12:06:29.495116+00:00",
+  "fixture": {
+    "id": "directory-live-safe-auth-gate",
+    "variables": "<redacted>"
+  },
+  "rows": [
+    {
+      "timestamp": "2026-04-20T12:05:59.774000+00:00",
+      "method_id": "directory.organizations.list",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-organizations-list"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:00.078065+00:00",
+      "method_id": "directory.organizations.list",
+      "scope_id": "directory:read_organization",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json",
+        "json_keys": [
+          "nextPageToken",
+          "organizations"
+        ]
+      },
+      "request_fixture_id": "directory-organizations-list"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:00.285730+00:00",
+      "method_id": "directory.user.list",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-user-list"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:00.768670+00:00",
+      "method_id": "directory.user.list",
+      "scope_id": "directory:read_users",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json",
+        "json_keys": [
+          "page",
+          "pages",
+          "perPage",
+          "total",
+          "users"
+        ]
+      },
+      "request_fixture_id": "directory-user-list"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:00.990593+00:00",
+      "method_id": "directory.user.create",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-user-create"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:01.349479+00:00",
+      "method_id": "directory.user.create",
+      "scope_id": "directory:write_users",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "3",
+        "message": "invalid_nickname"
+      },
+      "request_fixture_id": "directory-user-create"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:01.558449+00:00",
+      "method_id": "directory.user.get",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-user-get"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:01.848042+00:00",
+      "method_id": "directory.user.get",
+      "scope_id": "directory:read_users",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "5",
+        "message": "not_found"
+      },
+      "request_fixture_id": "directory-user-get"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:02.063255+00:00",
+      "method_id": "directory.user.update",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-user-update"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:02.454957+00:00",
+      "method_id": "directory.user.update",
+      "scope_id": "directory:write_users",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "5",
+        "message": "not_found"
+      },
+      "request_fixture_id": "directory-user-update"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:02.716271+00:00",
+      "method_id": "directory.user.get2fa",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-user-get2fa"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:03.063615+00:00",
+      "method_id": "directory.user.get2fa",
+      "scope_id": "directory:read_users",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "5",
+        "message": "not_found"
+      },
+      "request_fixture_id": "directory-user-get2fa"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:03.354781+00:00",
+      "method_id": "directory.user.delete2fa",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-user-delete2fa"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:03.680515+00:00",
+      "method_id": "directory.user.delete2fa",
+      "scope_id": "directory:write_users",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "5",
+        "message": "not_found"
+      },
+      "request_fixture_id": "directory-user-delete2fa"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:03.897458+00:00",
+      "method_id": "directory.user.create_user_alias",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-user-create_user_alias"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:04.540523+00:00",
+      "method_id": "directory.user.create_user_alias",
+      "scope_id": "directory:write_users",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json",
+        "json_keys": [
+          "about",
+          "aliases",
+          "avatarId",
+          "birthday",
+          "contacts",
+          "createdAt",
+          "departmentId",
+          "email",
+          "externalId",
+          "gender",
+          "groups",
+          "id",
+          "isAdmin",
+          "isDismissed",
+          "isEnabled",
+          "isRobot",
+          "language",
+          "name",
+          "nickname",
+          "position"
+        ]
+      },
+      "request_fixture_id": "directory-user-create_user_alias"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:04.744904+00:00",
+      "method_id": "directory.user.delete_user_alias",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-user-delete_user_alias"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:05.675461+00:00",
+      "method_id": "directory.user.delete_user_alias",
+      "scope_id": "directory:write_users",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json",
+        "json_keys": [
+          "alias",
+          "removed"
+        ]
+      },
+      "request_fixture_id": "directory-user-delete_user_alias"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:05.884643+00:00",
+      "method_id": "directory.user.update_avatar",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-user-update_avatar"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:06.164834+00:00",
+      "method_id": "directory.user.update_avatar",
+      "scope_id": "directory:write_users",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "3",
+        "message": "userId is not from organization"
+      },
+      "request_fixture_id": "directory-user-update_avatar"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:06.355471+00:00",
+      "method_id": "directory.user.update_contacts",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-user-update_contacts"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:06.744873+00:00",
+      "method_id": "directory.user.update_contacts",
+      "scope_id": "directory:write_users",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "5",
+        "message": "not_found"
+      },
+      "request_fixture_id": "directory-user-update_contacts"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:06.978121+00:00",
+      "method_id": "directory.user.delete_contacts",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-user-delete_contacts"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:07.362427+00:00",
+      "method_id": "directory.user.delete_contacts",
+      "scope_id": "directory:write_users",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "5",
+        "message": "not_found"
+      },
+      "request_fixture_id": "directory-user-delete_contacts"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:07.559748+00:00",
+      "method_id": "directory.user.get_domain2fa",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-user-get_domain2fa"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:07.957261+00:00",
+      "method_id": "directory.user.get_domain2fa",
+      "scope_id": "directory:read_users",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "5",
+        "message": "2FA выключена для организации"
+      },
+      "request_fixture_id": "directory-user-get_domain2fa"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:08.172519+00:00",
+      "method_id": "directory.user.update_domain2fa",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-user-update_domain2fa"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:08.547194+00:00",
+      "method_id": "directory.user.update_domain2fa",
+      "scope_id": "directory:write_users",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "5",
+        "message": "2FA выключена для организации"
+      },
+      "request_fixture_id": "directory-user-update_domain2fa"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:08.793149+00:00",
+      "method_id": "directory.group.list",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-group-list"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:09.200447+00:00",
+      "method_id": "directory.group.list",
+      "scope_id": "directory:read_groups",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json",
+        "json_keys": [
+          "groups",
+          "page",
+          "pages",
+          "perPage",
+          "total"
+        ]
+      },
+      "request_fixture_id": "directory-group-list"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:09.453660+00:00",
+      "method_id": "directory.group.create",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-group-create"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:09.800659+00:00",
+      "method_id": "directory.group.create",
+      "scope_id": "directory:write_groups",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "3",
+        "message": "invalid_name"
+      },
+      "request_fixture_id": "directory-group-create"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:10.013853+00:00",
+      "method_id": "directory.group.get",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-group-get"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:10.241331+00:00",
+      "method_id": "directory.group.get",
+      "scope_id": "directory:read_groups",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-group-get"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:10.445670+00:00",
+      "method_id": "directory.group.delete",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-group-delete"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:10.645646+00:00",
+      "method_id": "directory.group.delete",
+      "scope_id": "directory:write_groups",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-group-delete"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:10.853237+00:00",
+      "method_id": "directory.group.update",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-group-update"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:11.075053+00:00",
+      "method_id": "directory.group.update",
+      "scope_id": "directory:write_groups",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-group-update"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:11.283175+00:00",
+      "method_id": "directory.group.list_members",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-group-list_members"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:11.510796+00:00",
+      "method_id": "directory.group.list_members",
+      "scope_id": "directory:read_groups",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-group-list_members"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:11.724803+00:00",
+      "method_id": "directory.group.update_members",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-group-update_members"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:11.940265+00:00",
+      "method_id": "directory.group.update_members",
+      "scope_id": "directory:write_groups",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-group-update_members"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:12.157919+00:00",
+      "method_id": "directory.group.add_member",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-group-add_member"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:12.367787+00:00",
+      "method_id": "directory.group.add_member",
+      "scope_id": "directory:write_groups",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-group-add_member"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:12.602815+00:00",
+      "method_id": "directory.group.delete_members",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-group-delete_members"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:12.815221+00:00",
+      "method_id": "directory.group.delete_members",
+      "scope_id": "directory:write_groups",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-group-delete_members"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:13.056083+00:00",
+      "method_id": "directory.group.delete_member",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-group-delete_member"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:13.292879+00:00",
+      "method_id": "directory.group.delete_member",
+      "scope_id": "directory:write_groups",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-group-delete_member"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:13.536271+00:00",
+      "method_id": "directory.department.list",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-department-list"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:13.873795+00:00",
+      "method_id": "directory.department.list",
+      "scope_id": "directory:read_departments",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json",
+        "json_keys": [
+          "departments",
+          "page",
+          "pages",
+          "perPage",
+          "total"
+        ]
+      },
+      "request_fixture_id": "directory-department-list"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:14.115510+00:00",
+      "method_id": "directory.department.create",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-department-create"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:14.444095+00:00",
+      "method_id": "directory.department.create",
+      "scope_id": "directory:write_departments",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "3",
+        "message": "invalid_name"
+      },
+      "request_fixture_id": "directory-department-create"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:14.658611+00:00",
+      "method_id": "directory.department.get",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-department-get"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:14.893472+00:00",
+      "method_id": "directory.department.get",
+      "scope_id": "directory:read_departments",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-department-get"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:15.161185+00:00",
+      "method_id": "directory.department.delete",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-department-delete"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:15.388902+00:00",
+      "method_id": "directory.department.delete",
+      "scope_id": "directory:write_departments",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-department-delete"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:15.627166+00:00",
+      "method_id": "directory.department.update",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-department-update"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:15.826853+00:00",
+      "method_id": "directory.department.update",
+      "scope_id": "directory:write_departments",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-department-update"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:16.063282+00:00",
+      "method_id": "directory.department.create_alias",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-department-create_alias"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:17.314790+00:00",
+      "method_id": "directory.department.create_alias",
+      "scope_id": "directory:write_departments",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-department-create_alias"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:17.540559+00:00",
+      "method_id": "directory.department.delete_alias",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-department-delete_alias"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:17.797585+00:00",
+      "method_id": "directory.department.delete_alias",
+      "scope_id": "directory:write_departments",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-department-delete_alias"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:18.042255+00:00",
+      "method_id": "directory.domain.list",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-domain-list"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:18.635854+00:00",
+      "method_id": "directory.domain.list",
+      "scope_id": "directory:read_domains",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json",
+        "json_keys": [
+          "domains",
+          "page",
+          "pages",
+          "perPage",
+          "total"
+        ]
+      },
+      "request_fixture_id": "directory-domain-list"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:18.881383+00:00",
+      "method_id": "directory.domain.create",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-domain-create"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:19.434089+00:00",
+      "method_id": "directory.domain.create",
+      "scope_id": "directory:write_domains",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json",
+        "json_keys": [
+          "country",
+          "delegated",
+          "master",
+          "mx",
+          "name",
+          "verified"
+        ]
+      },
+      "request_fixture_id": "directory-domain-create"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:19.652391+00:00",
+      "method_id": "directory.domain.delete",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-domain-delete"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:20.179712+00:00",
+      "method_id": "directory.domain.delete",
+      "scope_id": "directory:write_domains",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json",
+        "json_keys": []
+      },
+      "request_fixture_id": "directory-domain-delete"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:20.419863+00:00",
+      "method_id": "directory.domain.dkimstatus",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-domain-dkimstatus"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:20.739331+00:00",
+      "method_id": "directory.domain.dkimstatus",
+      "scope_id": "directory:read_domains",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json",
+        "json_keys": [
+          "enabled",
+          "publicKey"
+        ]
+      },
+      "request_fixture_id": "directory-domain-dkimstatus"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:20.992320+00:00",
+      "method_id": "directory.domain.dkimdisable",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-domain-dkimdisable"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:21.308999+00:00",
+      "method_id": "directory.domain.dkimdisable",
+      "scope_id": "directory:write_domains",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json",
+        "json_keys": []
+      },
+      "request_fixture_id": "directory-domain-dkimdisable"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:21.518190+00:00",
+      "method_id": "directory.domain.dkimenable",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-domain-dkimenable"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:21.901002+00:00",
+      "method_id": "directory.domain.dkimenable",
+      "scope_id": "directory:write_domains",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json",
+        "json_keys": []
+      },
+      "request_fixture_id": "directory-domain-dkimenable"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:22.113712+00:00",
+      "method_id": "directory.domain.status",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-domain-status"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:22.517443+00:00",
+      "method_id": "directory.domain.status",
+      "scope_id": "directory:read_domains",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "5",
+        "message": "domain_not_found"
+      },
+      "request_fixture_id": "directory-domain-status"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:22.833324+00:00",
+      "method_id": "directory.domain_dns.list",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-domain_dns-list"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:23.257267+00:00",
+      "method_id": "directory.domain_dns.list",
+      "scope_id": "directory:manage_dns",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "5",
+        "message": "domain not found"
+      },
+      "request_fixture_id": "directory-domain_dns-list"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:23.475089+00:00",
+      "method_id": "directory.domain_dns.create",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-domain_dns-create"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:23.924044+00:00",
+      "method_id": "directory.domain_dns.create",
+      "scope_id": "directory:manage_dns",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "5",
+        "message": "domain not found"
+      },
+      "request_fixture_id": "directory-domain_dns-create"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:24.142066+00:00",
+      "method_id": "directory.domain_dns.edit",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-domain_dns-edit"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:24.349618+00:00",
+      "method_id": "directory.domain_dns.edit",
+      "scope_id": "directory:manage_dns",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-domain_dns-edit"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:24.566437+00:00",
+      "method_id": "directory.domain_dns.delete",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-domain_dns-delete"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:24.779324+00:00",
+      "method_id": "directory.domain_dns.delete",
+      "scope_id": "directory:manage_dns",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "text/plain"
+      },
+      "request_fixture_id": "directory-domain_dns-delete"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:24.990925+00:00",
+      "method_id": "directory.external_contact.list",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-external_contact-list"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:25.762891+00:00",
+      "method_id": "directory.external_contact.list",
+      "scope_id": "directory:read_external_contacts",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json",
+        "json_keys": [
+          "contacts",
+          "page",
+          "pages",
+          "perPage",
+          "total"
+        ]
+      },
+      "request_fixture_id": "directory-external_contact-list"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:25.970986+00:00",
+      "method_id": "directory.external_contact.create",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-external_contact-create"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:26.264549+00:00",
+      "method_id": "directory.external_contact.create",
+      "scope_id": "directory:write_external_contacts",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "3",
+        "message": "invalid_firstName"
+      },
+      "request_fixture_id": "directory-external_contact-create"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:26.527446+00:00",
+      "method_id": "directory.external_contact.get",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-external_contact-get"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:26.872376+00:00",
+      "method_id": "directory.external_contact.get",
+      "scope_id": "directory:read_external_contacts",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "3",
+        "message": "invalid_contactId"
+      },
+      "request_fixture_id": "directory-external_contact-get"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:27.071943+00:00",
+      "method_id": "directory.external_contact.delete",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-external_contact-delete"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:27.427484+00:00",
+      "method_id": "directory.external_contact.delete",
+      "scope_id": "directory:write_external_contacts",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "3",
+        "message": "invalid_contactId"
+      },
+      "request_fixture_id": "directory-external_contact-delete"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:27.716156+00:00",
+      "method_id": "directory.external_contact.update",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-external_contact-update"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:28.005175+00:00",
+      "method_id": "directory.external_contact.update",
+      "scope_id": "directory:write_external_contacts",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "3",
+        "message": "invalid_contactId"
+      },
+      "request_fixture_id": "directory-external_contact-update"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:28.231629+00:00",
+      "method_id": "directory.external_contact.update_emails",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-external_contact-update_emails"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:28.514414+00:00",
+      "method_id": "directory.external_contact.update_emails",
+      "scope_id": "directory:write_external_contacts",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "3",
+        "message": "invalid_contactId"
+      },
+      "request_fixture_id": "directory-external_contact-update_emails"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:28.728715+00:00",
+      "method_id": "directory.external_contact.update_phones",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "16",
+        "message": "Unauthorized"
+      },
+      "request_fixture_id": "directory-external_contact-update_phones"
+    },
+    {
+      "timestamp": "2026-04-20T12:06:29.104537+00:00",
+      "method_id": "directory.external_contact.update_phones",
+      "scope_id": "directory:write_external_contacts",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "details",
+          "message"
+        ],
+        "code": "3",
+        "message": "invalid_contactId"
+      },
+      "request_fixture_id": "directory-external_contact-update_phones"
+    }
+  ],
+  "cleanup_errors": []
+}

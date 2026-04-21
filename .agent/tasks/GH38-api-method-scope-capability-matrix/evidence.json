@@ -1,0 +1,111 @@
+{
+  "task_id": "GH38-api-method-scope-capability-matrix",
+  "status": "PASS",
+  "updated_at": "2026-04-21",
+  "summary": "Verified the current post-Cloud-extraction yandex-office capability map against the frozen GH38 spec. The map covers Calendar, Contacts, Directory, Disk, Forms, Mail, Telemost, and Tracker. Runtime token selection from method-scope-map.json is analyzed but not implemented.",
+  "artifacts": [
+    ".agent/tasks/GH38-api-method-scope-capability-matrix/spec.md",
+    ".agent/tasks/GH38-api-method-scope-capability-matrix/evidence.md",
+    ".agent/tasks/GH38-api-method-scope-capability-matrix/evidence.json",
+    ".agent/tasks/GH38-api-method-scope-capability-matrix/raw/validate.txt",
+    ".agent/tasks/GH38-api-method-scope-capability-matrix/raw/final-capability-audit.json",
+    "references/yandex-office-auth-principles.md",
+    "capabilities/README.md",
+    "capabilities/methods.json",
+    "capabilities/matrix.json",
+    "capabilities/method-scope-map.json",
+    "capabilities/atomic.client_id.json",
+    "capabilities/atomic.token",
+    "capabilities/probe.py",
+    "capabilities/validate.py",
+    ".agent/tasks/GH38-api-method-scope-capability-matrix/notes/runtime-method-scope-map-integration.md"
+  ],
+  "counts": {
+    "oauth_scopes": 134,
+    "auth_contexts": 32,
+    "methods": 315,
+    "matrix_cells": 816,
+    "matrix_status_counts": {
+      "works": 343,
+      "does_not_work": 458,
+      "unclear_needs_retest": 15
+    },
+    "method_scope_map_methods": 309,
+    "method_scope_map_public": 2,
+    "method_scope_map_one_of": 304,
+    "method_scope_map_all_of": 3
+  },
+  "service_counts": {
+    "calendar": 6,
+    "contacts": 5,
+    "directory": 49,
+    "disk": 32,
+    "forms": 33,
+    "mail": 32,
+    "telemost": 9,
+    "tracker": 149
+  },
+  "acceptance": {
+    "AC1": {
+      "status": "PASS",
+      "evidence": ["references/yandex-office-auth-principles.md", "spec.md", "capabilities/README.md"]
+    },
+    "AC2": {
+      "status": "PASS",
+      "evidence": ["capabilities/methods.json"]
+    },
+    "AC3": {
+      "status": "PASS",
+      "evidence": ["references/yandex-oauth-scopes.json", "capabilities/atomic.client_id.json", "capabilities/atomic.token"]
+    },
+    "AC4": {
+      "status": "PASS",
+      "evidence": ["capabilities/probe.py", "capabilities/methods.json", "capabilities/README.md"]
+    },
+    "AC5": {
+      "status": "PASS_WITH_RESIDUALS",
+      "evidence": ["capabilities/matrix.json", "capabilities/method-scope-map.json", "raw/final-capability-audit.json"]
+    },
+    "AC6": {
+      "status": "PASS_GUIDANCE_RUNTIME_NOT_IMPLEMENTED",
+      "evidence": [
+        "spec.md",
+        "capabilities/README.md",
+        "capabilities/mail-imap-scenarios.md",
+        "notes/runtime-method-scope-map-integration.md"
+      ]
+    },
+    "AC7": {
+      "status": "PASS",
+      "evidence": ["capabilities/validate.py", "raw/validate.txt"]
+    }
+  },
+  "residuals": [
+    "SMTP methods remain unclear_needs_retest because this host could not reach Yandex SMTP.",
+    "mail.imap.uid.delete_matching.live_realty is a negative/safety probe for mail:imap_ro and has no successful method-scope-map entry.",
+    "Current runtime callers still pass broad hardcoded required_scopes values into resolve_token(); method-scope-map.json is not yet used for automatic token choice."
+  ],
+  "commands": [
+    {
+      "command": "python3 capabilities/validate.py | tee .agent/tasks/GH38-api-method-scope-capability-matrix/raw/validate.txt",
+      "status": "PASS",
+      "artifact": ".agent/tasks/GH38-api-method-scope-capability-matrix/raw/validate.txt"
+    },
+    {
+      "command": "python3 -m py_compile capabilities/probe.py capabilities/validate.py",
+      "status": "PASS"
+    },
+    {
+      "command": "rg -n \"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\\\.[A-Za-z]{2,}|sc=[A-Za-z0-9_-]+|y0_[A-Za-z0-9_-]{20,}\" capabilities .agent/tasks/GH38-api-method-scope-capability-matrix -S",
+      "status": "PASS_NO_MATCHES"
+    },
+    {
+      "command": "jq empty config.json config.skill.json capabilities/methods.json capabilities/matrix.json capabilities/method-scope-map.json capabilities/atomic.client_id.json",
+      "status": "PASS"
+    },
+    {
+      "command": "pytest common/tests/test_config_auth.py common/tests/test_oauth_setup.py",
+      "status": "PASS"
+    }
+  ]
+}

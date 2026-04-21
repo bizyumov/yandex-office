@@ -1,0 +1,671 @@
+{
+  "probe": "telemost",
+  "timestamp": "2026-04-19T15:01:07.612207+00:00",
+  "fixture": {
+    "id": "telemost-method-access-fixture",
+    "variables": "<redacted>"
+  },
+  "rows": [
+    {
+      "timestamp": "2026-04-19T15:00:57.901336+00:00",
+      "method_id": "telemost.conferences.create.post",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "UnauthorizedError",
+        "description": "Unauthorized"
+      },
+      "request_fixture_id": "telemost-create-conference"
+    },
+    {
+      "timestamp": "2026-04-19T15:00:58.418603+00:00",
+      "method_id": "telemost.conferences.create.post",
+      "scope_id": "telemost-api:conferences.create",
+      "status": "works",
+      "http": {
+        "status_code": 201,
+        "ok": true,
+        "content_type": "application/json",
+        "json_keys": [
+          "id",
+          "join_url"
+        ]
+      },
+      "request_fixture_id": "telemost-create-conference"
+    },
+    {
+      "timestamp": "2026-04-19T15:00:58.597620+00:00",
+      "method_id": "telemost.conferences.create.post",
+      "scope_id": "telemost-api:conferences.read",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 403,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "ForbiddenError",
+        "description": "Forbidden"
+      },
+      "request_fixture_id": "telemost-create-conference"
+    },
+    {
+      "timestamp": "2026-04-19T15:00:58.772273+00:00",
+      "method_id": "telemost.conferences.create.post",
+      "scope_id": "telemost-api:conferences.update",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 403,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "ForbiddenError",
+        "description": "Forbidden"
+      },
+      "request_fixture_id": "telemost-create-conference"
+    },
+    {
+      "timestamp": "2026-04-19T15:00:58.985238+00:00",
+      "method_id": "telemost.conferences.get",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "UnauthorizedError",
+        "description": "Unauthorized"
+      },
+      "request_fixture_id": "telemost-get-conference"
+    },
+    {
+      "timestamp": "2026-04-19T15:00:59.196933+00:00",
+      "method_id": "telemost.conferences.get",
+      "scope_id": "telemost-api:conferences.create",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 403,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "ForbiddenError",
+        "description": "Forbidden"
+      },
+      "request_fixture_id": "telemost-get-conference"
+    },
+    {
+      "timestamp": "2026-04-19T15:00:59.845335+00:00",
+      "method_id": "telemost.conferences.get",
+      "scope_id": "telemost-api:conferences.read",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json",
+        "json_keys": [
+          "access_level",
+          "id",
+          "join_url",
+          "waiting_room_level"
+        ]
+      },
+      "request_fixture_id": "telemost-get-conference"
+    },
+    {
+      "timestamp": "2026-04-19T15:01:00.004619+00:00",
+      "method_id": "telemost.conferences.get",
+      "scope_id": "telemost-api:conferences.update",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 403,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "ForbiddenError",
+        "description": "Forbidden"
+      },
+      "request_fixture_id": "telemost-get-conference"
+    },
+    {
+      "timestamp": "2026-04-19T15:01:00.153201+00:00",
+      "method_id": "telemost.conferences.patch",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "UnauthorizedError",
+        "description": "Unauthorized"
+      },
+      "request_fixture_id": "telemost-update-conference"
+    },
+    {
+      "timestamp": "2026-04-19T15:01:00.321014+00:00",
+      "method_id": "telemost.conferences.patch",
+      "scope_id": "telemost-api:conferences.create",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 403,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "ForbiddenError",
+        "description": "Forbidden"
+      },
+      "request_fixture_id": "telemost-update-conference"
+    },
+    {
+      "timestamp": "2026-04-19T15:01:00.497784+00:00",
+      "method_id": "telemost.conferences.patch",
+      "scope_id": "telemost-api:conferences.read",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 403,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "ForbiddenError",
+        "description": "Forbidden"
+      },
+      "request_fixture_id": "telemost-update-conference"
+    },
+    {
+      "timestamp": "2026-04-19T15:01:00.893489+00:00",
+      "method_id": "telemost.conferences.patch",
+      "scope_id": "telemost-api:conferences.update",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json",
+        "json_keys": [
+          "id",
+          "join_url"
+        ]
+      },
+      "request_fixture_id": "telemost-update-conference"
+    },
+    {
+      "timestamp": "2026-04-19T15:01:01.073730+00:00",
+      "method_id": "telemost.conferences.cohosts.get",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "UnauthorizedError",
+        "description": "Unauthorized"
+      },
+      "request_fixture_id": "telemost-get-cohosts"
+    },
+    {
+      "timestamp": "2026-04-19T15:01:01.254977+00:00",
+      "method_id": "telemost.conferences.cohosts.get",
+      "scope_id": "telemost-api:conferences.create",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 403,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "ForbiddenError",
+        "description": "Forbidden"
+      },
+      "request_fixture_id": "telemost-get-cohosts"
+    },
+    {
+      "timestamp": "2026-04-19T15:01:01.935825+00:00",
+      "method_id": "telemost.conferences.cohosts.get",
+      "scope_id": "telemost-api:conferences.read",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json",
+        "json_keys": [
+          "cohosts"
+        ]
+      },
+      "request_fixture_id": "telemost-get-cohosts"
+    },
+    {
+      "timestamp": "2026-04-19T15:01:02.120909+00:00",
+      "method_id": "telemost.conferences.cohosts.get",
+      "scope_id": "telemost-api:conferences.update",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 403,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "ForbiddenError",
+        "description": "Forbidden"
+      },
+      "request_fixture_id": "telemost-get-cohosts"
+    },
+    {
+      "timestamp": "2026-04-19T15:01:02.282751+00:00",
+      "method_id": "telemost.conferences.cohosts.put",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "UnauthorizedError",
+        "description": "Unauthorized"
+      },
+      "request_fixture_id": "telemost-replace-cohosts"
+    },
+    {
+      "timestamp": "2026-04-19T15:01:02.512832+00:00",
+      "method_id": "telemost.conferences.cohosts.put",
+      "scope_id": "telemost-api:conferences.create",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 403,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "ForbiddenError",
+        "description": "Forbidden"
+      },
+      "request_fixture_id": "telemost-replace-cohosts"
+    },
+    {
+      "timestamp": "2026-04-19T15:01:02.701769+00:00",
+      "method_id": "telemost.conferences.cohosts.put",
+      "scope_id": "telemost-api:conferences.read",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 403,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "ForbiddenError",
+        "description": "Forbidden"
+      },
+      "request_fixture_id": "telemost-replace-cohosts"
+    },
+    {
+      "timestamp": "2026-04-19T15:01:02.959734+00:00",
+      "method_id": "telemost.conferences.cohosts.put",
+      "scope_id": "telemost-api:conferences.update",
+      "status": "works",
+      "http": {
+        "status_code": 204,
+        "ok": true,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "telemost-replace-cohosts"
+    },
+    {
+      "timestamp": "2026-04-19T15:01:03.104843+00:00",
+      "method_id": "telemost.conferences.cohosts.patch",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "UnauthorizedError",
+        "description": "Unauthorized"
+      },
+      "request_fixture_id": "telemost-add-cohosts"
+    },
+    {
+      "timestamp": "2026-04-19T15:01:04.299725+00:00",
+      "method_id": "telemost.conferences.cohosts.patch",
+      "scope_id": "telemost-api:conferences.create",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 403,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "ForbiddenError",
+        "description": "Forbidden"
+      },
+      "request_fixture_id": "telemost-add-cohosts"
+    },
+    {
+      "timestamp": "2026-04-19T15:01:04.476693+00:00",
+      "method_id": "telemost.conferences.cohosts.patch",
+      "scope_id": "telemost-api:conferences.read",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 403,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "ForbiddenError",
+        "description": "Forbidden"
+      },
+      "request_fixture_id": "telemost-add-cohosts"
+    },
+    {
+      "timestamp": "2026-04-19T15:01:04.728338+00:00",
+      "method_id": "telemost.conferences.cohosts.patch",
+      "scope_id": "telemost-api:conferences.update",
+      "status": "works",
+      "http": {
+        "status_code": 204,
+        "ok": true,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "telemost-add-cohosts"
+    },
+    {
+      "timestamp": "2026-04-19T15:01:04.886962+00:00",
+      "method_id": "telemost.conferences.cohosts.delete",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "UnauthorizedError",
+        "description": "Unauthorized"
+      },
+      "request_fixture_id": "telemost-delete-cohosts"
+    },
+    {
+      "timestamp": "2026-04-19T15:01:05.048493+00:00",
+      "method_id": "telemost.conferences.cohosts.delete",
+      "scope_id": "telemost-api:conferences.create",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 403,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "ForbiddenError",
+        "description": "Forbidden"
+      },
+      "request_fixture_id": "telemost-delete-cohosts"
+    },
+    {
+      "timestamp": "2026-04-19T15:01:05.281322+00:00",
+      "method_id": "telemost.conferences.cohosts.delete",
+      "scope_id": "telemost-api:conferences.read",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 403,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "ForbiddenError",
+        "description": "Forbidden"
+      },
+      "request_fixture_id": "telemost-delete-cohosts"
+    },
+    {
+      "timestamp": "2026-04-19T15:01:05.774861+00:00",
+      "method_id": "telemost.conferences.cohosts.delete",
+      "scope_id": "telemost-api:conferences.update",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "details",
+          "error",
+          "message"
+        ],
+        "error": "NoSuchUserPrincipalsFound",
+        "description": "Some of the specified user principal names were not found."
+      },
+      "request_fixture_id": "telemost-delete-cohosts"
+    },
+    {
+      "timestamp": "2026-04-19T15:01:05.989395+00:00",
+      "method_id": "telemost.organizations.settings.get",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "UnauthorizedError",
+        "description": "Unauthorized"
+      },
+      "request_fixture_id": "telemost-get-org-settings"
+    },
+    {
+      "timestamp": "2026-04-19T15:01:06.162718+00:00",
+      "method_id": "telemost.organizations.settings.get",
+      "scope_id": "telemost-api:conferences.create",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 403,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "ForbiddenError",
+        "description": "Forbidden"
+      },
+      "request_fixture_id": "telemost-get-org-settings"
+    },
+    {
+      "timestamp": "2026-04-19T15:01:06.365249+00:00",
+      "method_id": "telemost.organizations.settings.get",
+      "scope_id": "telemost-api:conferences.read",
+      "status": "works",
+      "http": {
+        "status_code": 403,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "OrganizationSettingsAccessForbidden",
+        "description": "Нет прав на выполнение запроса."
+      },
+      "request_fixture_id": "telemost-get-org-settings"
+    },
+    {
+      "timestamp": "2026-04-19T15:01:06.591711+00:00",
+      "method_id": "telemost.organizations.settings.get",
+      "scope_id": "telemost-api:conferences.update",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 403,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "ForbiddenError",
+        "description": "Forbidden"
+      },
+      "request_fixture_id": "telemost-get-org-settings"
+    },
+    {
+      "timestamp": "2026-04-19T15:01:06.750182+00:00",
+      "method_id": "telemost.organizations.settings.put",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "UnauthorizedError",
+        "description": "Unauthorized"
+      },
+      "request_fixture_id": "telemost-update-org-settings"
+    },
+    {
+      "timestamp": "2026-04-19T15:01:06.929566+00:00",
+      "method_id": "telemost.organizations.settings.put",
+      "scope_id": "telemost-api:conferences.create",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 403,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "ForbiddenError",
+        "description": "Forbidden"
+      },
+      "request_fixture_id": "telemost-update-org-settings"
+    },
+    {
+      "timestamp": "2026-04-19T15:01:07.111556+00:00",
+      "method_id": "telemost.organizations.settings.put",
+      "scope_id": "telemost-api:conferences.read",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 403,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "ForbiddenError",
+        "description": "Forbidden"
+      },
+      "request_fixture_id": "telemost-update-org-settings"
+    },
+    {
+      "timestamp": "2026-04-19T15:01:07.612154+00:00",
+      "method_id": "telemost.organizations.settings.put",
+      "scope_id": "telemost-api:conferences.update",
+      "status": "works",
+      "http": {
+        "status_code": 403,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "OrganizationSettingsAccessForbidden",
+        "description": "Нет прав на выполнение запроса."
+      },
+      "request_fixture_id": "telemost-update-org-settings"
+    }
+  ],
+  "cleanup_errors": []
+}

@@ -1,0 +1,1581 @@
+{
+  "schema_version": 1,
+  "generated_by": "capabilities/probe.py",
+  "methods": {
+    "calendar.caldav.principal": {
+      "one_of": [
+        "calendar:all"
+      ]
+    },
+    "calendar.caldav.calendars": {
+      "one_of": [
+        "calendar:all"
+      ]
+    },
+    "calendar.caldav.report.date_search": {
+      "one_of": [
+        "calendar:all"
+      ]
+    },
+    "calendar.caldav.event.put": {
+      "one_of": [
+        "calendar:all"
+      ]
+    },
+    "calendar.caldav.event.get": {
+      "one_of": [
+        "calendar:all"
+      ]
+    },
+    "calendar.caldav.event.delete": {
+      "one_of": [
+        "calendar:all"
+      ]
+    },
+    "contacts.carddav.principal": {
+      "one_of": [
+        "addressbook:all"
+      ]
+    },
+    "contacts.carddav.addressbook.propfind": {
+      "one_of": [
+        "addressbook:all"
+      ]
+    },
+    "contacts.carddav.vcard.put": {
+      "one_of": [
+        "addressbook:all"
+      ]
+    },
+    "contacts.carddav.vcard.get": {
+      "one_of": [
+        "addressbook:all"
+      ]
+    },
+    "contacts.carddav.vcard.delete": {
+      "one_of": [
+        "addressbook:all"
+      ]
+    },
+    "directory.organizations.list": {
+      "one_of": [
+        "directory:read_organization"
+      ]
+    },
+    "directory.user.list": {
+      "one_of": [
+        "directory:read_users"
+      ]
+    },
+    "directory.user.create": {
+      "one_of": [
+        "directory:write_users"
+      ]
+    },
+    "directory.user.get": {
+      "one_of": [
+        "directory:read_users"
+      ]
+    },
+    "directory.user.update": {
+      "one_of": [
+        "directory:write_users"
+      ]
+    },
+    "directory.user.get2fa": {
+      "one_of": [
+        "directory:read_users"
+      ]
+    },
+    "directory.user.delete2fa": {
+      "one_of": [
+        "directory:write_users"
+      ]
+    },
+    "directory.user.create_user_alias": {
+      "one_of": [
+        "directory:write_users"
+      ]
+    },
+    "directory.user.delete_user_alias": {
+      "one_of": [
+        "directory:write_users"
+      ]
+    },
+    "directory.user.update_avatar": {
+      "one_of": [
+        "directory:write_users"
+      ]
+    },
+    "directory.user.update_contacts": {
+      "one_of": [
+        "directory:write_users"
+      ]
+    },
+    "directory.user.delete_contacts": {
+      "one_of": [
+        "directory:write_users"
+      ]
+    },
+    "directory.user.get_domain2fa": {
+      "one_of": [
+        "directory:read_users"
+      ]
+    },
+    "directory.user.update_domain2fa": {
+      "one_of": [
+        "directory:write_users"
+      ]
+    },
+    "directory.group.list": {
+      "one_of": [
+        "directory:read_groups"
+      ]
+    },
+    "directory.group.create": {
+      "one_of": [
+        "directory:write_groups"
+      ]
+    },
+    "directory.group.get": {
+      "one_of": [
+        "directory:read_groups"
+      ]
+    },
+    "directory.group.delete": {
+      "one_of": [
+        "directory:write_groups"
+      ]
+    },
+    "directory.group.update": {
+      "one_of": [
+        "directory:write_groups"
+      ]
+    },
+    "directory.group.list_members": {
+      "one_of": [
+        "directory:read_groups"
+      ]
+    },
+    "directory.group.update_members": {
+      "one_of": [
+        "directory:write_groups"
+      ]
+    },
+    "directory.group.add_member": {
+      "one_of": [
+        "directory:write_groups"
+      ]
+    },
+    "directory.group.delete_members": {
+      "one_of": [
+        "directory:write_groups"
+      ]
+    },
+    "directory.group.delete_member": {
+      "one_of": [
+        "directory:write_groups"
+      ]
+    },
+    "directory.department.list": {
+      "one_of": [
+        "directory:read_departments"
+      ]
+    },
+    "directory.department.create": {
+      "one_of": [
+        "directory:write_departments"
+      ]
+    },
+    "directory.department.get": {
+      "one_of": [
+        "directory:read_departments"
+      ]
+    },
+    "directory.department.delete": {
+      "one_of": [
+        "directory:write_departments"
+      ]
+    },
+    "directory.department.update": {
+      "one_of": [
+        "directory:write_departments"
+      ]
+    },
+    "directory.department.create_alias": {
+      "one_of": [
+        "directory:write_departments"
+      ]
+    },
+    "directory.department.delete_alias": {
+      "one_of": [
+        "directory:write_departments"
+      ]
+    },
+    "directory.domain.list": {
+      "one_of": [
+        "directory:read_domains"
+      ]
+    },
+    "directory.domain.create": {
+      "one_of": [
+        "directory:write_domains"
+      ]
+    },
+    "directory.domain.delete": {
+      "one_of": [
+        "directory:write_domains"
+      ]
+    },
+    "directory.domain.dkimstatus": {
+      "one_of": [
+        "directory:read_domains"
+      ]
+    },
+    "directory.domain.dkimdisable": {
+      "one_of": [
+        "directory:write_domains"
+      ]
+    },
+    "directory.domain.dkimenable": {
+      "one_of": [
+        "directory:write_domains"
+      ]
+    },
+    "directory.domain.status": {
+      "one_of": [
+        "directory:read_domains"
+      ]
+    },
+    "directory.domain_dns.list": {
+      "one_of": [
+        "directory:manage_dns"
+      ]
+    },
+    "directory.domain_dns.create": {
+      "one_of": [
+        "directory:manage_dns"
+      ]
+    },
+    "directory.domain_dns.edit": {
+      "one_of": [
+        "directory:manage_dns"
+      ]
+    },
+    "directory.domain_dns.delete": {
+      "one_of": [
+        "directory:manage_dns"
+      ]
+    },
+    "directory.external_contact.list": {
+      "one_of": [
+        "directory:read_external_contacts"
+      ]
+    },
+    "directory.external_contact.create": {
+      "one_of": [
+        "directory:write_external_contacts"
+      ]
+    },
+    "directory.external_contact.get": {
+      "one_of": [
+        "directory:read_external_contacts"
+      ]
+    },
+    "directory.external_contact.delete": {
+      "one_of": [
+        "directory:write_external_contacts"
+      ]
+    },
+    "directory.external_contact.update": {
+      "one_of": [
+        "directory:write_external_contacts"
+      ]
+    },
+    "directory.external_contact.update_emails": {
+      "one_of": [
+        "directory:write_external_contacts"
+      ]
+    },
+    "directory.external_contact.update_phones": {
+      "one_of": [
+        "directory:write_external_contacts"
+      ]
+    },
+    "disk.public.resources.download.get": {
+      "public": true
+    },
+    "disk.public.resources.get": {
+      "public": true
+    },
+    "disk.resources.copy.post.disk": {
+      "all_of": [
+        "cloud_api:disk.read",
+        "cloud_api:disk.write"
+      ]
+    },
+    "disk.resources.move.post.disk": {
+      "all_of": [
+        "cloud_api:disk.read",
+        "cloud_api:disk.write"
+      ]
+    },
+    "disk.trash.resources.restore.put": {
+      "all_of": [
+        "cloud_api:disk.read",
+        "cloud_api:disk.write"
+      ]
+    },
+    "disk.info.get": {
+      "one_of": [
+        "cloud_api:disk.info",
+        "cloud_api:disk.read"
+      ]
+    },
+    "disk.resources.get.disk": {
+      "one_of": [
+        "cloud_api:disk.read"
+      ]
+    },
+    "disk.resources.get.app_folder": {
+      "one_of": [
+        "cloud_api:disk.app_folder"
+      ]
+    },
+    "disk.trash.resources.get": {
+      "one_of": [
+        "cloud_api:disk.read"
+      ]
+    },
+    "disk.resources.files.get": {
+      "one_of": [
+        "cloud_api:disk.read"
+      ]
+    },
+    "disk.resources.last_uploaded.get": {
+      "one_of": [
+        "cloud_api:disk.read"
+      ]
+    },
+    "disk.resources.patch.disk": {
+      "one_of": [
+        "cloud_api:disk.write"
+      ]
+    },
+    "disk.resources.patch.app_folder": {
+      "one_of": [
+        "cloud_api:disk.app_folder"
+      ]
+    },
+    "disk.resources.upload.get.disk": {
+      "one_of": [
+        "cloud_api:disk.write"
+      ]
+    },
+    "disk.resources.upload.get.app_folder": {
+      "one_of": [
+        "cloud_api:disk.app_folder"
+      ]
+    },
+    "disk.resources.download.get.disk": {
+      "one_of": [
+        "cloud_api:disk.read"
+      ]
+    },
+    "disk.resources.download.get.app_folder": {
+      "one_of": [
+        "cloud_api:disk.app_folder"
+      ]
+    },
+    "disk.resources.put.disk": {
+      "one_of": [
+        "cloud_api:disk.write"
+      ]
+    },
+    "disk.resources.put.app_folder": {
+      "one_of": [
+        "cloud_api:disk.app_folder"
+      ]
+    },
+    "disk.resources.copy.post.app_folder": {
+      "one_of": [
+        "cloud_api:disk.app_folder"
+      ]
+    },
+    "disk.resources.move.post.app_folder": {
+      "one_of": [
+        "cloud_api:disk.app_folder"
+      ]
+    },
+    "disk.resources.delete.disk": {
+      "one_of": [
+        "cloud_api:disk.write"
+      ]
+    },
+    "disk.resources.delete.app_folder": {
+      "one_of": [
+        "cloud_api:disk.app_folder"
+      ]
+    },
+    "disk.resources.publish.put.disk": {
+      "one_of": [
+        "cloud_api:disk.write"
+      ]
+    },
+    "disk.resources.publish.put.app_folder": {
+      "one_of": [
+        "cloud_api:disk.app_folder"
+      ]
+    },
+    "disk.resources.unpublish.put.disk": {
+      "one_of": [
+        "cloud_api:disk.write"
+      ]
+    },
+    "disk.resources.unpublish.put.app_folder": {
+      "one_of": [
+        "cloud_api:disk.app_folder"
+      ]
+    },
+    "disk.public.resources.save_to_disk.post.disk": {
+      "one_of": [
+        "cloud_api:disk.write"
+      ]
+    },
+    "disk.public.resources.save_to_disk.post.app_folder": {
+      "one_of": [
+        "cloud_api:disk.write"
+      ]
+    },
+    "disk.trash.resources.delete": {
+      "one_of": [
+        "cloud_api:disk.write"
+      ]
+    },
+    "disk.operations.get.disk": {
+      "one_of": [
+        "cloud_api:disk.app_folder",
+        "cloud_api:disk.info",
+        "cloud_api:disk.read",
+        "cloud_api:disk.write"
+      ]
+    },
+    "disk.operations.get.app_folder": {
+      "one_of": [
+        "cloud_api:disk.app_folder",
+        "cloud_api:disk.info",
+        "cloud_api:disk.read",
+        "cloud_api:disk.write"
+      ]
+    },
+    "forms.answers.v1_answers_get_answer": {
+      "one_of": [
+        "forms:read"
+      ]
+    },
+    "forms.answers.v1_answers_export_answers": {
+      "one_of": [
+        "forms:write"
+      ]
+    },
+    "forms.answers.v1_answers_export_answers_results": {
+      "one_of": [
+        "forms:read"
+      ]
+    },
+    "forms.answers.v1_answers_get_answers": {
+      "one_of": [
+        "forms:read"
+      ]
+    },
+    "forms.files.v1_files_get_file": {
+      "one_of": [
+        "forms:read"
+      ]
+    },
+    "forms.files.v1_files_delete_file": {
+      "one_of": [
+        "forms:write"
+      ]
+    },
+    "forms.files.v1_files_save_survey_file": {
+      "one_of": [
+        "forms:write"
+      ]
+    },
+    "forms.files.v1_files_verify_file": {
+      "one_of": [
+        "forms:write"
+      ]
+    },
+    "forms.surveys.b2b_v1_surveys_get_surveys": {
+      "one_of": [
+        "forms:read"
+      ]
+    },
+    "forms.surveys.b2b_v1_surveys_create_survey": {
+      "one_of": [
+        "forms:write"
+      ]
+    },
+    "forms.surveys.b2b_v1_surveys_get_survey": {
+      "one_of": [
+        "forms:read"
+      ]
+    },
+    "forms.surveys.b2b_v1_surveys_delete_survey": {
+      "one_of": [
+        "forms:write"
+      ]
+    },
+    "forms.surveys.b2b_v1_surveys_modify_survey": {
+      "one_of": [
+        "forms:write"
+      ]
+    },
+    "forms.surveys.v1_surveys_publish_survey": {
+      "one_of": [
+        "forms:write"
+      ]
+    },
+    "forms.surveys.v1_surveys_unpublish_survey": {
+      "one_of": [
+        "forms:write"
+      ]
+    },
+    "forms.filling.v1_frontend_get_form": {
+      "one_of": [
+        "forms:read"
+      ]
+    },
+    "forms.filling.v1_frontend_submit_form": {
+      "one_of": [
+        "forms:write"
+      ]
+    },
+    "forms.filling.v1_frontend_get_suggest": {
+      "one_of": [
+        "forms:read"
+      ]
+    },
+    "forms.images.v1_images_create_image": {
+      "one_of": [
+        "forms:write"
+      ]
+    },
+    "forms.questions.v1_questions_get_questions": {
+      "one_of": [
+        "forms:read"
+      ]
+    },
+    "forms.questions.v1_questions_create_question": {
+      "one_of": [
+        "forms:write"
+      ]
+    },
+    "forms.questions.v1_questions_get_question": {
+      "one_of": [
+        "forms:read"
+      ]
+    },
+    "forms.questions.v1_questions_delete_question": {
+      "one_of": [
+        "forms:write"
+      ]
+    },
+    "forms.questions.v1_questions_modify_question": {
+      "one_of": [
+        "forms:write"
+      ]
+    },
+    "forms.questions.v1_questions_move_question": {
+      "one_of": [
+        "forms:write"
+      ]
+    },
+    "forms.keysets.v1_keysets_download_keyset": {
+      "one_of": [
+        "forms:read"
+      ]
+    },
+    "forms.keysets.v1_keysets_get_keyset": {
+      "one_of": [
+        "forms:read"
+      ]
+    },
+    "forms.keysets.v1_keysets_delete_keyset": {
+      "one_of": [
+        "forms:write"
+      ]
+    },
+    "forms.keysets.v1_keysets_modify_keyset": {
+      "one_of": [
+        "forms:write"
+      ]
+    },
+    "forms.keysets.v1_keysets_get_keysets": {
+      "one_of": [
+        "forms:read"
+      ]
+    },
+    "forms.keysets.v1_keysets_create_keyset": {
+      "one_of": [
+        "forms:write"
+      ]
+    },
+    "forms.operations.v1_operations_get_operation": {
+      "one_of": [
+        "forms:read"
+      ]
+    },
+    "forms.users.v1_users_get_user": {
+      "one_of": [
+        "forms:read"
+      ]
+    },
+    "mail.imap.authenticate": {
+      "one_of": [
+        "mail:imap_full",
+        "mail:imap_ro"
+      ]
+    },
+    "mail.imap.capability": {
+      "one_of": [
+        "mail:imap_full",
+        "mail:imap_ro"
+      ]
+    },
+    "mail.imap.noop": {
+      "one_of": [
+        "mail:imap_full",
+        "mail:imap_ro"
+      ]
+    },
+    "mail.imap.logout": {
+      "one_of": [
+        "mail:imap_full",
+        "mail:imap_ro"
+      ]
+    },
+    "mail.imap.list": {
+      "one_of": [
+        "mail:imap_full",
+        "mail:imap_ro"
+      ]
+    },
+    "mail.imap.lsub": {
+      "one_of": [
+        "mail:imap_full",
+        "mail:imap_ro"
+      ]
+    },
+    "mail.imap.status": {
+      "one_of": [
+        "mail:imap_full",
+        "mail:imap_ro"
+      ]
+    },
+    "mail.imap.select": {
+      "one_of": [
+        "mail:imap_full",
+        "mail:imap_ro"
+      ]
+    },
+    "mail.imap.examine": {
+      "one_of": [
+        "mail:imap_full",
+        "mail:imap_ro"
+      ]
+    },
+    "mail.imap.check": {
+      "one_of": [
+        "mail:imap_full",
+        "mail:imap_ro"
+      ]
+    },
+    "mail.imap.close": {
+      "one_of": [
+        "mail:imap_full",
+        "mail:imap_ro"
+      ]
+    },
+    "mail.imap.create": {
+      "one_of": [
+        "mail:imap_full",
+        "mail:imap_ro"
+      ]
+    },
+    "mail.imap.delete": {
+      "one_of": [
+        "mail:imap_full",
+        "mail:imap_ro"
+      ]
+    },
+    "mail.imap.rename": {
+      "one_of": [
+        "mail:imap_full",
+        "mail:imap_ro"
+      ]
+    },
+    "mail.imap.subscribe": {
+      "one_of": [
+        "mail:imap_full",
+        "mail:imap_ro"
+      ]
+    },
+    "mail.imap.unsubscribe": {
+      "one_of": [
+        "mail:imap_full",
+        "mail:imap_ro"
+      ]
+    },
+    "mail.imap.append": {
+      "one_of": [
+        "mail:imap_full",
+        "mail:imap_ro"
+      ]
+    },
+    "mail.imap.search": {
+      "one_of": [
+        "mail:imap_full",
+        "mail:imap_ro"
+      ]
+    },
+    "mail.imap.fetch": {
+      "one_of": [
+        "mail:imap_full",
+        "mail:imap_ro"
+      ]
+    },
+    "mail.imap.store": {
+      "one_of": [
+        "mail:imap_full"
+      ]
+    },
+    "mail.imap.copy": {
+      "one_of": [
+        "mail:imap_full",
+        "mail:imap_ro"
+      ]
+    },
+    "mail.imap.expunge": {
+      "one_of": [
+        "mail:imap_full",
+        "mail:imap_ro"
+      ]
+    },
+    "mail.imap.uid.search": {
+      "one_of": [
+        "mail:imap_full",
+        "mail:imap_ro"
+      ]
+    },
+    "mail.imap.uid.fetch": {
+      "one_of": [
+        "mail:imap_full",
+        "mail:imap_ro"
+      ]
+    },
+    "mail.imap.uid.store": {
+      "one_of": [
+        "mail:imap_full"
+      ]
+    },
+    "mail.imap.uid.copy": {
+      "one_of": [
+        "mail:imap_full",
+        "mail:imap_ro"
+      ]
+    },
+    "telemost.conferences.create.post": {
+      "one_of": [
+        "telemost-api:conferences.create"
+      ]
+    },
+    "telemost.conferences.get": {
+      "one_of": [
+        "telemost-api:conferences.read"
+      ]
+    },
+    "telemost.conferences.patch": {
+      "one_of": [
+        "telemost-api:conferences.update"
+      ]
+    },
+    "telemost.conferences.cohosts.get": {
+      "one_of": [
+        "telemost-api:conferences.read"
+      ]
+    },
+    "telemost.conferences.cohosts.put": {
+      "one_of": [
+        "telemost-api:conferences.update"
+      ]
+    },
+    "telemost.conferences.cohosts.patch": {
+      "one_of": [
+        "telemost-api:conferences.update"
+      ]
+    },
+    "telemost.conferences.cohosts.delete": {
+      "one_of": [
+        "telemost-api:conferences.update"
+      ]
+    },
+    "telemost.organizations.settings.get": {
+      "one_of": [
+        "telemost-api:conferences.read"
+      ]
+    },
+    "telemost.organizations.settings.put": {
+      "one_of": [
+        "telemost-api:conferences.update"
+      ]
+    },
+    "tracker.admin_create_resolution": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.admin_create_status": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.admin_get_issue_types": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.admin_get_resolutions": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.admin_get_statuses": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.admin_patch_issue_type": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.admin_patch_resolution": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.admin_patch_status": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.boards_delete_board": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.boards_delete_column": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.boards_get_board": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.boards_get_boards": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.boards_get_column": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.boards_get_columns": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.boards_get_sprint": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.boards_get_sprints": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.boards_patch_board": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.boards_patch_column": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.boards_post_board": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.boards_post_column": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.boards_post_sprint": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.bulkchange_bulk_move_info": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.bulkchange_bulk_move_issues": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.bulkchange_bulk_transition": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.bulkchange_bulk_update_issues": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.dashboards_create_dashboard": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.dashboards_create_widget": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.delete_macros": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.entities_attachments_add_attachment": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.entities_attachments_delete_attachment": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.entities_attachments_get_all_attachments": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.entities_attachments_get_attachment": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.entities_bulkchange_entities": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.entities_checklists_add_checklist": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.entities_checklists_delete_checklist": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.entities_checklists_delete_checklist_item": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.entities_checklists_move_checklist_item": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.entities_checklists_patch_checklist": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.entities_checklists_patch_checklist_item": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.entities_comments_delete_comment": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.entities_comments_get_all_comments": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.entities_comments_get_comment": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.entities_create_entity": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.entities_delete_entity": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.entities_get_access": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.entities_get_entity": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.entities_get_events_relative": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.entities_keyresults": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.entities_links_add_links": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.entities_links_delete_link": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.entities_links_get_links": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.entities_metric": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.entities_patch_access": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.entities_search_entities": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.entities_update_entity": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.get_macros": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.get_macroses": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.import_import_attachments": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.import_import_comments": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.import_import_links": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.import_import_ticket": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.issues_add_checklist_item": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.issues_add_comment": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.issues_add_external_link": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.issues_count_issues": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.issues_create_field": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.issues_create_issue": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.issues_create_issue_field_category": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.issues_delete_attachment": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.issues_delete_checklist": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.issues_delete_checklist_item": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.issues_delete_comment": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.issues_delete_external_link": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.issues_delete_link_issue": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.issues_delete_worklog": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.issues_edit_checklist": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.issues_edit_comment": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.issues_get_applications": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.issues_get_attachment": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.issues_get_attachment_preview": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.issues_get_attachments_list": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.issues_get_changelog": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.issues_get_checklist": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.issues_get_comments": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.issues_get_external_links": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.issues_get_global_fields": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.issues_get_issue": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.issues_get_issue_fields": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.issues_get_links": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.issues_get_priorities": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.issues_get_suggest": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.issues_get_transitions": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.issues_get_worklog": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.issues_issue_worklog": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.issues_link_issue": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.issues_move_issue": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.issues_new_transition": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.issues_new_worklog": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.issues_patch_issue": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.issues_patch_issue_field_category": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.issues_patch_issue_field_name": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.issues_patch_issue_field_value": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.issues_patch_worklog": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.issues_post_attachment": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.issues_search_issues": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.issues_search_release": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.issues_temp_attachment": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.patch_macros": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.post_macros": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.projects_create_project": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.projects_delete_project": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.projects_get_project": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.projects_get_project_queues": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.projects_get_projects": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.projects_update_project": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.queues_change_trigger": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.queues_create_autoaction": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.queues_create_local_field": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.queues_create_queue": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.queues_create_trigger": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.queues_create_version": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.queues_delete_tag": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.queues_get_autoaction": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.queues_get_component_group_access": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.queues_get_component_user_access": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.queues_get_components": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.queues_get_fields": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.queues_get_group_access": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.queues_get_info_local_field": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.queues_get_local_fields": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.queues_get_queue": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.queues_get_queues": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.queues_get_trigger": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.queues_get_user_access": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.queues_get_versions": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.queues_manage_access": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.queues_patch_component": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.queues_post_component": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.queues_restore_queue": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.queues_view_autoaction_logs": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.queues_view_trigger_logs": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.users_get_user": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.users_get_user_info": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.users_get_users": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.admin_create_issue_type": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.queues_delete_queue": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.queues_get_tags": {
+      "one_of": [
+        "tracker:read"
+      ]
+    },
+    "tracker.entities_comments_add_comment": {
+      "one_of": [
+        "tracker:write"
+      ]
+    },
+    "tracker.entities_comments_patch_comment": {
+      "one_of": [
+        "tracker:write"
+      ]
+    }
+  }
+}

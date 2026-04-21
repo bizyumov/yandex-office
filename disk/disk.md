@@ -99,7 +99,7 @@ python3 <full-path-to-yandex-office>/scripts/oauth_setup.py \
   --scope cloud_api:disk.app_folder
 ```
 
-Recommended: use the default Disk app from root `config.json` (`oauth_apps.service_defaults.disk`, currently `disk-read`) for the read-only approval link. Use `--app disk-full` for the write-capable preconfigured app, and use explicit `--client-id` plus `--scope` only for advanced/operator flows. If the app's scopes change later, reissue tokens.
+Recommended: use the default Disk app from root `config.skill.json` (the `oauth_apps.catalog` entry with `"service": "disk"` and `"is_default": true`, currently `disk-read`) for the read-only approval link. Use `--app disk-full` for the write-capable preconfigured app, and use explicit `--client-id` plus `--scope` only for advanced/operator flows. If the app's scopes change later, reissue tokens.
 
 ## Important: Telemost Recordings
 

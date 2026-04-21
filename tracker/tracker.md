@@ -66,7 +66,7 @@ python3 <full-path-to-yandex-office>/scripts/oauth_setup.py \
   --service tracker
 ```
 
-Recommended: use the default Tracker app from root `config.json` (`oauth_apps.service_defaults.tracker`, currently `tracker-read`) for the default onboarding path. Use `--app tracker-full` for write access, and explicit `--client-id` and `--scope` only when you need a one-off override.
+Recommended: use the default Tracker app from root `config.skill.json` (the `oauth_apps.catalog` entry with `"service": "tracker"` and `"is_default": true`, currently `tracker-read`) for the default onboarding path. Use `--app tracker-full` for write access, and explicit `--client-id` and `--scope` only when you need a one-off override.
 
 ### Organization ID
 

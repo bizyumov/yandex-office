@@ -1,0 +1,50 @@
+{
+  "task_id": "GH38-api-method-scope-capability-matrix",
+  "verdict": "PASS_WITH_RESIDUALS",
+  "verified_at": "2026-04-21",
+  "scope": "Current yandex-office capability-map build after extracting Cloud to the standalone yandex-cloud skill.",
+  "checks": [
+    {
+      "name": "capability inventory and generated output validation",
+      "command": "python3 capabilities/validate.py",
+      "status": "PASS",
+      "artifact": "raw/validate.txt"
+    },
+    {
+      "name": "probe/validator syntax check",
+      "command": "python3 -m py_compile capabilities/probe.py capabilities/validate.py",
+      "status": "PASS"
+    },
+    {
+      "name": "capability JSON parse check",
+      "command": "jq empty config.json config.skill.json capabilities/methods.json capabilities/matrix.json capabilities/method-scope-map.json capabilities/atomic.client_id.json",
+      "status": "PASS"
+    },
+    {
+      "name": "secret/live-id redaction spot check",
+      "command": "rg for raw OAuth tokens, private email-shaped values, and Yandex diagnostic ids in capabilities/task artifacts",
+      "status": "PASS"
+    },
+    {
+      "name": "targeted regression tests",
+      "command": "pytest common/tests/test_config_auth.py common/tests/test_oauth_setup.py",
+      "status": "PASS"
+    }
+  ],
+  "counts": {
+    "methods": 315,
+    "matrix_cells": 816,
+    "method_scope_map_methods": 309,
+    "works": 343,
+    "does_not_work": 458,
+    "unclear_needs_retest": 15
+  },
+  "notes": [
+    "All 315 inventoried methods have matrix cells.",
+    "method-scope-map.json intentionally contains only methods with successful public, one_of, or all_of capability results.",
+    "Five SMTP methods remain unclear_needs_retest from this host.",
+    "mail.imap.uid.delete_matching.live_realty is a negative/safety probe for mail:imap_ro and has no successful method-scope-map entry.",
+    "Cloud infrastructure is no longer part of yandex-office and was extracted to the private yandex-cloud skill.",
+    "Runtime token selection from method-scope-map.json is not implemented yet; see notes/runtime-method-scope-map-integration.md."
+  ]
+}

@@ -1,0 +1,2099 @@
+{
+  "probe": "mail",
+  "timestamp": "2026-04-20T10:10:43.769031+00:00",
+  "fixture": {
+    "id": "mail-method-access-fixture",
+    "variables": "<redacted>"
+  },
+  "rows": [
+    {
+      "timestamp": "2026-04-20T10:07:54.140081+00:00",
+      "method_id": "mail.imap.authenticate",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingImapAuthContext"
+      },
+      "request_fixture_id": "mail-imap-authenticate"
+    },
+    {
+      "timestamp": "2026-04-20T10:07:54.764883+00:00",
+      "method_id": "mail.imap.authenticate",
+      "scope_id": "mail:imap_full",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-authenticate"
+    },
+    {
+      "timestamp": "2026-04-20T10:07:55.392037+00:00",
+      "method_id": "mail.imap.authenticate",
+      "scope_id": "mail:imap_ro",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-authenticate"
+    },
+    {
+      "timestamp": "2026-04-20T10:07:56.019926+00:00",
+      "method_id": "mail.imap.authenticate",
+      "scope_id": "mail:smtp",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 535,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "error",
+        "description": "[AUTHENTICATIONFAILED] AUTHENTICATE invalid credentials or IMAP is disabled sc=<redacted>"
+      },
+      "request_fixture_id": "mail-imap-authenticate"
+    },
+    {
+      "timestamp": "2026-04-20T10:07:56.020006+00:00",
+      "method_id": "mail.imap.capability",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingImapAuthContext"
+      },
+      "request_fixture_id": "mail-imap-capability"
+    },
+    {
+      "timestamp": "2026-04-20T10:07:56.848789+00:00",
+      "method_id": "mail.imap.capability",
+      "scope_id": "mail:imap_full",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-capability"
+    },
+    {
+      "timestamp": "2026-04-20T10:07:57.632235+00:00",
+      "method_id": "mail.imap.capability",
+      "scope_id": "mail:imap_ro",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-capability"
+    },
+    {
+      "timestamp": "2026-04-20T10:07:58.256553+00:00",
+      "method_id": "mail.imap.capability",
+      "scope_id": "mail:smtp",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 535,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "error",
+        "description": "[AUTHENTICATIONFAILED] AUTHENTICATE invalid credentials or IMAP is disabled sc=<redacted>"
+      },
+      "request_fixture_id": "mail-imap-capability"
+    },
+    {
+      "timestamp": "2026-04-20T10:07:58.256641+00:00",
+      "method_id": "mail.imap.noop",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingImapAuthContext"
+      },
+      "request_fixture_id": "mail-imap-noop"
+    },
+    {
+      "timestamp": "2026-04-20T10:07:58.896693+00:00",
+      "method_id": "mail.imap.noop",
+      "scope_id": "mail:imap_full",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-noop"
+    },
+    {
+      "timestamp": "2026-04-20T10:07:59.747888+00:00",
+      "method_id": "mail.imap.noop",
+      "scope_id": "mail:imap_ro",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-noop"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:00.435695+00:00",
+      "method_id": "mail.imap.noop",
+      "scope_id": "mail:smtp",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 535,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "error",
+        "description": "[AUTHENTICATIONFAILED] AUTHENTICATE invalid credentials or IMAP is disabled sc=<redacted>"
+      },
+      "request_fixture_id": "mail-imap-noop"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:00.435796+00:00",
+      "method_id": "mail.imap.logout",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingImapAuthContext"
+      },
+      "request_fixture_id": "mail-imap-logout"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:01.148865+00:00",
+      "method_id": "mail.imap.logout",
+      "scope_id": "mail:imap_full",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-logout"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:01.757616+00:00",
+      "method_id": "mail.imap.logout",
+      "scope_id": "mail:imap_ro",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-logout"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:02.314179+00:00",
+      "method_id": "mail.imap.logout",
+      "scope_id": "mail:smtp",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 535,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "error",
+        "description": "[AUTHENTICATIONFAILED] AUTHENTICATE invalid credentials or IMAP is disabled sc=<redacted>"
+      },
+      "request_fixture_id": "mail-imap-logout"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:02.314344+00:00",
+      "method_id": "mail.imap.list",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingImapAuthContext"
+      },
+      "request_fixture_id": "mail-imap-list"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:03.280973+00:00",
+      "method_id": "mail.imap.list",
+      "scope_id": "mail:imap_full",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-list"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:04.006810+00:00",
+      "method_id": "mail.imap.list",
+      "scope_id": "mail:imap_ro",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-list"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:04.668061+00:00",
+      "method_id": "mail.imap.list",
+      "scope_id": "mail:smtp",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 535,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "error",
+        "description": "[AUTHENTICATIONFAILED] AUTHENTICATE invalid credentials or IMAP is disabled sc=<redacted>"
+      },
+      "request_fixture_id": "mail-imap-list"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:04.668141+00:00",
+      "method_id": "mail.imap.lsub",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingImapAuthContext"
+      },
+      "request_fixture_id": "mail-imap-lsub"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:05.395522+00:00",
+      "method_id": "mail.imap.lsub",
+      "scope_id": "mail:imap_full",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-lsub"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:06.431329+00:00",
+      "method_id": "mail.imap.lsub",
+      "scope_id": "mail:imap_ro",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-lsub"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:07.043080+00:00",
+      "method_id": "mail.imap.lsub",
+      "scope_id": "mail:smtp",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 535,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "error",
+        "description": "[AUTHENTICATIONFAILED] AUTHENTICATE invalid credentials or IMAP is disabled sc=<redacted>"
+      },
+      "request_fixture_id": "mail-imap-lsub"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:07.043197+00:00",
+      "method_id": "mail.imap.status",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingImapAuthContext"
+      },
+      "request_fixture_id": "mail-imap-status"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:08.331437+00:00",
+      "method_id": "mail.imap.status",
+      "scope_id": "mail:imap_full",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-status"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:09.061269+00:00",
+      "method_id": "mail.imap.status",
+      "scope_id": "mail:imap_ro",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-status"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:09.729842+00:00",
+      "method_id": "mail.imap.status",
+      "scope_id": "mail:smtp",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 535,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "error",
+        "description": "[AUTHENTICATIONFAILED] AUTHENTICATE invalid credentials or IMAP is disabled sc=<redacted>"
+      },
+      "request_fixture_id": "mail-imap-status"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:09.729937+00:00",
+      "method_id": "mail.imap.select",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingImapAuthContext"
+      },
+      "request_fixture_id": "mail-imap-select"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:10.549556+00:00",
+      "method_id": "mail.imap.select",
+      "scope_id": "mail:imap_full",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "count",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-select"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:11.633775+00:00",
+      "method_id": "mail.imap.select",
+      "scope_id": "mail:imap_ro",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "count",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-select"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:12.450899+00:00",
+      "method_id": "mail.imap.select",
+      "scope_id": "mail:smtp",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 535,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "error",
+        "description": "[AUTHENTICATIONFAILED] AUTHENTICATE invalid credentials or IMAP is disabled sc=<redacted>"
+      },
+      "request_fixture_id": "mail-imap-select"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:12.450978+00:00",
+      "method_id": "mail.imap.examine",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingImapAuthContext"
+      },
+      "request_fixture_id": "mail-imap-examine"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:13.404482+00:00",
+      "method_id": "mail.imap.examine",
+      "scope_id": "mail:imap_full",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "count",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-examine"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:14.223872+00:00",
+      "method_id": "mail.imap.examine",
+      "scope_id": "mail:imap_ro",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "count",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-examine"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:14.793018+00:00",
+      "method_id": "mail.imap.examine",
+      "scope_id": "mail:smtp",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 535,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "error",
+        "description": "[AUTHENTICATIONFAILED] AUTHENTICATE invalid credentials or IMAP is disabled sc=<redacted>"
+      },
+      "request_fixture_id": "mail-imap-examine"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:14.793279+00:00",
+      "method_id": "mail.imap.check",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingImapAuthContext"
+      },
+      "request_fixture_id": "mail-imap-check"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:15.693205+00:00",
+      "method_id": "mail.imap.check",
+      "scope_id": "mail:imap_full",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-check"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:16.712524+00:00",
+      "method_id": "mail.imap.check",
+      "scope_id": "mail:imap_ro",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-check"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:17.321610+00:00",
+      "method_id": "mail.imap.check",
+      "scope_id": "mail:smtp",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 535,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "error",
+        "description": "[AUTHENTICATIONFAILED] AUTHENTICATE invalid credentials or IMAP is disabled sc=<redacted>"
+      },
+      "request_fixture_id": "mail-imap-check"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:17.321701+00:00",
+      "method_id": "mail.imap.close",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingImapAuthContext"
+      },
+      "request_fixture_id": "mail-imap-close"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:20.384857+00:00",
+      "method_id": "mail.imap.close",
+      "scope_id": "mail:imap_full",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-close"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:24.104146+00:00",
+      "method_id": "mail.imap.close",
+      "scope_id": "mail:imap_ro",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-close"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:27.100242+00:00",
+      "method_id": "mail.imap.close",
+      "scope_id": "mail:smtp",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 535,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "error",
+        "description": "[AUTHENTICATIONFAILED] AUTHENTICATE invalid credentials or IMAP is disabled sc=<redacted>"
+      },
+      "request_fixture_id": "mail-imap-close"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:27.706222+00:00",
+      "method_id": "mail.imap.create",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingImapAuthContext"
+      },
+      "request_fixture_id": "mail-imap-create"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:28.552031+00:00",
+      "method_id": "mail.imap.create",
+      "scope_id": "mail:imap_full",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-create"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:30.601338+00:00",
+      "method_id": "mail.imap.create",
+      "scope_id": "mail:imap_ro",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-create"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:32.536774+00:00",
+      "method_id": "mail.imap.create",
+      "scope_id": "mail:smtp",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 535,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "error",
+        "description": "[AUTHENTICATIONFAILED] AUTHENTICATE invalid credentials or IMAP is disabled sc=<redacted>"
+      },
+      "request_fixture_id": "mail-imap-create"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:33.116614+00:00",
+      "method_id": "mail.imap.delete",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingImapAuthContext"
+      },
+      "request_fixture_id": "mail-imap-delete"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:34.751546+00:00",
+      "method_id": "mail.imap.delete",
+      "scope_id": "mail:imap_full",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-delete"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:36.722500+00:00",
+      "method_id": "mail.imap.delete",
+      "scope_id": "mail:imap_ro",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-delete"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:38.018616+00:00",
+      "method_id": "mail.imap.delete",
+      "scope_id": "mail:smtp",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 535,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "error",
+        "description": "[AUTHENTICATIONFAILED] AUTHENTICATE invalid credentials or IMAP is disabled sc=<redacted>"
+      },
+      "request_fixture_id": "mail-imap-delete"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:38.018692+00:00",
+      "method_id": "mail.imap.rename",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingImapAuthContext"
+      },
+      "request_fixture_id": "mail-imap-rename"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:39.809757+00:00",
+      "method_id": "mail.imap.rename",
+      "scope_id": "mail:imap_full",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-rename"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:46.818861+00:00",
+      "method_id": "mail.imap.rename",
+      "scope_id": "mail:imap_ro",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-rename"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:49.546664+00:00",
+      "method_id": "mail.imap.rename",
+      "scope_id": "mail:smtp",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 535,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "error",
+        "description": "[AUTHENTICATIONFAILED] AUTHENTICATE invalid credentials or IMAP is disabled sc=<redacted>"
+      },
+      "request_fixture_id": "mail-imap-rename"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:50.743845+00:00",
+      "method_id": "mail.imap.subscribe",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingImapAuthContext"
+      },
+      "request_fixture_id": "mail-imap-subscribe"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:53.058957+00:00",
+      "method_id": "mail.imap.subscribe",
+      "scope_id": "mail:imap_full",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-subscribe"
+    },
+    {
+      "timestamp": "2026-04-20T10:08:56.978238+00:00",
+      "method_id": "mail.imap.subscribe",
+      "scope_id": "mail:imap_ro",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-subscribe"
+    },
+    {
+      "timestamp": "2026-04-20T10:09:00.215002+00:00",
+      "method_id": "mail.imap.subscribe",
+      "scope_id": "mail:smtp",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 535,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "error",
+        "description": "[AUTHENTICATIONFAILED] AUTHENTICATE invalid credentials or IMAP is disabled sc=<redacted>"
+      },
+      "request_fixture_id": "mail-imap-subscribe"
+    },
+    {
+      "timestamp": "2026-04-20T10:09:01.426497+00:00",
+      "method_id": "mail.imap.unsubscribe",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingImapAuthContext"
+      },
+      "request_fixture_id": "mail-imap-unsubscribe"
+    },
+    {
+      "timestamp": "2026-04-20T10:09:03.716493+00:00",
+      "method_id": "mail.imap.unsubscribe",
+      "scope_id": "mail:imap_full",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-unsubscribe"
+    },
+    {
+      "timestamp": "2026-04-20T10:09:06.599609+00:00",
+      "method_id": "mail.imap.unsubscribe",
+      "scope_id": "mail:imap_ro",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-unsubscribe"
+    },
+    {
+      "timestamp": "2026-04-20T10:09:09.726154+00:00",
+      "method_id": "mail.imap.unsubscribe",
+      "scope_id": "mail:smtp",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 535,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "error",
+        "description": "[AUTHENTICATIONFAILED] AUTHENTICATE invalid credentials or IMAP is disabled sc=<redacted>"
+      },
+      "request_fixture_id": "mail-imap-unsubscribe"
+    },
+    {
+      "timestamp": "2026-04-20T10:09:10.524509+00:00",
+      "method_id": "mail.imap.append",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingImapAuthContext"
+      },
+      "request_fixture_id": "mail-imap-append"
+    },
+    {
+      "timestamp": "2026-04-20T10:09:12.399615+00:00",
+      "method_id": "mail.imap.append",
+      "scope_id": "mail:imap_full",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-append"
+    },
+    {
+      "timestamp": "2026-04-20T10:09:15.036760+00:00",
+      "method_id": "mail.imap.append",
+      "scope_id": "mail:imap_ro",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-append"
+    },
+    {
+      "timestamp": "2026-04-20T10:09:16.899876+00:00",
+      "method_id": "mail.imap.append",
+      "scope_id": "mail:smtp",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 535,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "error",
+        "description": "[AUTHENTICATIONFAILED] AUTHENTICATE invalid credentials or IMAP is disabled sc=<redacted>"
+      },
+      "request_fixture_id": "mail-imap-append"
+    },
+    {
+      "timestamp": "2026-04-20T10:09:17.542523+00:00",
+      "method_id": "mail.imap.search",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingImapAuthContext"
+      },
+      "request_fixture_id": "mail-imap-search"
+    },
+    {
+      "timestamp": "2026-04-20T10:09:18.521395+00:00",
+      "method_id": "mail.imap.search",
+      "scope_id": "mail:imap_full",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "imap_status",
+          "matched"
+        ]
+      },
+      "request_fixture_id": "mail-imap-search"
+    },
+    {
+      "timestamp": "2026-04-20T10:09:19.625434+00:00",
+      "method_id": "mail.imap.search",
+      "scope_id": "mail:imap_ro",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "imap_status",
+          "matched"
+        ]
+      },
+      "request_fixture_id": "mail-imap-search"
+    },
+    {
+      "timestamp": "2026-04-20T10:09:20.346069+00:00",
+      "method_id": "mail.imap.search",
+      "scope_id": "mail:smtp",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 535,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "error",
+        "description": "[AUTHENTICATIONFAILED] AUTHENTICATE invalid credentials or IMAP is disabled sc=<redacted>"
+      },
+      "request_fixture_id": "mail-imap-search"
+    },
+    {
+      "timestamp": "2026-04-20T10:09:20.346266+00:00",
+      "method_id": "mail.imap.fetch",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingImapAuthContext"
+      },
+      "request_fixture_id": "mail-imap-fetch"
+    },
+    {
+      "timestamp": "2026-04-20T10:09:21.698753+00:00",
+      "method_id": "mail.imap.fetch",
+      "scope_id": "mail:imap_full",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "fetched",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-fetch"
+    },
+    {
+      "timestamp": "2026-04-20T10:09:23.092202+00:00",
+      "method_id": "mail.imap.fetch",
+      "scope_id": "mail:imap_ro",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "fetched",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-fetch"
+    },
+    {
+      "timestamp": "2026-04-20T10:09:23.673846+00:00",
+      "method_id": "mail.imap.fetch",
+      "scope_id": "mail:smtp",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 535,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "error",
+        "description": "[AUTHENTICATIONFAILED] AUTHENTICATE invalid credentials or IMAP is disabled sc=<redacted>"
+      },
+      "request_fixture_id": "mail-imap-fetch"
+    },
+    {
+      "timestamp": "2026-04-20T10:09:23.673974+00:00",
+      "method_id": "mail.imap.store",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingImapAuthContext"
+      },
+      "request_fixture_id": "mail-imap-store"
+    },
+    {
+      "timestamp": "2026-04-20T10:09:27.182586+00:00",
+      "method_id": "mail.imap.store",
+      "scope_id": "mail:imap_full",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-store"
+    },
+    {
+      "timestamp": "2026-04-20T10:09:30.967517+00:00",
+      "method_id": "mail.imap.store",
+      "scope_id": "mail:imap_ro",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 535,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "error",
+        "description": "STORE command error: BAD [b'[CLIENTBUG] STORE Can not store in read-only folder. sc=<redacted>']"
+      },
+      "request_fixture_id": "mail-imap-store"
+    },
+    {
+      "timestamp": "2026-04-20T10:09:34.171924+00:00",
+      "method_id": "mail.imap.store",
+      "scope_id": "mail:smtp",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 535,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "error",
+        "description": "[AUTHENTICATIONFAILED] AUTHENTICATE invalid credentials or IMAP is disabled sc=<redacted>"
+      },
+      "request_fixture_id": "mail-imap-store"
+    },
+    {
+      "timestamp": "2026-04-20T10:09:34.768240+00:00",
+      "method_id": "mail.imap.copy",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingImapAuthContext"
+      },
+      "request_fixture_id": "mail-imap-copy"
+    },
+    {
+      "timestamp": "2026-04-20T10:09:38.600249+00:00",
+      "method_id": "mail.imap.copy",
+      "scope_id": "mail:imap_full",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-copy"
+    },
+    {
+      "timestamp": "2026-04-20T10:09:44.894046+00:00",
+      "method_id": "mail.imap.copy",
+      "scope_id": "mail:imap_ro",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-copy"
+    },
+    {
+      "timestamp": "2026-04-20T10:09:49.618618+00:00",
+      "method_id": "mail.imap.copy",
+      "scope_id": "mail:smtp",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 535,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "error",
+        "description": "[AUTHENTICATIONFAILED] AUTHENTICATE invalid credentials or IMAP is disabled sc=<redacted>"
+      },
+      "request_fixture_id": "mail-imap-copy"
+    },
+    {
+      "timestamp": "2026-04-20T10:09:50.879929+00:00",
+      "method_id": "mail.imap.expunge",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingImapAuthContext"
+      },
+      "request_fixture_id": "mail-imap-expunge"
+    },
+    {
+      "timestamp": "2026-04-20T10:09:55.085894+00:00",
+      "method_id": "mail.imap.expunge",
+      "scope_id": "mail:imap_full",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-expunge"
+    },
+    {
+      "timestamp": "2026-04-20T10:09:59.579015+00:00",
+      "method_id": "mail.imap.expunge",
+      "scope_id": "mail:imap_ro",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-expunge"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:02.804739+00:00",
+      "method_id": "mail.imap.expunge",
+      "scope_id": "mail:smtp",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 535,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "error",
+        "description": "[AUTHENTICATIONFAILED] AUTHENTICATE invalid credentials or IMAP is disabled sc=<redacted>"
+      },
+      "request_fixture_id": "mail-imap-expunge"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:03.538440+00:00",
+      "method_id": "mail.imap.uid.search",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingImapAuthContext"
+      },
+      "request_fixture_id": "mail-imap-uid-search"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:04.598383+00:00",
+      "method_id": "mail.imap.uid.search",
+      "scope_id": "mail:imap_full",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "imap_status",
+          "matched"
+        ]
+      },
+      "request_fixture_id": "mail-imap-uid-search"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:05.597082+00:00",
+      "method_id": "mail.imap.uid.search",
+      "scope_id": "mail:imap_ro",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "imap_status",
+          "matched"
+        ]
+      },
+      "request_fixture_id": "mail-imap-uid-search"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:06.242676+00:00",
+      "method_id": "mail.imap.uid.search",
+      "scope_id": "mail:smtp",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 535,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "error",
+        "description": "[AUTHENTICATIONFAILED] AUTHENTICATE invalid credentials or IMAP is disabled sc=<redacted>"
+      },
+      "request_fixture_id": "mail-imap-uid-search"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:06.242743+00:00",
+      "method_id": "mail.imap.uid.fetch",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingImapAuthContext"
+      },
+      "request_fixture_id": "mail-imap-uid-fetch"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:07.253142+00:00",
+      "method_id": "mail.imap.uid.fetch",
+      "scope_id": "mail:imap_full",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "fetched",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-uid-fetch"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:08.358603+00:00",
+      "method_id": "mail.imap.uid.fetch",
+      "scope_id": "mail:imap_ro",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "fetched",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-uid-fetch"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:09.039664+00:00",
+      "method_id": "mail.imap.uid.fetch",
+      "scope_id": "mail:smtp",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 535,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "error",
+        "description": "[AUTHENTICATIONFAILED] AUTHENTICATE invalid credentials or IMAP is disabled sc=<redacted>"
+      },
+      "request_fixture_id": "mail-imap-uid-fetch"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:09.039783+00:00",
+      "method_id": "mail.imap.uid.store",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingImapAuthContext"
+      },
+      "request_fixture_id": "mail-imap-uid-store"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:12.168610+00:00",
+      "method_id": "mail.imap.uid.store",
+      "scope_id": "mail:imap_full",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-uid-store"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:16.428858+00:00",
+      "method_id": "mail.imap.uid.store",
+      "scope_id": "mail:imap_ro",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 535,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "error",
+        "description": "UID command error: BAD [b'[CLIENTBUG] UID STORE Can not store in read-only folder. sc=<redacted>']"
+      },
+      "request_fixture_id": "mail-imap-uid-store"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:19.157783+00:00",
+      "method_id": "mail.imap.uid.store",
+      "scope_id": "mail:smtp",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 535,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "error",
+        "description": "[AUTHENTICATIONFAILED] AUTHENTICATE invalid credentials or IMAP is disabled sc=<redacted>"
+      },
+      "request_fixture_id": "mail-imap-uid-store"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:19.912229+00:00",
+      "method_id": "mail.imap.uid.copy",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingImapAuthContext"
+      },
+      "request_fixture_id": "mail-imap-uid-copy"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:23.747395+00:00",
+      "method_id": "mail.imap.uid.copy",
+      "scope_id": "mail:imap_full",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-uid-copy"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:29.228088+00:00",
+      "method_id": "mail.imap.uid.copy",
+      "scope_id": "mail:imap_ro",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "data",
+          "imap_status"
+        ]
+      },
+      "request_fixture_id": "mail-imap-uid-copy"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:33.285070+00:00",
+      "method_id": "mail.imap.uid.copy",
+      "scope_id": "mail:smtp",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 535,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "error",
+        "description": "[AUTHENTICATIONFAILED] AUTHENTICATE invalid credentials or IMAP is disabled sc=<redacted>"
+      },
+      "request_fixture_id": "mail-imap-uid-copy"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:35.753678+00:00",
+      "method_id": "mail.imap.uid.delete_matching.live_realty",
+      "scope_id": "mail:imap_ro",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 535,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error",
+          "matches_before",
+          "target_uid"
+        ],
+        "error": "ImapStoreDeletedFailed",
+        "description": "UID command error: BAD [b'[CLIENTBUG] UID STORE Can not store in read-only folder. sc=<redacted>']"
+      },
+      "request_fixture_id": "mail-imap-uid-delete-matching-live-realty"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:35.753822+00:00",
+      "method_id": "mail.smtp.authenticate",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingSmtpAuthContext"
+      },
+      "request_fixture_id": "mail-smtp-authenticate"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:43.767993+00:00",
+      "method_id": "mail.smtp.authenticate",
+      "scope_id": "mail:imap_full",
+      "status": "unclear_needs_retest",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "NetworkUnreachable",
+        "description": "[Errno 101] Network is unreachable"
+      },
+      "request_fixture_id": "mail-smtp-authenticate"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:43.768073+00:00",
+      "method_id": "mail.smtp.authenticate",
+      "scope_id": "mail:imap_ro",
+      "status": "unclear_needs_retest",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "NetworkUnreachable",
+        "description": "cached"
+      },
+      "request_fixture_id": "mail-smtp-authenticate"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:43.768114+00:00",
+      "method_id": "mail.smtp.authenticate",
+      "scope_id": "mail:smtp",
+      "status": "unclear_needs_retest",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "NetworkUnreachable",
+        "description": "cached"
+      },
+      "request_fixture_id": "mail-smtp-authenticate"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:43.768184+00:00",
+      "method_id": "mail.smtp.noop",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingSmtpAuthContext"
+      },
+      "request_fixture_id": "mail-smtp-noop"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:43.768219+00:00",
+      "method_id": "mail.smtp.noop",
+      "scope_id": "mail:imap_full",
+      "status": "unclear_needs_retest",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "NetworkUnreachable",
+        "description": "cached"
+      },
+      "request_fixture_id": "mail-smtp-noop"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:43.768515+00:00",
+      "method_id": "mail.smtp.noop",
+      "scope_id": "mail:imap_ro",
+      "status": "unclear_needs_retest",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "NetworkUnreachable",
+        "description": "cached"
+      },
+      "request_fixture_id": "mail-smtp-noop"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:43.768582+00:00",
+      "method_id": "mail.smtp.noop",
+      "scope_id": "mail:smtp",
+      "status": "unclear_needs_retest",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "NetworkUnreachable",
+        "description": "cached"
+      },
+      "request_fixture_id": "mail-smtp-noop"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:43.768619+00:00",
+      "method_id": "mail.smtp.rset",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingSmtpAuthContext"
+      },
+      "request_fixture_id": "mail-smtp-rset"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:43.768652+00:00",
+      "method_id": "mail.smtp.rset",
+      "scope_id": "mail:imap_full",
+      "status": "unclear_needs_retest",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "NetworkUnreachable",
+        "description": "cached"
+      },
+      "request_fixture_id": "mail-smtp-rset"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:43.768688+00:00",
+      "method_id": "mail.smtp.rset",
+      "scope_id": "mail:imap_ro",
+      "status": "unclear_needs_retest",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "NetworkUnreachable",
+        "description": "cached"
+      },
+      "request_fixture_id": "mail-smtp-rset"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:43.768712+00:00",
+      "method_id": "mail.smtp.rset",
+      "scope_id": "mail:smtp",
+      "status": "unclear_needs_retest",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "NetworkUnreachable",
+        "description": "cached"
+      },
+      "request_fixture_id": "mail-smtp-rset"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:43.768741+00:00",
+      "method_id": "mail.smtp.quit",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingSmtpAuthContext"
+      },
+      "request_fixture_id": "mail-smtp-quit"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:43.768763+00:00",
+      "method_id": "mail.smtp.quit",
+      "scope_id": "mail:imap_full",
+      "status": "unclear_needs_retest",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "NetworkUnreachable",
+        "description": "cached"
+      },
+      "request_fixture_id": "mail-smtp-quit"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:43.768802+00:00",
+      "method_id": "mail.smtp.quit",
+      "scope_id": "mail:imap_ro",
+      "status": "unclear_needs_retest",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "NetworkUnreachable",
+        "description": "cached"
+      },
+      "request_fixture_id": "mail-smtp-quit"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:43.768850+00:00",
+      "method_id": "mail.smtp.quit",
+      "scope_id": "mail:smtp",
+      "status": "unclear_needs_retest",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "NetworkUnreachable",
+        "description": "cached"
+      },
+      "request_fixture_id": "mail-smtp-quit"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:43.768904+00:00",
+      "method_id": "mail.smtp.send",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error"
+        ],
+        "error": "MissingSmtpAuthContext"
+      },
+      "request_fixture_id": "mail-smtp-send"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:43.768942+00:00",
+      "method_id": "mail.smtp.send",
+      "scope_id": "mail:imap_full",
+      "status": "unclear_needs_retest",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "NetworkUnreachable",
+        "description": "cached"
+      },
+      "request_fixture_id": "mail-smtp-send"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:43.768980+00:00",
+      "method_id": "mail.smtp.send",
+      "scope_id": "mail:imap_ro",
+      "status": "unclear_needs_retest",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "NetworkUnreachable",
+        "description": "cached"
+      },
+      "request_fixture_id": "mail-smtp-send"
+    },
+    {
+      "timestamp": "2026-04-20T10:10:43.769016+00:00",
+      "method_id": "mail.smtp.send",
+      "scope_id": "mail:smtp",
+      "status": "unclear_needs_retest",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "NetworkUnreachable",
+        "description": "cached"
+      },
+      "request_fixture_id": "mail-smtp-send"
+    }
+  ],
+  "cleanup_errors": []
+}
