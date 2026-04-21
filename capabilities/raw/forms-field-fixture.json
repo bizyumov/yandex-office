@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-04-20T12:29:24.856021+00:00",
+  "purpose": "Controlled live Forms field-type capability fixture for GH38.",
+  "survey_id": "<redacted-survey-id>",
+  "survey_name": "OpenClaw GH38 Forms capability field matrix 1776688069",
+  "organization_header": "X-Org-ID",
+  "requested_question_types": [
+    "string",
+    "boolean",
+    "integer",
+    "file",
+    "comment",
+    "date",
+    "daterange",
+    "payment",
+    "enum",
+    "suggest",
+    "matrix",
+    "series"
+  ],
+  "note": "Yandex stores requested type suggest as type=enum with widget=dropdown.",
+  "survey_get_status": 200,
+  "questions_get_status": 200,
+  "forms_list_status": 200,
+  "forms_list_count": 1,
+  "questions": [
+    {
+      "id": "<redacted-question-id>",
+      "label": "OpenClaw GH38 string",
+      "slug": "openclaw_gh38_string",
+      "type": "string",
+      "widget": null
+    },
+    {
+      "id": "<redacted-question-id>",
+      "label": "OpenClaw GH38 boolean",
+      "slug": "openclaw_gh38_boolean",
+      "type": "boolean",
+      "widget": null
+    },
+    {
+      "id": "<redacted-question-id>",
+      "label": "OpenClaw GH38 integer",
+      "slug": "openclaw_gh38_integer",
+      "type": "integer",
+      "widget": null
+    },
+    {
+      "id": "<redacted-question-id>",
+      "label": "OpenClaw GH38 file",
+      "slug": "openclaw_gh38_file",
+      "type": "file",
+      "widget": null
+    },
+    {
+      "id": "<redacted-question-id>",
+      "label": "OpenClaw GH38 comment",
+      "slug": "openclaw_gh38_comment",
+      "type": "comment",
+      "widget": null
+    },
+    {
+      "id": "<redacted-question-id>",
+      "label": "OpenClaw GH38 date",
+      "slug": "openclaw_gh38_date",
+      "type": "date",
+      "widget": null
+    },
+    {
+      "id": "<redacted-question-id>",
+      "label": "OpenClaw GH38 daterange",
+      "slug": "openclaw_gh38_daterange",
+      "type": "daterange",
+      "widget": null
+    },
+    {
+      "id": "<redacted-question-id>",
+      "label": "OpenClaw GH38 payment",
+      "slug": "openclaw_gh38_payment",
+      "type": "payment",
+      "widget": null
+    },
+    {
+      "id": "<redacted-question-id>",
+      "label": "OpenClaw GH38 enum",
+      "slug": "openclaw_gh38_enum",
+      "type": "enum",
+      "widget": "radio"
+    },
+    {
+      "id": "<redacted-question-id>",
+      "label": "OpenClaw GH38 suggest",
+      "slug": "openclaw_gh38_suggest",
+      "type": "enum",
+      "widget": "dropdown"
+    },
+    {
+      "id": "<redacted-question-id>",
+      "label": "OpenClaw GH38 matrix",
+      "slug": "openclaw_gh38_matrix",
+      "type": "matrix",
+      "widget": null
+    },
+    {
+      "id": "<redacted-question-id>",
+      "label": "OpenClaw GH38 series",
+      "slug": "openclaw_gh38_series",
+      "type": "series",
+      "widget": null
+    }
+  ]
+}

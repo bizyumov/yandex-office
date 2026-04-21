@@ -1,5 +1,6 @@
 # === Credentials & Tokens ===
 *.token
+capabilities/probe.local.json
 .env
 .env.*
 

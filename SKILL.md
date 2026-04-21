@@ -1,12 +1,12 @@
 ---
 name: yandex-office
-description: Shared Yandex skill pack for Mail, Disk, Telemost, Calendar, Contacts, Directory, Cloud, Forms, and Tracker on this OpenClaw host. Yandex Search now lives in a separate standalone skill repo.
+description: Shared Yandex skill pack for Mail, Disk, Telemost, Calendar, Contacts, Directory, Forms, and Tracker on this OpenClaw host. Yandex Search and Yandex Cloud now live in separate standalone skill repos.
 homepage: https://github.com/bizyumov/yandex-office
 license: MIT
 compatibility: Python 3.10+, per-skill dependencies, network access for Yandex APIs
 metadata:
   author: bizyumov
-  version: "2026.04.10"
+  version: "2026.04.20"
   openclaw:
     emoji: "🟡"
     requires:
@@ -33,7 +33,7 @@ Current release surface:
 - Need install instructions? See `Installation`, lines 269-286 below.
 - Need OAuth details? See `OAuth Setup`, lines 288-342 below, and `OAuth App Registration`, lines 343-349 below.
 - Need release/version pointers? See `Versioning`, lines 394-400 below.
-- Need to know where Yandex Search went? See `Migration Note`, lines 386-392 below.
+- Need to know where Yandex Search or Yandex Cloud went? See `Migration Note`, lines 386-392 below.
 
 ## Sub-Skills
 
@@ -45,7 +45,6 @@ Current release surface:
 | [directory](directory/) | Directory / Директория: Yandex 360 Directory API — users, departments, groups, and org-aware identity data |
 | [telemost](telemost/) | Telemost / Телемост: process Telemost emails, manage real conferences, and admin Telemost org defaults |
 | [disk](disk/) | Disk / Диск: download files from Yandex Disk, upload files to Disk, and manage public or organization-only share links (Telemost links may require OAuth) |
-| [cloud](cloud/) | Cloud / Облако: deploy serverless functions to Yandex Cloud |
 | [forms](forms/) | Forms / Формы: export form responses from Yandex Forms — download results as XLSX or JSON |
 | [tracker](tracker/) | Tracker / Трекер: manage tasks in Yandex Tracker — create, search, update issues, manage Agile boards |
 
@@ -57,7 +56,6 @@ Current release surface:
 - Directory: `directory/directory.md`
 - Disk: `disk/disk.md`
 - Telemost: `telemost/telemost.md`
-- Cloud: `cloud/cloud.md`
 - Forms: `forms/forms.md`
 - Tracker: `tracker/tracker.md`
 
@@ -121,9 +119,7 @@ Root `config.json`:
   "urls": {
     "oauth": "https://oauth.yandex.ru/authorize",
     "disk_api": "https://cloud-api.yandex.net",
-    "telemost_api": "https://cloud-api.yandex.net/v1/telemost-api",
-    "search_api": "https://searchapi.api.cloud.yandex.net",
-    "operations_api": "https://operation.api.cloud.yandex.net"
+    "telemost_api": "https://cloud-api.yandex.net/v1/telemost-api"
   },
   "imap": { "server": "imap.yandex.com", "port": 993 },
   "mail": {
@@ -322,7 +318,7 @@ python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --client-id DISK_CLI
 Recommended flow:
 
 - keep the app catalog in root `config.json` under `oauth_apps.catalog`
-- keep default app bindings in root `config.json` under `oauth_apps.service_defaults`
+- keep default app selection in root `config.skill.json` by marking one catalog entry per service with `is_default: true`
 - use `--app <app_id>` only when selecting a non-default variant
 - add the account first with `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <name>` when needed
 - then run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <name> --service <name>`
@@ -354,7 +350,6 @@ Important:
 |---------|---------------|
 | Yandex Disk API | https://yandex.ru/dev/disk-api/doc/ru/concepts/quickstart |
 | Yandex Mail IMAP | https://yandex.ru/support/mail/mail-clients/others.html |
-| Yandex Cloud CLI | https://cloud.yandex.com/docs/cli/quickstart |
 
 ## Structure
 
@@ -377,9 +372,7 @@ yandex-office/
 │   └── disk.md
 ├── telemost/
 │   └── telemost.md
-├── cloud/
-│   └── cloud.md
-└── forms/
+├── forms/
     └── forms.md
 ```
 
@@ -390,6 +383,8 @@ Yandex Search moved to the standalone `yandex-search-skill` repository:
 - https://github.com/bizyumov/yandex-search-skill
 
 Use that skill when you need Yandex Cloud Search API v2. This `yandex-office` meta-skill no longer includes search instructions.
+
+Yandex Cloud infrastructure guidance moved to the private standalone `yandex-cloud` skill repository at `/opt/openclaw/shared/skills/yandex-cloud`.
 
 ## Versioning
 

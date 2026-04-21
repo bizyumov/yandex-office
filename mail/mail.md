@@ -5,7 +5,7 @@ license: MIT
 compatibility: Requires Python 3.10+, network access to imap.yandex.ru
 metadata:
   author: bizyumov
-  version: "2026.04.10"
+  version: "2026.04.20"
 ---
 
 # Yandex Mail / Почта
@@ -36,7 +36,7 @@ python3 scripts/fetch_emails.py --filter forms
 python3 scripts/fetch_emails.py --sender "Мария" --subject "Fwd:" --mailbox alex --dry-run
 ```
 
-> Recommended: use the default Mail app from root `config.json` (`oauth_apps.service_defaults.mail`) so the approval URL can use the app's baked-in scopes without passing `--client-id` each time. If you also need Disk access, run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <name> --service disk` from the agent workspace CWD.
+> Recommended: use the default Mail app from root `config.skill.json` (the `oauth_apps.catalog` entry with `"service": "mail"` and `"is_default": true`) so the approval URL can use the app's baked-in scopes without passing `--client-id` each time. If you also need Disk access, run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <name> --service disk` from the agent workspace CWD.
 
 ## What It Does
 

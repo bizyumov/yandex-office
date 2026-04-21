@@ -4,7 +4,7 @@ A collection of [agentskills.io](https://agentskills.io/specification)-compliant
 
 Current release:
 
-- version: `2026.04.10`
+- version: `2026.04.20`
 - version file: `VERSION`
 - cumulative release notes: `CHANGELOG.md`
 
@@ -26,7 +26,6 @@ Current release:
 | [directory](directory/) | Directory / Директория: Yandex 360 Directory API — users, departments, groups, and org-aware identity data |
 | [telemost](telemost/) | Telemost / Телемост: process Telemost emails, manage real conferences, and admin Telemost org defaults |
 | [disk](disk/) | Disk / Диск: download files from Yandex Disk, upload files to Disk, and manage public or organization-only share links (Telemost links may require OAuth) |
-| [cloud](cloud/) | Cloud / Облако: deploy serverless functions to Yandex Cloud |
 | [forms](forms/) | Forms / Формы: export form responses from Yandex Forms — download results as XLSX or JSON |
 | [tracker](tracker/) | Tracker / Трекер: manage tasks in Yandex Tracker — create, search, update issues, manage Agile boards |
 
@@ -47,7 +46,10 @@ Yandex Search has moved to the standalone `yandex-search-skill` repository:
 
 - https://github.com/bizyumov/yandex-search-skill
 
-This repository now covers the remaining shared Yandex service skills only.
+Yandex Cloud infrastructure guidance moved to the private standalone `yandex-cloud`
+skill repository at `/opt/openclaw/shared/skills/yandex-cloud`.
+
+This repository now covers the remaining shared Yandex 360 office service skills only.
 
 ## Shared Configuration
 
@@ -65,9 +67,7 @@ Root `config.json`:
   "urls": {
     "oauth": "https://oauth.yandex.ru/authorize",
     "disk_api": "https://cloud-api.yandex.net",
-    "telemost_api": "https://cloud-api.yandex.net/v1/telemost-api",
-    "search_api": "https://searchapi.api.cloud.yandex.net",
-    "operations_api": "https://operation.api.cloud.yandex.net"
+    "telemost_api": "https://cloud-api.yandex.net/v1/telemost-api"
   },
   "imap": { "server": "imap.yandex.com", "port": 993 },
   "mail": {
@@ -266,11 +266,11 @@ OpenClaw workspace cwd
      -> accounts + service-specific overrides
 
 Skill config.json
-  -> oauth_apps.service_defaults.<service> selects the default app_id
+  -> oauth_apps.catalog marks the default app with `is_default: true`
   -> oauth_apps.catalog.<app_id> stores app name, client_id, service, and baked-in scopes
 
 python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --service <service> [--app <app_id>] --account <account> --email <email>
-  -> resolves app_id from oauth_apps.service_defaults unless --app is passed
+  -> resolves the default app from oauth_apps.catalog (`is_default: true`) unless --app is passed
   -> reads oauth_apps.catalog.<app_id>
   -> generates approval URL
   -> creates auth/{account}.token on first save if needed
@@ -355,7 +355,7 @@ python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --client-id DISK_CLI
 Recommended flow:
 
 - keep the checked-in app catalog in `config.json` under `oauth_apps.catalog`
-- keep service defaults in `config.json` under `oauth_apps.service_defaults`
+- keep default app selection in `config.skill.json` by marking one catalog entry per service with `is_default: true`
 - when `--service` is used, `oauth_setup.py` prints the default profile and any other configured profiles for that service
 - use `--app <app_id>` only when you need a non-default variant such as `disk-full`, `forms-full`, `tracker-full`, or `directory-full`
 - add the account first with `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <name>` when needed
@@ -387,7 +387,6 @@ Important:
 |---------|---------------|
 | Yandex Disk API | https://yandex.ru/dev/disk-api/doc/ru/concepts/quickstart |
 | Yandex Mail IMAP | https://yandex.ru/support/mail/mail-clients/others.html |
-| Yandex Cloud CLI | https://cloud.yandex.com/docs/cli/quickstart |
 
 ## License
 

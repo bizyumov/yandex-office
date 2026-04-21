@@ -24,7 +24,7 @@ def test_load_runtime_context_uses_cwd_agent_config(tmp_path: Path) -> None:
     script_path.write_text("", encoding="utf-8")
 
     write_json(
-        repo / "config.json",
+        repo / "config.skill.json",
         {
             "mail": {"filters": {"sender": "keeper@telemost.yandex.ru"}},
         },
@@ -51,7 +51,7 @@ def test_bootstrap_runtime_context_initializes_data_dir(tmp_path: Path) -> None:
     script_path.write_text("", encoding="utf-8")
 
     write_json(
-        repo / "config.example.json",
+        repo / "config.skill.json",
         {
             "urls": {"oauth": "https://oauth.yandex.ru/authorize"},
         },
@@ -67,7 +67,8 @@ def test_bootstrap_runtime_context_initializes_data_dir(tmp_path: Path) -> None:
     workspace = tmp_path / "workspace" / "velizar"
     runtime = bootstrap_runtime_context(script_path, cwd=workspace)
 
-    assert (repo / "config.json").exists()
+    assert (repo / "config.skill.json").exists()
+    assert not (repo / "config.json").exists()
     assert runtime.data_dir == (workspace / "yandex-data").resolve()
     assert (workspace / "yandex-data" / "auth").is_dir()
     assert (workspace / "yandex-data" / "incoming").is_dir()
@@ -81,7 +82,7 @@ def test_load_runtime_context_accepts_explicit_data_dir_override(tmp_path: Path)
     script_path.parent.mkdir(parents=True, exist_ok=True)
     script_path.write_text("", encoding="utf-8")
 
-    write_json(repo / "config.json", {})
+    write_json(repo / "config.skill.json", {})
 
     external_data_dir = tmp_path / "workspace" / "custom-yandex"
     write_json(
@@ -109,7 +110,7 @@ def test_bootstrap_runtime_context_accepts_explicit_data_dir_override(tmp_path: 
     script_path.parent.mkdir(parents=True, exist_ok=True)
     script_path.write_text("", encoding="utf-8")
 
-    write_json(repo / "config.example.json", {})
+    write_json(repo / "config.skill.json", {})
     write_json(repo / "config.agent.example.json", {"accounts": []})
 
     workspace = tmp_path / "workspace"
@@ -133,7 +134,7 @@ def test_load_runtime_context_rejects_data_dir_inside_skill_tree(tmp_path: Path)
     script_path.parent.mkdir(parents=True, exist_ok=True)
     script_path.write_text("", encoding="utf-8")
 
-    write_json(repo / "config.json", {})
+    write_json(repo / "config.skill.json", {})
 
     try:
         load_runtime_context(
@@ -155,7 +156,7 @@ def test_load_runtime_context_requires_agent_config_for_external_data_dir(tmp_pa
     script_path.write_text("", encoding="utf-8")
 
     workspace = tmp_path / "workspace"
-    write_json(repo / "config.json", {})
+    write_json(repo / "config.skill.json", {})
 
     try:
         load_runtime_context(

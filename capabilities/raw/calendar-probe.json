@@ -1,0 +1,155 @@
+{
+  "probe": "calendar",
+  "timestamp": "2026-04-20T11:30:11.701334+00:00",
+  "fixture": {
+    "id": "calendar-method-access-fixture",
+    "variables": "<redacted>"
+  },
+  "rows": [
+    {
+      "timestamp": "2026-04-20T11:30:07.301466+00:00",
+      "method_id": "calendar.caldav.principal",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": ""
+      },
+      "request_fixture_id": "calendar-principal"
+    },
+    {
+      "timestamp": "2026-04-20T11:30:07.544016+00:00",
+      "method_id": "calendar.caldav.principal",
+      "scope_id": "calendar:all",
+      "status": "works",
+      "http": {
+        "status_code": 207,
+        "ok": true,
+        "content_type": "text/xml"
+      },
+      "request_fixture_id": "calendar-principal"
+    },
+    {
+      "timestamp": "2026-04-20T11:30:07.772377+00:00",
+      "method_id": "calendar.caldav.calendars",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": ""
+      },
+      "request_fixture_id": "calendar-home-set"
+    },
+    {
+      "timestamp": "2026-04-20T11:30:08.143467+00:00",
+      "method_id": "calendar.caldav.calendars",
+      "scope_id": "calendar:all",
+      "status": "works",
+      "http": {
+        "status_code": 207,
+        "ok": true,
+        "content_type": "text/xml"
+      },
+      "request_fixture_id": "calendar-home-set"
+    },
+    {
+      "timestamp": "2026-04-20T11:30:08.443632+00:00",
+      "method_id": "calendar.caldav.report.date_search",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": ""
+      },
+      "request_fixture_id": "calendar-date-search"
+    },
+    {
+      "timestamp": "2026-04-20T11:30:08.721244+00:00",
+      "method_id": "calendar.caldav.report.date_search",
+      "scope_id": "calendar:all",
+      "status": "works",
+      "http": {
+        "status_code": 207,
+        "ok": true,
+        "content_type": "text/xml"
+      },
+      "request_fixture_id": "calendar-date-search"
+    },
+    {
+      "timestamp": "2026-04-20T11:30:08.937555+00:00",
+      "method_id": "calendar.caldav.event.put",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": ""
+      },
+      "request_fixture_id": "calendar-event-put"
+    },
+    {
+      "timestamp": "2026-04-20T11:30:09.351427+00:00",
+      "method_id": "calendar.caldav.event.put",
+      "scope_id": "calendar:all",
+      "status": "works",
+      "http": {
+        "status_code": 201,
+        "ok": true,
+        "content_type": ""
+      },
+      "request_fixture_id": "calendar-event-put"
+    },
+    {
+      "timestamp": "2026-04-20T11:30:09.574843+00:00",
+      "method_id": "calendar.caldav.event.get",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/html"
+      },
+      "request_fixture_id": "calendar-event-get"
+    },
+    {
+      "timestamp": "2026-04-20T11:30:09.849079+00:00",
+      "method_id": "calendar.caldav.event.get",
+      "scope_id": "calendar:all",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "text/calendar"
+      },
+      "request_fixture_id": "calendar-event-get"
+    },
+    {
+      "timestamp": "2026-04-20T11:30:10.085482+00:00",
+      "method_id": "calendar.caldav.event.delete",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": ""
+      },
+      "request_fixture_id": "calendar-event-delete"
+    },
+    {
+      "timestamp": "2026-04-20T11:30:11.402000+00:00",
+      "method_id": "calendar.caldav.event.delete",
+      "scope_id": "calendar:all",
+      "status": "works",
+      "http": {
+        "status_code": 204,
+        "ok": true,
+        "content_type": ""
+      },
+      "request_fixture_id": "calendar-event-delete"
+    }
+  ],
+  "cleanup_errors": []
+}

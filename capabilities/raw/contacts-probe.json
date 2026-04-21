@@ -1,0 +1,133 @@
+{
+  "probe": "contacts",
+  "timestamp": "2026-04-20T11:30:20.481390+00:00",
+  "fixture": {
+    "id": "contacts-method-access-fixture",
+    "variables": "<redacted>"
+  },
+  "rows": [
+    {
+      "timestamp": "2026-04-20T11:30:17.614981+00:00",
+      "method_id": "contacts.carddav.principal",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": ""
+      },
+      "request_fixture_id": "contacts-addressbook-propfind"
+    },
+    {
+      "timestamp": "2026-04-20T11:30:17.889121+00:00",
+      "method_id": "contacts.carddav.principal",
+      "scope_id": "addressbook:all",
+      "status": "works",
+      "http": {
+        "status_code": 207,
+        "ok": true,
+        "content_type": "text/xml"
+      },
+      "request_fixture_id": "contacts-addressbook-propfind"
+    },
+    {
+      "timestamp": "2026-04-20T11:30:18.167440+00:00",
+      "method_id": "contacts.carddav.addressbook.propfind",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": ""
+      },
+      "request_fixture_id": "contacts-addressbook-propfind"
+    },
+    {
+      "timestamp": "2026-04-20T11:30:18.574851+00:00",
+      "method_id": "contacts.carddav.addressbook.propfind",
+      "scope_id": "addressbook:all",
+      "status": "works",
+      "http": {
+        "status_code": 207,
+        "ok": true,
+        "content_type": "text/xml"
+      },
+      "request_fixture_id": "contacts-addressbook-propfind"
+    },
+    {
+      "timestamp": "2026-04-20T11:30:18.829629+00:00",
+      "method_id": "contacts.carddav.vcard.put",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": ""
+      },
+      "request_fixture_id": "contacts-vcard-put"
+    },
+    {
+      "timestamp": "2026-04-20T11:30:19.130809+00:00",
+      "method_id": "contacts.carddav.vcard.put",
+      "scope_id": "addressbook:all",
+      "status": "works",
+      "http": {
+        "status_code": 201,
+        "ok": true,
+        "content_type": ""
+      },
+      "request_fixture_id": "contacts-vcard-put"
+    },
+    {
+      "timestamp": "2026-04-20T11:30:19.396224+00:00",
+      "method_id": "contacts.carddav.vcard.get",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "text/html"
+      },
+      "request_fixture_id": "contacts-vcard-get"
+    },
+    {
+      "timestamp": "2026-04-20T11:30:19.672488+00:00",
+      "method_id": "contacts.carddav.vcard.get",
+      "scope_id": "addressbook:all",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "text/x-vcard"
+      },
+      "request_fixture_id": "contacts-vcard-get"
+    },
+    {
+      "timestamp": "2026-04-20T11:30:19.869705+00:00",
+      "method_id": "contacts.carddav.vcard.delete",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": ""
+      },
+      "request_fixture_id": "contacts-vcard-delete"
+    },
+    {
+      "timestamp": "2026-04-20T11:30:20.185384+00:00",
+      "method_id": "contacts.carddav.vcard.delete",
+      "scope_id": "addressbook:all",
+      "status": "works",
+      "http": {
+        "status_code": 204,
+        "ok": true,
+        "content_type": ""
+      },
+      "request_fixture_id": "contacts-vcard-delete"
+    }
+  ],
+  "cleanup_errors": [
+    "delete-contact-probe-vcard failed: HTTP 400"
+  ]
+}

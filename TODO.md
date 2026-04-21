@@ -87,7 +87,7 @@ The relationship between `fetch_emails.py`, `incoming/` directory, and downstrea
 ## 🟡 MEDIUM: Meta-Skill Structure Documentation
 
 ### Problem
-`yandex-office` is a meta-skill containing multiple sub-skills (mail, disk, telemost, cloud). The structure is not immediately obvious, and users may look for `mail` as a separate top-level skill.
+`yandex-office` is a meta-skill containing multiple sub-skills (mail, disk, telemost, calendar, contacts, directory, forms, tracker). The structure is not immediately obvious, and users may look for `mail` as a separate top-level skill.
 
 ### Required Changes
 
@@ -107,8 +107,10 @@ The relationship between `fetch_emails.py`, `incoming/` directory, and downstrea
    │   └── disk.md
    ├── telemost/      (meeting transcript processing)
    │   └── telemost.md
-   └── cloud/         (cloud services)
-       └── cloud.md
+   ├── forms/         (Forms API)
+   │   └── forms.md
+   └── tracker/       (Tracker API)
+       └── tracker.md
    ```
    
    Each subfolder is an independent skill with its own documentation.
@@ -124,11 +126,9 @@ The relationship between `fetch_emails.py`, `incoming/` directory, and downstrea
    │   └── SKILL.md           ├── mail/
    ├── disk/               └── mail.md
    │   └── SKILL.md           ├── disk/
-   ├── telemost/           └── disk.md
-   │   └── SKILL.md           ├── telemost/
-   └── cloud/
-       └── SKILL.md           └── cloud/
-                                  └── cloud.md
+   └── telemost/
+       └── SKILL.md           └── telemost/
+                                  └── telemost.md
    ```
    
    This eliminates confusion with multiple `SKILL.md` files and makes navigation

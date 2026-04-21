@@ -37,8 +37,9 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from common.auth import default_scopes, load_token_file, resolve_token
+from common.auth import load_token_file, resolve_token
 from common.config import load_runtime_context
+from common.oauth_apps import default_service_scopes
 
 SHARE_RIGHTS = {
     "read",
@@ -52,8 +53,6 @@ PASSWORD_RIGHTS = {
     "read_with_password_without_download",
 }
 ACCESS_MODES = {"employees", "all"}
-DISK_READ_SCOPES = default_scopes("disk", "read")
-DISK_WRITE_SCOPES = default_scopes("disk", "write")
 
 
 class YandexDisk:
@@ -86,7 +85,9 @@ class YandexDisk:
         self._data_dir = self.runtime.data_dir
         self.api_base = self._config.get("urls", {}).get("disk_api", API_BASE)
         self.account = account
-        self._required_scopes = list(required_scopes or DISK_READ_SCOPES)
+        self._disk_read_scopes = default_service_scopes(self._config, "disk", "read")
+        self._disk_write_scopes = default_service_scopes(self._config, "disk", "write")
+        self._required_scopes = list(required_scopes or self._disk_read_scopes)
         self._explicit_token = token is not None
         self._token_file_path = Path(token_file).resolve() if token_file else None
 
@@ -335,7 +336,7 @@ class YandexDisk:
     def get_resource_meta(self, path: str) -> dict:
         """Get authenticated metadata for a Disk resource path."""
         self._ensure_disk_token(
-            required_scopes=DISK_WRITE_SCOPES,
+            required_scopes=self._disk_write_scopes,
             operation="resource metadata",
         )
         endpoint = f"{self.api_base}/v1/disk/resources"
@@ -362,7 +363,7 @@ class YandexDisk:
     ) -> dict:
         """Publish a Disk resource and configure share access."""
         self._ensure_disk_token(
-            required_scopes=DISK_WRITE_SCOPES,
+            required_scopes=self._disk_write_scopes,
             operation="share management",
         )
         endpoint = f"{self.api_base}/v1/disk/resources/publish"
@@ -400,7 +401,7 @@ class YandexDisk:
     ) -> dict:
         """Update existing share settings for a published resource."""
         self._ensure_disk_token(
-            required_scopes=DISK_WRITE_SCOPES,
+            required_scopes=self._disk_write_scopes,
             operation="share management",
         )
         current = self.get_share_info(path)
@@ -430,7 +431,7 @@ class YandexDisk:
     def unpublish_file(self, path: str) -> dict:
         """Revoke a published share link."""
         self._ensure_disk_token(
-            required_scopes=DISK_WRITE_SCOPES,
+            required_scopes=self._disk_write_scopes,
             operation="share management",
         )
         endpoint = f"{self.api_base}/v1/disk/resources/unpublish"
@@ -455,7 +456,7 @@ class YandexDisk:
 
     def ensure_dir(self, path: str) -> dict:
         self._ensure_disk_token(
-            required_scopes=DISK_WRITE_SCOPES,
+            required_scopes=self._disk_write_scopes,
             operation="directory creation",
         )
         endpoint = f"{self.api_base}/v1/disk/resources"
@@ -480,7 +481,7 @@ class YandexDisk:
 
     def get_upload_link(self, path: str, overwrite: bool = False) -> dict:
         self._ensure_disk_token(
-            required_scopes=DISK_WRITE_SCOPES,
+            required_scopes=self._disk_write_scopes,
             operation="upload",
         )
         endpoint = f"{self.api_base}/v1/disk/resources/upload"
@@ -500,7 +501,7 @@ class YandexDisk:
         create_parents: bool = True,
     ) -> dict:
         self._ensure_disk_token(
-            required_scopes=DISK_WRITE_SCOPES,
+            required_scopes=self._disk_write_scopes,
             operation="upload",
         )
         local_file = Path(local_path).expanduser().resolve()
