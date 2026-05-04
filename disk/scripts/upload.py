@@ -43,10 +43,12 @@ def main() -> int:
     )
 
     disk = YandexDisk(
-        token_file=args.token_file,
         account=args.account,
-        auth_dir=args.auth_dir,
     )
+    try:
+        disk.digest_legacy_disk_token_env()
+    except Exception:
+        pass
 
     try:
         if args.publish:

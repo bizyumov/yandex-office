@@ -17,7 +17,6 @@ SUBSKILL_NAMES = {
     "directory": "Директория",
     "disk": "Диск",
     "telemost": "Телемост",
-    "cloud": "Облако",
     "forms": "Формы",
     "tracker": "Трекер",
 }
@@ -29,7 +28,6 @@ SUBSKILL_DOCS = {
     "directory": ROOT / "directory" / "directory.md",
     "disk": ROOT / "disk" / "disk.md",
     "telemost": ROOT / "telemost" / "telemost.md",
-    "cloud": ROOT / "cloud" / "cloud.md",
     "forms": ROOT / "forms" / "forms.md",
     "tracker": ROOT / "tracker" / "tracker.md",
 }

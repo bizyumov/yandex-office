@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import requests
 
@@ -13,13 +13,17 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from common.auth import resolve_token
+from common.api import (
+    BlockedYandexMethodError,
+    TokenConfigError,
+    YandexApiContext,
+    YandexApiError,
+    request_json,
+    yandex_api_method,
+)
 from common.config import load_runtime_context
 
 DEFAULT_API_BASE = "https://cloud-api.yandex.net/v1/telemost-api"
-READ_SCOPES = ["telemost-api:conferences.read"]
-CREATE_SCOPES = ["telemost-api:conferences.create"]
-UPDATE_SCOPES = ["telemost-api:conferences.update"]
 VALID_ACCESS_LEVELS = {"PUBLIC", "ORGANIZATION"}
 VALID_WAITING_ROOM_LEVELS = {"PUBLIC", "ORGANIZATION", "ADMINS"}
 VALID_ORG_ROLES = {"OWNER", "INTERNAL_COHOST", "INTERNAL_MEMBER"}
@@ -38,6 +42,7 @@ class TelemostError(RuntimeError):
         payload = {"error": str(self)}
         payload.update(self.details)
         return payload
+
 
 class YandexTelemostClient:
     """Client for Yandex Telemost conference management."""
@@ -58,86 +63,160 @@ class YandexTelemostClient:
         self.data_dir = Path(data_dir).resolve() if data_dir else self.runtime.data_dir
         self.config = self.runtime.config
         self.api_base = self.config.get("urls", {}).get("telemost_api", DEFAULT_API_BASE).rstrip("/")
+        self.config.setdefault("urls", {}).setdefault("telemost_api", self.api_base)
         self.session = session or requests.Session()
 
-    def _auth_headers(self, scopes: list[str]) -> dict[str, str]:
-        token_info = resolve_token(
+    def _api_context(self) -> YandexApiContext:
+        """Build the shared GH41 API context for Telemost calls."""
+
+        return YandexApiContext(
             account=self.account,
-            skill="telemost",
             data_dir=self.data_dir,
             config=self.config,
-            required_scopes=scopes,
+            session=self.session,
         )
-        return {"Authorization": f"OAuth {token_info.token}"}
 
-    def _request(
+    @staticmethod
+    def _telemost_error(exc: YandexApiError) -> TelemostError:
+        """Map central provider errors into the Telemost business exception."""
+
+        details = {
+            "status_code": exc.status_code,
+            "response": exc.payload if exc.payload is not None else exc.message,
+        }
+        if exc.status_code in (401, 403):
+            return TelemostError("Telemost API access denied", **details)
+        if exc.status_code == 402:
+            return TelemostError("Telemost live stream requires a paid Yandex 360 tariff", **details)
+        if exc.status_code == 404:
+            return TelemostError("Telemost conference not found", **details)
+        return TelemostError("Telemost API request failed", **details)
+
+    def _call_api(
         self,
-        method: str,
-        path: str,
-        *,
-        scopes: list[str],
-        expected_statuses: tuple[int, ...],
-        json_body: dict[str, Any] | None = None,
-        params: dict[str, Any] | None = None,
+        func: Callable[..., Any],
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any:
+        """Call a decorated API method and adapt failures to TelemostError.
+
+        The decorator owns token dispatch. This helper only preserves the
+        Telemost business exception type for callers that already depend on it.
+        """
+
+        try:
+            return func(*args, **kwargs)
+        except YandexApiError as exc:
+            raise self._telemost_error(exc) from exc
+        except (BlockedYandexMethodError, TokenConfigError) as exc:
+            raise TelemostError(str(exc)) from exc
+
+    @yandex_api_method("telemost.conferences.create.post", one_of=["telemost-api:conferences.create"])
+    def _api_create_conference(self, ctx: YandexApiContext, payload: dict[str, Any]) -> dict[str, Any]:
+        """POST /conferences."""
+
+        return request_json(
+            ctx,
+            "POST",
+            ctx.url("telemost_api", "/conferences"),
+            expected_statuses=(201,),
+            headers={"Content-Type": "application/json"},
+            json=payload,
+            timeout=30,
+        ) or {}
+
+    @yandex_api_method("telemost.conferences.get", one_of=["telemost-api:conferences.read"])
+    def _api_get_conference(self, ctx: YandexApiContext, conference_id: str) -> dict[str, Any]:
+        """GET /conferences/{id}."""
+
+        return request_json(
+            ctx,
+            "GET",
+            ctx.url("telemost_api", f"/conferences/{conference_id}"),
+            expected_statuses=(200,),
+            timeout=30,
+        ) or {}
+
+    @yandex_api_method("telemost.conferences.patch", one_of=["telemost-api:conferences.update"])
+    def _api_patch_conference(
+        self,
+        ctx: YandexApiContext,
+        conference_id: str,
+        payload: dict[str, Any],
     ) -> dict[str, Any] | None:
-        url = f"{self.api_base}{path}"
-        headers = self._auth_headers(scopes)
-        if json_body is not None:
-            headers["Content-Type"] = "application/json"
+        """PATCH /conferences/{id}."""
 
-        try:
-            response = self.session.request(
-                method,
-                url,
-                headers=headers,
-                json=json_body,
-                params=params,
-                timeout=30,
-            )
-        except requests.RequestException as exc:
-            raise TelemostError(
-                "Telemost request failed",
-                method=method,
-                path=path,
-                reason=str(exc),
-            ) from exc
+        return request_json(
+            ctx,
+            "PATCH",
+            ctx.url("telemost_api", f"/conferences/{conference_id}"),
+            expected_statuses=(200,),
+            headers={"Content-Type": "application/json"},
+            json=payload,
+            timeout=30,
+        )
 
-        if response.status_code not in expected_statuses:
-            details = {
-                "method": method,
-                "path": path,
-                "status_code": response.status_code,
-            }
-            try:
-                details["response"] = response.json()
-            except ValueError:
-                details["response"] = response.text[:500]
+    @yandex_api_method("telemost.conferences.cohosts.get", one_of=["telemost-api:conferences.read"])
+    def _api_get_cohosts(self, ctx: YandexApiContext, conference_id: str) -> dict[str, Any]:
+        """GET /conferences/{id}/cohosts."""
 
-            if response.status_code in (401, 403):
-                raise TelemostError("Telemost API access denied", **details)
-            if response.status_code == 402:
-                raise TelemostError(
-                    "Telemost live stream requires a paid Yandex 360 tariff",
-                    **details,
-                )
-            if response.status_code == 404:
-                raise TelemostError("Telemost conference not found", **details)
-            raise TelemostError("Telemost API request failed", **details)
+        return request_json(
+            ctx,
+            "GET",
+            ctx.url("telemost_api", self._cohosts_path(conference_id)),
+            expected_statuses=(200,),
+            timeout=30,
+        ) or {}
 
-        if response.status_code == 204:
-            return None
-        if not response.content:
-            return {}
-        try:
-            return response.json()
-        except ValueError as exc:
-            raise TelemostError(
-                "Telemost API returned invalid JSON",
-                method=method,
-                path=path,
-                status_code=response.status_code,
-                response=response.text[:500],
-            ) from exc
+    @yandex_api_method("telemost.conferences.cohosts.put", one_of=["telemost-api:conferences.update"])
+    def _api_put_cohosts(
+        self,
+        ctx: YandexApiContext,
+        conference_id: str,
+        payload: dict[str, Any],
+    ) -> None:
+        """PUT /conferences/{id}/cohosts."""
+
+        request_json(
+            ctx,
+            "PUT",
+            ctx.url("telemost_api", self._cohosts_path(conference_id)),
+            expected_statuses=(204,),
+            headers={"Content-Type": "application/json"},
+            json=payload,
+            timeout=30,
+        )
+
+    @yandex_api_method("telemost.organizations.settings.get", one_of=["telemost-api:conferences.read"])
+    def _api_get_org_settings(self, ctx: YandexApiContext, org_id: int | str) -> dict[str, Any]:
+        """GET /organizations/{org_id}/settings."""
+
+        return request_json(
+            ctx,
+            "GET",
+            ctx.url("telemost_api", f"/organizations/{org_id}/settings"),
+            expected_statuses=(200,),
+            timeout=30,
+        ) or {}
+
+    @yandex_api_method("telemost.organizations.settings.put", one_of=["telemost-api:conferences.update"])
+    def _api_put_org_settings(
+        self,
+        ctx: YandexApiContext,
+        org_id: int | str,
+        payload: dict[str, Any],
+    ) -> dict[str, Any]:
+        """PUT /organizations/{org_id}/settings."""
+
+        return request_json(
+            ctx,
+            "PUT",
+            ctx.url("telemost_api", f"/organizations/{org_id}/settings"),
+            expected_statuses=(200,),
+            headers={"Content-Type": "application/json"},
+            json=payload,
+            timeout=30,
+        ) or {}
 
     @staticmethod
     def _validate_access_level(access_level: str | None) -> str | None:
@@ -258,24 +337,13 @@ class YandexTelemostClient:
     def _cohosts_path(self, conference_id: str) -> str:
         return f"/conferences/{conference_id}/cohosts"
 
-    def _resolve_org_id(self, org_id: int | str | None, *, scopes: list[str]) -> int:
+    @staticmethod
+    def _resolve_org_id(org_id: int | str | None) -> int:
+        """Normalize an explicit organization ID for organization settings."""
+
         if org_id is not None:
             return int(org_id)
-        token_info = resolve_token(
-            account=self.account,
-            skill="telemost",
-            data_dir=self.data_dir,
-            config=self.config,
-            required_scopes=scopes,
-        )
-        token_org_id = token_info.token_data.get("org_id")
-        if token_org_id is None:
-            raise TelemostError(
-                "Organization ID is required; provide --org-id or save org_id in the token file",
-                account=self.account,
-                token_path=str(token_info.token_path),
-            )
-        return int(token_org_id)
+        raise TelemostError("Organization ID is required; provide --org-id")
 
     @staticmethod
     def _normalize_role_list(roles: list[str] | None) -> list[str] | None:
@@ -370,12 +438,9 @@ class YandexTelemostClient:
             cohosts=cohosts or [],
             include_cohosts=True,
         )
-        created = self._request(
-            "POST",
-            "/conferences",
-            scopes=CREATE_SCOPES,
-            expected_statuses=(201,),
-            json_body=payload,
+        created = self._call_api(
+            self._api_create_conference,
+            payload,
         ) or {}
         conference_id = created.get("id")
         if not conference_id:
@@ -383,21 +448,17 @@ class YandexTelemostClient:
         return self.get_conference(conference_id)
 
     def get_cohosts(self, conference_id: str) -> list[str]:
-        response = self._request(
-            "GET",
-            self._cohosts_path(conference_id),
-            scopes=READ_SCOPES,
-            expected_statuses=(200,),
+        response = self._call_api(
+            self._api_get_cohosts,
+            conference_id,
         ) or {}
         cohosts = response.get("cohosts", [])
         return [entry.get("email") for entry in cohosts if isinstance(entry, dict) and entry.get("email")]
 
     def get_conference(self, conference_id: str) -> dict[str, Any]:
-        conference = self._request(
-            "GET",
-            f"/conferences/{conference_id}",
-            scopes=READ_SCOPES,
-            expected_statuses=(200,),
+        conference = self._call_api(
+            self._api_get_conference,
+            conference_id,
         ) or {}
         cohosts = self.get_cohosts(conference_id)
         return self._normalize_conference(conference, cohosts=cohosts)
@@ -419,31 +480,25 @@ class YandexTelemostClient:
             include_cohosts=False,
         )
         if payload:
-            self._request(
-                "PATCH",
-                f"/conferences/{conference_id}",
-                scopes=UPDATE_SCOPES,
-                expected_statuses=(200,),
-                json_body=payload,
+            self._call_api(
+                self._api_patch_conference,
+                conference_id,
+                payload,
             )
         if cohosts is not _UNSET and cohosts is not None:
             normalized_cohosts = self._normalize_cohosts(cohosts)
-            self._request(
-                "PUT",
-                self._cohosts_path(conference_id),
-                scopes=UPDATE_SCOPES,
-                expected_statuses=(204,),
-                json_body={"cohosts": [{"email": email} for email in normalized_cohosts or []]},
+            self._call_api(
+                self._api_put_cohosts,
+                conference_id,
+                {"cohosts": [{"email": email} for email in normalized_cohosts or []]},
             )
         return self.get_conference(conference_id)
 
     def get_org_settings(self, *, org_id: int | str | None = None) -> dict[str, Any]:
-        resolved_org_id = self._resolve_org_id(org_id, scopes=READ_SCOPES)
-        settings = self._request(
-            "GET",
-            f"/organizations/{resolved_org_id}/settings",
-            scopes=READ_SCOPES,
-            expected_statuses=(200,),
+        resolved_org_id = self._resolve_org_id(org_id)
+        settings = self._call_api(
+            self._api_get_org_settings,
+            resolved_org_id,
         ) or {}
         settings["org_id"] = resolved_org_id
         return settings
@@ -454,16 +509,14 @@ class YandexTelemostClient:
         *,
         org_id: int | str | None = None,
     ) -> dict[str, Any]:
-        resolved_org_id = self._resolve_org_id(org_id, scopes=UPDATE_SCOPES)
+        resolved_org_id = self._resolve_org_id(org_id)
         payload = self._normalize_org_settings_payload(settings)
         if not payload:
             raise ValueError("Organization settings payload cannot be empty")
-        updated = self._request(
-            "PUT",
-            f"/organizations/{resolved_org_id}/settings",
-            scopes=UPDATE_SCOPES,
-            expected_statuses=(200,),
-            json_body=payload,
+        updated = self._call_api(
+            self._api_put_org_settings,
+            resolved_org_id,
+            payload,
         ) or {}
         updated["org_id"] = resolved_org_id
         return updated

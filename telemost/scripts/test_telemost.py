@@ -21,6 +21,7 @@ from process_meeting import (
     archive_dirs,
     build_meeting_output_path,
     classify_email,
+    default_incoming_dir,
     enrich_incoming,
     extract_media_links,
     extract_meeting_title,
@@ -508,6 +509,20 @@ def test_build_meeting_output_path():
     print("  PASS: build_meeting_output_path → YYYY-MM/date_HH-MM_tag_uid")
 
 
+def test_default_incoming_dir_prefers_named_telemost_filter():
+    """Default processor input follows the named telemost filter directory."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        data_dir = Path(tmpdir)
+        incoming = data_dir / "incoming"
+        assert default_incoming_dir(data_dir) == incoming
+
+        telemost_incoming = incoming / "telemost"
+        telemost_incoming.mkdir(parents=True)
+        assert default_incoming_dir(data_dir) == telemost_incoming
+
+        print("  PASS: default_incoming_dir → incoming/telemost when present")
+
+
 # ── Runner ───────────────────────────────────────────────────────────
 
 def run_all():
@@ -522,6 +537,7 @@ def run_all():
         ("T16a", test_enrich_incoming),
         ("T16b", test_classify_email),
         ("T16c", test_build_meeting_output_path),
+        ("T16d", test_default_incoming_dir_prefers_named_telemost_filter),
     ]
 
     passed = 0

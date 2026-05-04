@@ -4,7 +4,7 @@ A collection of [agentskills.io](https://agentskills.io/specification)-compliant
 
 Current release:
 
-- version: `2026.04.20`
+- version: `2026.05.04`
 - version file: `VERSION`
 - cumulative release notes: `CHANGELOG.md`
 
@@ -55,12 +55,13 @@ This repository now covers the remaining shared Yandex 360 office service skills
 
 All Yandex sub-skills use the same two-level config:
 
-- skill defaults in root `config.json`
+- skill defaults in root `config.skill.json`
 - agent overrides in `{data_dir}/config.agent.json`
-- default runtime location is `./yandex-data` from the agent workspace CWD
+- account aliases and OAuth state managed by setup/runtime auth
+- default runtime location is `./yandex-data` from CWD
 - scripts that expose `--data-dir` can override that path explicitly
 
-Root `config.json`:
+Root `config.skill.json`:
 
 ```json
 {
@@ -95,7 +96,6 @@ Workspace `{data_dir}/config.agent.json`:
 
 ```json
 {
-  "accounts": [{ "name": "alex", "email": "user@example.com" }],
   "mail": {
     "filters": {
       "telemost": {
@@ -122,36 +122,56 @@ Mail filter notes:
 - sender and subject filters are literal IMAP substring matches; no extra query language is implemented
 - large dry-run result sets spill into `{data_dir}/latest-query/`; the next spilled run replaces the previous artifact, so copy it elsewhere if you need to keep it
 
-During first onboarding, OpenClaw must invoke the full path to `scripts/oauth_setup.py` with no account arguments while the current process CWD is still the agent workspace. Bootstrap resolves `data_dir` as `./yandex-data` from that workspace CWD, creates `{data_dir}/config.agent.json` and runtime directories there, and normal runtime then requires that initialized data dir. If you run a script manually from the shared skill root, pass `--data-dir`.
+During first onboarding, OpenClaw must invoke the full path to `scripts/oauth_setup.py` with no account arguments while the current process CWD is unchanged. Bootstrap resolves `data_dir` as `./yandex-data` from that CWD, creates `{data_dir}/config.agent.json` and runtime directories there, and normal runtime then requires that initialized data dir. If you run a script manually from the shared skill root, pass `--data-dir`.
 
 ## Onboarding
 
 ### First run
 
-1. Check `./yandex-data` in the current agent workspace CWD.
+1. Check `./yandex-data` in the current CWD.
 2. If it does not exist, run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py` from that CWD with no extra arguments.
-3. Do not inspect other workspaces.
-4. Do not create bootstrap files or directories manually.
+3. Keep onboarding checks inside the current CWD.
+4. Let `scripts/oauth_setup.py` create bootstrap files and directories.
 
 ### Adding Yandex accounts
+
+Initialize the account alias with the provided email:
 
 ```bash
 python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email user@yandex.ru --account alex
 ```
 
-This updates `{data_dir}/config.agent.json` and does not prompt for a token.
+Then issue or import an OAuth app token with the command below.
 
-### Issuing Service Tokens
+### Issuing OAuth App Tokens
 
 ```bash
-python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email user@yandex.ru --account alex --service mail
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email user@yandex.ru --account alex --app mail-readonly
 ```
 
 Behavior:
 
-- the script prints the default OAuth profile and any other configured profiles for that service
-- after OAuth is completed and an `access_token` is returned, save it to `./yandex-data/auth/<account>.token`
-- use `--app <profile_id>` when you need a non-default profile
+- complete OAuth in the browser, then paste the returned `access_token` into
+  this exact hidden terminal input line:
+
+```text
+Paste the access_token here:
+```
+
+- `scripts/oauth_setup.py` verifies the pasted token and updates managed auth
+- if the token value is already available and you need a non-interactive import,
+  use this exact CLI:
+
+```bash
+IFS= read -rsp 'Paste access_token: ' YANDEX_ACCESS_TOKEN
+printf '\n'
+export YANDEX_ACCESS_TOKEN
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --from-env YANDEX_ACCESS_TOKEN
+unset YANDEX_ACCESS_TOKEN
+```
+
+- Choose app IDs explicitly with `--app`; use the read/default app unless the
+  user explicitly approves write-capable permissions.
 
 ### Data Directory
 
@@ -159,7 +179,6 @@ Runtime data lives **outside** the repo at `{data_dir}/`:
 
 ```
 {data_dir}/
-├── auth/alex.token      # OAuth tokens (per-account)
 ├── incoming/           # mail writes here
 ├── state.json          # UID/date tracking keyed by filter and mailbox
 ├── meetings/ # telemost output (bucketed by month)
@@ -263,23 +282,24 @@ python3 telemost/scripts/migrate_meeting_dirs.py
 OpenClaw workspace cwd
   -> bootstrap resolves absolute data_dir from $PWD/yandex-data
   -> {data_dir}/config.agent.json
-     -> accounts + service-specific overrides
+     -> agent-local app definitions + service-specific overrides
 
-Skill config.json
+Skill config.skill.json
   -> oauth_apps.catalog marks the default app with `is_default: true`
-  -> oauth_apps.catalog.<app_id> stores app name, client_id, service, and baked-in scopes
+  -> oauth_apps.catalog.<app_id> stores app name, client_id, and declared scopes
 
-python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --service <service> [--app <app_id>] --account <account> --email <email>
-  -> resolves the default app from oauth_apps.catalog (`is_default: true`) unless --app is passed
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <account> --app mail-readonly
   -> reads oauth_apps.catalog.<app_id>
   -> generates approval URL
-  -> creates auth/{account}.token on first save if needed
-  -> stores token under auth/{account}.token as token.<service>
-  -> stores app_id/client_id/scopes under token_meta.token.<service>
+  -> verifies the pasted token to recover email + client_id
+  -> creates or reuses the verified account alias
+  -> updates managed auth storage
+  -> adds an agent-local app definition only when the verified client_id is unknown
 
 runtime clients
-  -> resolve token.<service>
-  -> verify scopes from token_meta.token.<service>.scopes
+  -> call methods decorated with @yandex_api_method(...)
+  -> join managed auth client_id bindings to config-backed app scopes
+  -> choose eligible tokens by decorator auth shape and token-level good_at
 ```
 
 ### Default Service Scopes
@@ -311,56 +331,68 @@ Use one preconfigured app per capability family instead of one universal app:
 
 If you want write-capable variants later, keep them as separate app scenarios instead of broadening the default read-only app.
 
-### Token Format
+### Managed Auth
 
-```json
-{
-  "email": "user@yandex.ru",
-  "token.mail": "y0_...",
-  "token.disk": "y0_...",
-  "token_meta": {
-    "token.mail": {
-      "app_id": "mail-readonly",
-      "client_id": "660686ff45f947f2ac6e3f6495a9ec74",
-      "scopes": ["mail:imap_ro"]
-    }
-  }
-}
-```
-
-Canonical convention is `token.<service>`. Each service stores and resolves its own token directly.
-`token_meta` is optional but recommended: clients use it to validate granted scopes and generate a corrected approval URL when a token is under-scoped.
+Use `scripts/oauth_setup.py` for OAuth intake and refresh. Runtime clients
+select eligible credentials through decorator-declared auth metadata and the
+config-backed OAuth app catalog.
 
 ### Add an Account
 
 ```bash
-python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email user@yandex.ru --account alex
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email user@yandex.ru --account alex --app mail-readonly
 ```
 
-This updates `{data_dir}/config.agent.json` and does not prompt for a token.
+This prints the app approval URL, verifies the returned token, and creates or
+reuses the verified account alias through managed auth.
 
 ### Generate a Token
 
 ```bash
-# Recommended: default preconfigured app from config.json, ready approval link
-python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email user@yandex.ru --account alex --service mail
+# Recommended: default preconfigured app from config.skill.json, ready approval link
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email user@yandex.ru --account alex --app mail-readonly
 
 # Recommended: choose a non-default preconfigured app variant
-python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email user@yandex.ru --account alex --service disk --app disk-full
-
-# Advanced: explicit client ID and explicit scope override
-python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --client-id DISK_CLIENT_ID --scope cloud_api:disk.write --scope cloud_api:disk.app_folder --email user@yandex.ru --account alex --service disk
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email user@yandex.ru --account alex --app disk-full
 ```
 
 Recommended flow:
 
-- keep the checked-in app catalog in `config.json` under `oauth_apps.catalog`
-- keep default app selection in `config.skill.json` by marking one catalog entry per service with `is_default: true`
-- when `--service` is used, `oauth_setup.py` prints the default profile and any other configured profiles for that service
-- use `--app <app_id>` only when you need a non-default variant such as `disk-full`, `forms-full`, `tracker-full`, or `directory-full`
-- add the account first with `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <name>` when needed
-- then run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <name> --service <name>`
+- keep the checked-in app catalog in `config.skill.json` under `oauth_apps.catalog`
+- choose app IDs explicitly with `--app`
+- custom `--client-id --scope ...` tokens create or reuse an agent-local
+  `oauth_apps.catalog` entry in `{data_dir}/config.agent.json`
+- Yandex OAuth tokens are assumed to carry the full scope set configured on
+  the app that issued the token; runtime does not model per-token scope
+  narrowing
 - the generated URL omits `scope=` by default and relies on the OAuth app's baked-in permissions
+
+Current-used API methods declare auth directly in code through
+`@yandex_api_method(method_id, public=True | one_of=[...] | all_of=[...])`.
+Capability JSON files are development/audit inputs only. Normal runtime calls
+use decorator metadata, managed-auth `client_id` bindings, and config-backed app
+scope declarations.
+
+### Auth Feedback Categories
+
+Provider status, error code, and message remain the primary error payload.
+Agents may additionally use these derived categories for remediation:
+
+- `missing_or_invalid_credentials`: no token, expired token, rejected token, or
+  protocol credential failure
+- `missing_scope_or_wrong_app`: generic OAuth `403 ForbiddenError` after a
+  decorated method selected a candidate token
+- `account_or_org_policy_blocked`: post-auth provider policy, tariff, or org
+  denial, such as Telemost `OrganizationSettingsAccessForbidden`
+- `missing_resource_or_fixture`: protected API reached, but the requested
+  object, path, message, or principal is absent
+- `request_validation_failed`: protected API reached, but request shape or
+  business validation failed
+- `transient_or_unknown`: transport, rate-limit, server, or ambiguous failure
+
+Only `403 ForbiddenError` becomes a token-rotation signal. Other provider
+errors pass through with their exact payload and do not update token `good_at`
+or `bad_at`.
 
 Advanced flow:
 

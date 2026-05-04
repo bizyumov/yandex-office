@@ -45,7 +45,7 @@ erDiagram
     }
 
     TOKEN {
-        string id "y0__xC8z..."
+        string kind "managed-oauth-bearer"
     }
 
     ASSET {
@@ -74,11 +74,12 @@ erDiagram
 - `agent` is the OpenClaw runtime actor, for example `velizar`; it performs tasks for and on behalf of the user.
 - `yandex-office` is identified by `name` and `version`; the agent uses it to perform user-requested work.
 - `yandex account` is identified by `email`; this is the Yandex account identity.
-- `yandex account.name` is a local alias/handler used for commands and token filenames.
+- `yandex account.name` is a local alias/handler used for commands.
 - `scope` is identified by `id`; this is a Yandex OAuth permission atom.
 - `app` is identified by `client_id`; this is a Yandex OAuth application configured with a set of scopes.
 - `sub-skill` is identified by `name`; this is valuable `yandex-office` functionality, for example `disk`.
-- `token` is identified by the OAuth token value, for example `y0__xC8z...`; it is issued for a Yandex account and linked to the app that produced it.
+- `token` is an opaque OAuth bearer credential managed by the auth layer; it is
+  issued for a Yandex account and linked to the app that produced it.
 - `asset` is data or capability owned through a Yandex account, for example a Disk file, mailbox message, calendar event, or Telemost conference.
 
 ## Relationship Definitions

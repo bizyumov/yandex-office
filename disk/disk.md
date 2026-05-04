@@ -5,7 +5,7 @@ license: MIT
 compatibility: Requires Python 3.10+, requests, network access to Yandex Disk API
 metadata:
   author: bizyumov
-  version: "2026.04.10"
+  version: "2026.05.03"
 ---
 
 # Yandex Disk / Диск
@@ -64,11 +64,12 @@ print(upload["public_url"])
 
 For public files: no token required.
 
-For private files, uploads, higher rate limits, or any share-management operation, use a Yandex Disk OAuth token:
+For private files, uploads, or any share-management operation, use managed auth
+created by `scripts/oauth_setup.py`. Raw-token environment fallbacks are not
+supported runtime auth paths.
 
-```bash
-export YANDEX_DISK_TOKEN="your_oauth_token"
-```
+If multiple managed accounts exist, pass `--account` so runtime selects the
+intended account.
 
 Download-only scopes:
 - `cloud_api:disk.read`
@@ -78,43 +79,45 @@ Upload/share-management scopes:
 - `cloud_api:disk.write`
 - `cloud_api:disk.app_folder`
 
-From the agent workspace CWD, using the full path to the shared Yandex skill, generate a download token:
+Using the full path to the shared Yandex skill, generate a download token:
 
 ```bash
 python3 <full-path-to-yandex-office>/scripts/oauth_setup.py \
   --email user@yandex.ru \
   --account alex \
-  --service disk
+  --app disk-read
 ```
 
 Generate an upload/share-management token:
 
 ```bash
 python3 <full-path-to-yandex-office>/scripts/oauth_setup.py \
-  --client-id DISK_CLIENT_ID \
   --email user@yandex.ru \
   --account alex \
-  --service disk \
-  --scope cloud_api:disk.write \
-  --scope cloud_api:disk.app_folder
+  --app disk-full
 ```
 
-Recommended: use the default Disk app from root `config.skill.json` (the `oauth_apps.catalog` entry with `"service": "disk"` and `"is_default": true`, currently `disk-read`) for the read-only approval link. Use `--app disk-full` for the write-capable preconfigured app, and use explicit `--client-id` plus `--scope` only for advanced/operator flows. If the app's scopes change later, reissue tokens.
+Recommended: use `--app disk-read` for read/download. Use `--app disk-full`
+only when the user explicitly approves upload/share-management permissions. If
+the app's scopes change later, reissue tokens.
 
 ## Important: Telemost Recordings
 
-Telemost recording links may look public (`yadi.sk/d/...`) but still require OAuth authentication.
+Telemost recording links may look public (`yadi.sk/d/...`) but can still be
+organization-restricted by Yandex.
 
 Behavior to expect:
 
-- Without token: API can return `404` for existing Telemost recordings.
-- With token: API returns a working download URL.
+- Public-link Disk API calls are tokenless and can return `404` for
+  organization-restricted recordings.
 - `HEAD` requests are not a reliable availability check.
 
 CLI notes:
 
-- `--force-auth` requires a token and fails fast if no token is configured.
-- Use `--verbose` to see endpoint calls and auth mode (`auth=yes/no`).
+- Use `--account` for non-public Disk operations. If omitted, the central auth
+  dispatcher may infer the account only when exactly one account alias is
+  available.
+- Use `--verbose` to see endpoint calls.
 
 ## Share Management
 
@@ -130,7 +133,7 @@ CLI notes:
 | Option | Meaning |
 |---|---|
 | `--access` | `all` creates a public link; `employees` creates an organization-only link when used with the documented publish payload |
-| `--org-id` | Organization ID for `--access employees`; optional if `org_id` is already stored in the token file |
+| `--org-id` | Organization ID for `--access employees`; optional only when runtime already knows the organization for the selected account |
 | `--rights` | `read`, `write`, `read_without_download`, `read_with_password`, `read_with_password_without_download` |
 | `--password` | Required for password-protected rights |
 | `--available-until` | TTL in seconds; future Unix timestamps are also accepted for compatibility. Omit or pass `null` for infinite sharing |
@@ -145,7 +148,7 @@ Reliable method:
 1. Use an admin account token with `directory:read_organization`.
 2. Call `GET https://api360.yandex.net/directory/v1/org`.
 3. Read `organizations[].id` from the response.
-4. Store that value as `org_id` in the account token file for reuse.
+4. Pass that value with `--org-id` for organization-restricted publishing.
 
 Example:
 
@@ -158,7 +161,8 @@ Notes:
 
 - This works only if the token has the right scope and the user is allowed to view organization data. In practice, that means an admin path.
 - Non-admin users may get `403` and should not be expected to auto-discover `org_id`.
-- If `org_id` is already stored in `{data_dir}/auth/<account>.token`, Disk publishing does not need `--org-id`.
+- If runtime already knows `org_id` for the selected account, Disk publishing
+  does not need `--org-id`.
 
 ### Associate Org ID With Domain Name
 

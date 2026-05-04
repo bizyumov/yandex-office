@@ -6,7 +6,6 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 
@@ -322,13 +321,11 @@ def test_fetch_mailbox_dry_run_collects_headers(monkeypatch) -> None:
     conn = HeaderConn(header_message)
     fetcher = build_fetcher()
 
-    monkeypatch.setattr(
-        mail_fetch,
-        "resolve_token",
-        lambda **_: SimpleNamespace(token="y0_mail"),
-    )
     fetcher._connect_imap = lambda *_: conn
     fetcher._search_emails = lambda *_args, **_kwargs: [(11, b"11")]
+    fetcher._fetch_message_data = (
+        lambda conn_arg, uid_bytes, query, **_kwargs: conn_arg.uid("FETCH", uid_bytes, query)
+    )
 
     count = fetcher.fetch_mailbox(
         {"name": "alex", "email": "user@example.com"},
@@ -360,17 +357,15 @@ def test_fetch_mailbox_dry_run_does_not_sleep(monkeypatch) -> None:
     fetcher.config["mail"]["fetch"] = {"sleep_seconds": 99}
 
     monkeypatch.setattr(
-        mail_fetch,
-        "resolve_token",
-        lambda **_: SimpleNamespace(token="y0_mail"),
-    )
-    monkeypatch.setattr(
         mail_fetch.time,
         "sleep",
         lambda *_args, **_kwargs: pytest.fail("dry-run must not sleep"),
     )
     fetcher._connect_imap = lambda *_: conn
     fetcher._search_emails = lambda *_args, **_kwargs: [(11, b"11"), (12, b"12")]
+    fetcher._fetch_message_data = (
+        lambda conn_arg, uid_bytes, query, **_kwargs: conn_arg.uid("FETCH", uid_bytes, query)
+    )
 
     count = fetcher.fetch_mailbox(
         {"name": "alex", "email": "user@example.com"},
@@ -424,11 +419,6 @@ def test_fetch_mailbox_from_uid_is_non_persistent(monkeypatch) -> None:
     conn = LogoutConn()
     save_calls = []
 
-    monkeypatch.setattr(
-        mail_fetch,
-        "resolve_token",
-        lambda **_: SimpleNamespace(token="y0_mail"),
-    )
     fetcher._connect_imap = lambda *_: conn
     fetcher._search_emails = lambda *_args, **_kwargs: [(5001, b"5001")]
     fetcher._process_email = lambda *_args, **_kwargs: {

@@ -25,6 +25,7 @@ import imaplib
 import json
 import logging
 import re
+import requests
 import ssl
 import sys
 import time
@@ -37,7 +38,7 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from common.auth import resolve_token
+from common.api import YandexApiContext, yandex_api_method
 from common.config import load_runtime_context
 
 logger = logging.getLogger("mail")
@@ -347,17 +348,41 @@ class EmailFetcher:
             return 1
         return self._get_last_uid(mailbox_name, filter_name)
 
-    def _connect_imap(self, email_addr: str, token: str) -> imaplib.IMAP4_SSL:
+    @staticmethod
+    def _mail_credentials(ctx: YandexApiContext) -> tuple[str, str]:
+        if ctx.token_ref is None:
+            raise RuntimeError("Mail API context is not token-bound")
+        email_addr = str((ctx.token_data or {}).get("email") or "").strip()
+        if not email_addr:
+            raise RuntimeError("Mail token file is missing verified email")
+        return email_addr, ctx.token_ref.token
+
+    @yandex_api_method("mail.imap.authenticate", one_of=["mail:imap_full", "mail:imap_ro"])
+    def _connect_imap(self, ctx: YandexApiContext) -> imaplib.IMAP4_SSL:
+        """Authenticate to IMAP with the shared auth dispatcher token."""
+
         imap_cfg = self.config.get("imap", {})
         server = imap_cfg.get("server", "imap.yandex.com")
         port = imap_cfg.get("port", 993)
 
+        email_addr, token = self._mail_credentials(ctx)
         auth_string = f"user={email_addr}\x01auth=Bearer {token}\x01\x01"
         context = ssl.create_default_context()
         conn = imaplib.IMAP4_SSL(server, port, ssl_context=context)
         conn.authenticate("XOAUTH2", lambda x: auth_string.encode())
-        conn.select("INBOX")
+        self._select_inbox(conn, ctx=ctx)
         return conn
+
+    @yandex_api_method("mail.imap.select", one_of=["mail:imap_full", "mail:imap_ro"])
+    def _select_inbox(
+        self,
+        conn: imaplib.IMAP4_SSL,
+        *,
+        ctx: YandexApiContext | None = None,
+    ) -> None:
+        """Select INBOX after authentication."""
+
+        conn.select("INBOX")
 
     @staticmethod
     def _decode_header(header_value: str) -> str:
@@ -509,6 +534,7 @@ class EmailFetcher:
             return []
         return list(uid_data[0].split())
 
+    @yandex_api_method("mail.imap.search", one_of=["mail:imap_full", "mail:imap_ro"])
     def _search_emails(
         self,
         conn,
@@ -518,6 +544,7 @@ class EmailFetcher:
         subject: str | None = None,
         since: str | None = None,
         before: str | None = None,
+        ctx: YandexApiContext | None = None,
     ) -> list[tuple[int, bytes]]:
         """Search for new emails matching the current filter after last_uid."""
         criteria: list[str] = []
@@ -547,6 +574,19 @@ class EmailFetcher:
 
         return sorted(result, key=lambda item: item[0])
 
+    @yandex_api_method("mail.imap.fetch", one_of=["mail:imap_full", "mail:imap_ro"])
+    def _fetch_message_data(
+        self,
+        conn,
+        uid_bytes: bytes,
+        query: str,
+        *,
+        ctx: YandexApiContext | None = None,
+    ):
+        """Fetch message data through the shared auth-dispatched IMAP boundary."""
+
+        return conn.uid("FETCH", uid_bytes, query)
+
     def _process_email(
         self,
         conn,
@@ -554,6 +594,8 @@ class EmailFetcher:
         uid: int,
         mailbox_name: str,
         filter_name: str,
+        *,
+        ctx: YandexApiContext | None = None,
     ) -> dict | None:
         """Fetch a single email and write to incoming/ directory.
 
@@ -578,7 +620,7 @@ class EmailFetcher:
         }
 
         try:
-            _, msg_data = conn.uid("FETCH", uid_bytes, "(RFC822)")
+            _, msg_data = self._fetch_message_data(conn, uid_bytes, "(RFC822)", ctx=ctx)
             raw_email = msg_data[0][1]
             msg = email.message_from_bytes(raw_email)
 
@@ -711,32 +753,24 @@ class EmailFetcher:
             Number of successfully fetched messages.
         """
         mailbox_name = mailbox_config["name"]
-        email_addr = mailbox_config["email"]
         filter_name = run_filter["name"]
 
         logger.info(
-            f"Checking mailbox: {email_addr} ({mailbox_name}) using filter {filter_name}"
+            f"Checking mailbox: {mailbox_config['email']} ({mailbox_name}) using filter {filter_name}"
         )
 
-        # Load token from data_dir/auth/{name}.token
-        try:
-            token_info = resolve_token(
-                account=mailbox_name,
-                skill="mail",
-                data_dir=self.data_dir,
-                config=self.config,
-                required_scopes=["mail:imap_ro"],
-            )
-        except Exception as exc:
-            logger.error(str(exc))
-            return 0
-        token = token_info.token
+        api_ctx = YandexApiContext(
+            account=mailbox_name,
+            data_dir=self.data_dir,
+            config=self.config,
+            session=requests.Session(),
+        )
 
         # Connect with retry
         conn = None
         for attempt in range(3):
             try:
-                conn = self._connect_imap(email_addr, token)
+                conn = self._connect_imap(api_ctx)
                 logger.info("Connected to IMAP")
                 break
             except Exception as exc:
@@ -767,6 +801,7 @@ class EmailFetcher:
                 subject=subject,
                 since=since,
                 before=before,
+                ctx=api_ctx,
             )
         except Exception as exc:
             logger.error(f"Search failed: {exc}")
@@ -782,10 +817,11 @@ class EmailFetcher:
         if dry_run:
             for uid, uid_bytes in matching:
                 try:
-                    _, msg_data = conn.uid(
-                        "FETCH",
+                    _, msg_data = self._fetch_message_data(
+                        conn,
                         uid_bytes,
                         "(BODY.PEEK[HEADER.FIELDS (SUBJECT FROM DATE)])",
+                        ctx=api_ctx,
                     )
                     raw_header = self._extract_message_bytes(msg_data)
                     if raw_header is None:
@@ -827,7 +863,14 @@ class EmailFetcher:
         for idx, (uid, uid_bytes) in enumerate(matching):
             logger.info(f"Processing UID {uid}...")
             try:
-                meta = self._process_email(conn, uid_bytes, uid, mailbox_name, filter_name)
+                meta = self._process_email(
+                    conn,
+                    uid_bytes,
+                    uid,
+                    mailbox_name,
+                    filter_name,
+                    ctx=api_ctx,
+                )
                 if meta:
                     self.downloaded.append(meta)
                     if persist_state:

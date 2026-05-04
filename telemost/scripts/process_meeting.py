@@ -54,6 +54,15 @@ MSK = timezone(timedelta(hours=3))
 MEETING_START_RE = re.compile(r"(\d{2})\.(\d{2})\.(\d{4})\s+в\s+(\d{1,2}):(\d{2})")
 
 
+def default_incoming_dir(data_dir: Path) -> Path:
+    """Return the Telemost incoming directory for named-filter mail fetches."""
+
+    filter_dir = data_dir / "incoming" / "telemost"
+    if filter_dir.exists():
+        return filter_dir
+    return data_dir / "incoming"
+
+
 def extract_meeting_start_local(body_text: str) -> str | None:
     """Extract meeting local start timestamp from plain-text body.
 
@@ -751,7 +760,7 @@ def main():
     )
     data_dir = runtime.data_dir
 
-    incoming_dir = Path(args.incoming) if args.incoming else data_dir / "incoming"
+    incoming_dir = Path(args.incoming) if args.incoming else default_incoming_dir(data_dir)
     output_base = Path(args.output) if args.output else data_dir / "meetings"
     archive_base = Path(args.archive) if args.archive else data_dir / "archive"
 

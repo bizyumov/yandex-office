@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
+import re
 from typing import Any
+from urllib.error import HTTPError, URLError
+from urllib.parse import quote
+from urllib.request import HTTPRedirectHandler, Request, build_opener, urlopen
 
 from common.auth import build_approval_url
 
@@ -40,6 +45,20 @@ class OAuthProfileOption:
     auth_url: str
     access_class: str
     is_default: bool
+
+
+@dataclass(frozen=True)
+class OAuthClientMetadata:
+    client_id: str
+    app_name: str | None
+    scopes: list[str]
+
+
+class _NoRedirect(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        # Unknown/non-public client ids redirect to Passport. Treat that as an
+        # unresolved metadata lookup instead of parsing the login HTML.
+        return None
 
 
 def _clean_scopes(scopes: list[str] | None) -> list[str]:
@@ -255,10 +274,119 @@ def oauth_app_for_client_id(
             continue
         if str(raw.get("client_id", "")).strip() != normalized_client_id:
             continue
+        if not configured_services and service is None:
+            return OAuthAppConfig(
+                service="",
+                client_id=normalized_client_id,
+                scopes=_clean_scopes(raw.get("scopes")),
+                app_id=str(app_id),
+                app_name=str(raw.get("app_name") or raw.get("name") or "").strip() or None,
+                omit_scope_in_url=bool(raw.get("omit_scope_in_url", True)),
+                services=(),
+            )
         if not configured_services:
             continue
         return configured_oauth_app(config, service or configured_services[0], app_id)
     return None
+
+
+def fetch_yandex_oauth_client_metadata(
+    config: dict[str, Any],
+    *,
+    client_id: str,
+    timeout: float = 10.0,
+) -> OAuthClientMetadata:
+    normalized_client_id = str(client_id).strip()
+    if not normalized_client_id:
+        raise ValueError("client_id must be non-empty")
+
+    info_template = str(
+        config.get("urls", {}).get(
+            "oauth_client_info",
+            "https://oauth.yandex.ru/client/{client_id}/info",
+        )
+    )
+    info_url = info_template.format(client_id=quote(normalized_client_id, safe=""))
+    request = Request(info_url, headers={"Accept": "application/json"})
+    opener = build_opener(_NoRedirect)
+    try:
+        with opener.open(request, timeout=timeout) as response:
+            payload = json.load(response)
+    except HTTPError as exc:
+        raise RuntimeError(
+            f"Yandex OAuth client metadata lookup failed with HTTP {exc.code}"
+        ) from exc
+    except URLError as exc:
+        raise RuntimeError(
+            f"Yandex OAuth client metadata lookup failed: {exc.reason}"
+        ) from exc
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("Yandex OAuth client metadata returned invalid JSON") from exc
+
+    if not isinstance(payload, dict):
+        raise RuntimeError("Yandex OAuth client metadata returned non-object JSON")
+
+    response_client_id = str(payload.get("id") or "").strip()
+    if response_client_id and response_client_id != normalized_client_id:
+        raise RuntimeError(
+            "Yandex OAuth client metadata returned a different client_id"
+        )
+
+    scopes = _clean_scopes(payload.get("scope"))
+    if not scopes:
+        raise RuntimeError("Yandex OAuth client metadata did not include scopes")
+
+    app_name = str(payload.get("name") or "").strip() or None
+    return OAuthClientMetadata(
+        client_id=normalized_client_id,
+        app_name=app_name,
+        scopes=scopes,
+    )
+
+
+def _local_app_id(client_id: str) -> str:
+    normalized = re.sub(r"[^a-z0-9]+", "-", client_id.lower()).strip("-")
+    return f"custom-{normalized[:24] or 'app'}"
+
+
+def upsert_agent_oauth_app(
+    agent_config: dict[str, Any],
+    *,
+    client_id: str,
+    scopes: list[str],
+    app_name: str | None = None,
+) -> str:
+    normalized_client_id = str(client_id).strip()
+    if not normalized_client_id:
+        raise ValueError("client_id must be non-empty")
+
+    apps = agent_config.setdefault("oauth_apps", {})
+    if not isinstance(apps, dict):
+        raise ValueError("oauth_apps must be an object")
+    catalog = apps.setdefault("catalog", {})
+    if not isinstance(catalog, dict):
+        raise ValueError("oauth_apps.catalog must be an object")
+
+    for app_id, raw in sorted(catalog.items()):
+        if isinstance(raw, dict) and str(raw.get("client_id", "")).strip() == normalized_client_id:
+            raw["scopes"] = _clean_scopes(scopes)
+            if app_name:
+                raw["name"] = app_name
+            return str(app_id)
+
+    base_id = _local_app_id(normalized_client_id)
+    app_id = base_id
+    suffix = 2
+    while app_id in catalog:
+        app_id = f"{base_id}-{suffix}"
+        suffix += 1
+    catalog[app_id] = {
+        "client_id": normalized_client_id,
+        "scopes": _clean_scopes(scopes),
+        "name": app_name or f"Custom Yandex OAuth app {normalized_client_id[:8]}",
+        "omit_scope_in_url": False,
+    }
+    return app_id
 
 
 def plan_oauth_setup(

@@ -17,7 +17,6 @@ if str(ROOT_DIR) not in sys.path:
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-from common.auth import ResolvedToken
 from telemost.lib import client as telemost_client
 import conference as conference_cli
 
@@ -57,27 +56,39 @@ class FakeSession:
 
 
 @pytest.fixture(autouse=True)
-def stub_token(monkeypatch):
+def stub_token(monkeypatch, tmp_path):
+    data_dir = tmp_path / "yandex-data"
+    token_path = data_dir / "auth" / "acct.token"
+    token_path.parent.mkdir(parents=True, exist_ok=True)
+    token_path.write_text(
+        json.dumps(
+            {
+                "email": "user@example.com",
+                "secret": {"client_id": "telemost-client"},
+            }
+        ),
+        encoding="utf-8",
+    )
     monkeypatch.setattr(
         telemost_client,
         "load_runtime_context",
         lambda _path, **_: SimpleNamespace(
-            data_dir=Path("/tmp/workspace/yandex-data"),
-            config={"urls": {}},
-        ),
-    )
-    monkeypatch.setattr(
-        telemost_client,
-        "resolve_token",
-        lambda **_: ResolvedToken(
-            account="acct",
-            skill="telemost",
-            token="secret",
-            token_key="token.telemost",
-            source_key="token.telemost",
-            token_path=Path("/tmp/acct.token"),
-            token_data={"token.telemost": "secret"},
-            email="user@example.com",
+            data_dir=data_dir,
+            config={
+                "urls": {},
+                "oauth_apps": {
+                    "catalog": {
+                        "telemost": {
+                            "client_id": "telemost-client",
+                            "scopes": [
+                                "telemost-api:conferences.create",
+                                "telemost-api:conferences.read",
+                                "telemost-api:conferences.update",
+                            ],
+                        },
+                    },
+                },
+            },
         ),
     )
 

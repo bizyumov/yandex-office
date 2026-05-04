@@ -24,7 +24,7 @@ Do not duplicate the onboarding contract here.
 
 - `AUTHENTICATE failed`: wrong token, wrong mailbox, or IMAP/OAuth is disabled in mailbox settings.
 - No fetched mail: sender filter is too strict, or there is no matching mail yet.
-- Wrong data path: onboarding was not run from the agent workspace CWD.
+- Wrong data path: onboarding did not use the expected workspace data directory.
 
 ## Maintainer Note
 

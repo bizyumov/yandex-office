@@ -5,7 +5,7 @@ license: MIT
 compatibility: Python 3.10+, network access to api.tracker.yandex.net
 metadata:
   author: bizyumov
-  version: "2026.04.10"
+  version: "2026.05.04"
 ---
 
 # Yandex Tracker / Трекер
@@ -50,23 +50,16 @@ python3 scripts/get_board.py --board 123 --account mary
 
 You need an OAuth token with `tracker:read` (for reading) or `tracker:write` (for full operations) scope.
 
-Add to existing token file:
-```json
-{
-  "email": "user@yandex.ru",
-  "token.tracker": "y0__..."
-}
-```
-
-Or generate new token:
+Generate or refresh the Tracker token through managed auth:
 ```bash
 python3 <full-path-to-yandex-office>/scripts/oauth_setup.py \
   --email user@yandex.ru \
   --account mary \
-  --service tracker
+  --app tracker-read
 ```
 
-Recommended: use the default Tracker app from root `config.skill.json` (the `oauth_apps.catalog` entry with `"service": "tracker"` and `"is_default": true`, currently `tracker-read`) for the default onboarding path. Use `--app tracker-full` for write access, and explicit `--client-id` and `--scope` only when you need a one-off override.
+Recommended: use `--app tracker-read` for read/search. Use
+`--app tracker-full` only when the user explicitly approves write access.
 
 ### Organization ID
 
@@ -75,15 +68,8 @@ Tracker API requires organization identifier:
 - For **Yandex 360** organizations: use `X-Org-ID` header
 - For **Yandex Cloud** organizations: use `X-Cloud-Org-ID` header
 
-Store org ID in token file:
-```json
-{
-  "email": "user@yandex.ru",
-  "token.tracker": "y0__...",
-  "org_id": "123456",
-  "org_type": "360"  # or "cloud"
-}
-```
+Supply the organization ID through the supported command option or runtime
+configuration for the Tracker operation.
 
 To find your org ID: https://tracker.yandex.ru/admin/orgs
 
@@ -101,7 +87,7 @@ python3 scripts/search_issues.py --account ACCOUNT [options]
 
 | Argument | Required | Description |
 |----------|----------|-------------|
-| `--account` | Yes | Account name from config (e.g., `mary`) |
+| `--account` | Yes | Account alias (e.g., `mary`) |
 | `--query` | No* | Search query in Tracker query language |
 | `--filter` | No* | JSON filter object (alternative to query) |
 | `--queue` | No | Filter by queue key |
@@ -462,18 +448,10 @@ create_issue(
 )
 ```
 
-## Token Format
+## Managed Auth
 
-```json
-{
-  "email": "user@yandex.ru",
-  "token.tracker": "y0__...",
-  "org_id": "123456",
-  "org_type": "360"
-}
-```
-
-Stored at `{data_dir}/auth/{account}.token` with 600 permissions.
+Use `scripts/oauth_setup.py` for OAuth intake and refresh. Runtime managed auth
+handles credential selection.
 
 ## Error Handling
 

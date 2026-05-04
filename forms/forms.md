@@ -5,7 +5,7 @@ license: MIT
 compatibility: Python 3.10+, network access to api.forms.yandex.net
 metadata:
   author: bizyumov
-  version: "2026.04.10"
+  version: "2026.05.04"
 ---
 
 # Yandex Forms / Формы
@@ -118,35 +118,22 @@ You need an OAuth token with `forms:read` scope (for reading responses) or `form
 
 **Important:** You can only access forms that are visible to the authenticated user in the Yandex Forms UI. If you can't see a form when logged into forms.yandex.ru, the API will return 404.
 
-Add to existing token file:
-```json
-{
-  "email": "user@yandex.ru",
-  "token.forms": "y0__..."
-}
-```
-
-Or generate new token:
+Generate or refresh the Forms token through managed auth:
 ```bash
-# From the agent workspace CWD, using the full path to the shared Yandex skill:
+# Use the full path to the shared Yandex skill:
 python3 <full-path-to-yandex-office>/scripts/oauth_setup.py \
   --email user@yandex.ru \
   --account mary \
-  --service forms
+  --app forms-read
 ```
 
-Recommended: use the default Forms app from root `config.skill.json` (the `oauth_apps.catalog` entry with `"service": "forms"` and `"is_default": true`, currently `forms-read`) so the default approval link can use the preconfigured app permissions without needing `--client-id` each time. Use `--app forms-full` when you need write access.
+Recommended: use `--app forms-read` for response export/read. Use
+`--app forms-full` only when the user explicitly approves write access.
 
 ### Multiple Accounts
 
-You can add multiple account tokens to access forms from different users:
-
-```
-{data_dir}/auth/
-├── mary.token      # First account
-├── admin.token      # Admin account with broader access
-└── owner.token      # Form owner account
-```
+You can add multiple account aliases through `scripts/oauth_setup.py` to access
+forms from different users.
 
 Then use `--account` to specify which token to use:
 ```bash
@@ -175,7 +162,7 @@ python3 scripts/discover_forms.py --account ACCOUNT [options]
 
 | Argument | Required | Description |
 |----------|----------|-------------|
-| `--account` | Yes | Account name from config (e.g., `mary`) |
+| `--account` | Yes | Account alias (e.g., `mary`) |
 | `--output` | No | Output file for results (JSON) |
 | `--no-scan` | No | Skip workspace scan, use existing registry only |
 | `--json` | No | Output as JSON instead of formatted text |
@@ -228,7 +215,7 @@ python3 scripts/get_form_stats.py --form-id FORM_ID [--form-id FORM_ID2 ...] --a
 | Argument | Required | Description |
 |----------|----------|-------------|
 | `--form-id` | Yes | Form ID (can specify multiple) |
-| `--account` | Yes | Account name from config (e.g., `mary`) |
+| `--account` | Yes | Account alias (e.g., `mary`) |
 | `--limit` | No | Max responses to fetch (default: 1000) |
 | `--output` | No | Output file (JSON) |
 | `--json` | No | Output as JSON instead of formatted text |
@@ -284,7 +271,7 @@ python3 scripts/export_responses.py --form-id FORM_ID --account ACCOUNT [options
 | Argument | Required | Description |
 |----------|----------|-------------|
 | `--form-id` | Yes | Form ID (e.g., `6800cd9202848f10b272a9cc`) |
-| `--account` | Yes | Account name from config (e.g., `mary`) |
+| `--account` | Yes | Account alias (e.g., `mary`) |
 | `--output` | No | Output directory (default: `{data_dir}/forms/`) |
 | `--format` | No | Export format: `xlsx` or `json` (default: `xlsx`) |
 | `--wait` | No | Poll interval seconds (default: 5) |
@@ -426,7 +413,7 @@ Uses shared root `config.json` plus workspace `yandex-data/config.agent.json`. K
 
 - `forms.state_file` — Export operation tracking file
 - `forms.default_format` — Default export format (xlsx/json)
-- runtime data dir defaults to `./yandex-data` from the agent workspace CWD, or `--data-dir` when explicitly passed
+- runtime data dir defaults to `./yandex-data`, or `--data-dir` when explicitly passed
 
 Optional forms-specific config:
 ```json
@@ -442,16 +429,10 @@ Optional forms-specific config:
 }
 ```
 
-## Token Format
+## Managed Auth
 
-```json
-{
-  "email": "user@yandex.ru",
-  "token.forms": "y0__..."
-}
-```
-
-Stored at `{data_dir}/auth/{account}.token` with 600 permissions.
+Use `scripts/oauth_setup.py` for OAuth intake and refresh. Runtime managed auth
+handles credential selection.
 
 ## Error Handling
 

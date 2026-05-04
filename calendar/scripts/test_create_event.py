@@ -15,6 +15,7 @@ for entry in (ROOT_DIR, SCRIPT_DIR, CAL_LIB):
         sys.path.insert(0, str(entry))
 
 import create_event
+import client as calendar_client_module
 
 
 class DummyCalendar:
@@ -27,6 +28,8 @@ class DummyPrincipal:
 
 
 class DummyCalendarClient:
+    put_handler = None
+
     def __init__(self, *args, **kwargs):
         self.account = "acct"
         self.email = "user@example.com"
@@ -40,6 +43,17 @@ class DummyCalendarClient:
 
     def find_calendar(self):
         return DummyCalendar()
+
+    def put_event(self, *, event_url, ical_data):
+        if DummyCalendarClient.put_handler is not None:
+            return DummyCalendarClient.put_handler(
+                event_url,
+                auth=(self.email, self.token),
+                data=ical_data,
+                headers={"Content-Type": "text/calendar; charset=utf-8"},
+                timeout=30,
+            )
+        return DummyResponse(201)
 
 
 class DummyTelemostClient:
@@ -88,9 +102,9 @@ def test_create_telemost_event_uses_real_conference(monkeypatch):
         captured["timeout"] = timeout
         return DummyResponse(201)
 
+    DummyCalendarClient.put_handler = fake_put
     monkeypatch.setattr(create_event, "YandexCalendarClient", DummyCalendarClient)
     monkeypatch.setattr(create_event, "YandexTelemostClient", DummyTelemostClient)
-    monkeypatch.setattr(create_event.requests, "put", fake_put)
 
     result = create_event.create_telemost_event(
         account="acct",
@@ -116,9 +130,9 @@ def test_create_telemost_event_uses_real_conference(monkeypatch):
 
 
 def test_create_telemost_event_passes_overrides(monkeypatch):
+    DummyCalendarClient.put_handler = lambda *args, **kwargs: DummyResponse(204)
     monkeypatch.setattr(create_event, "YandexCalendarClient", DummyCalendarClient)
     monkeypatch.setattr(create_event, "YandexTelemostClient", DummyTelemostClient)
-    monkeypatch.setattr(create_event.requests, "put", lambda *args, **kwargs: DummyResponse(204))
 
     result = create_event.create_telemost_event(
         account="acct",
@@ -147,9 +161,9 @@ def test_create_telemost_event_without_attendees_uses_publish(monkeypatch):
         captured["data"] = data
         return DummyResponse(201)
 
+    DummyCalendarClient.put_handler = fake_put
     monkeypatch.setattr(create_event, "YandexCalendarClient", DummyCalendarClient)
     monkeypatch.setattr(create_event, "YandexTelemostClient", DummyTelemostClient)
-    monkeypatch.setattr(create_event.requests, "put", fake_put)
 
     result = create_event.create_telemost_event(
         account="acct",
@@ -170,9 +184,9 @@ def test_create_telemost_event_binds_existing_conference(monkeypatch):
         captured["data"] = data
         return DummyResponse(201)
 
+    DummyCalendarClient.put_handler = fake_put
     monkeypatch.setattr(create_event, "YandexCalendarClient", DummyCalendarClient)
     monkeypatch.setattr(create_event, "YandexTelemostClient", DummyTelemostClient)
-    monkeypatch.setattr(create_event.requests, "put", fake_put)
 
     result = create_event.create_telemost_event(
         account="acct",
@@ -191,6 +205,7 @@ def test_create_telemost_event_binds_existing_conference(monkeypatch):
 
 
 def test_create_telemost_event_rejects_conflicting_existing_conference_flags(monkeypatch):
+    DummyCalendarClient.put_handler = None
     monkeypatch.setattr(create_event, "YandexCalendarClient", DummyCalendarClient)
     monkeypatch.setattr(create_event, "YandexTelemostClient", DummyTelemostClient)
     monkeypatch.setattr(
@@ -218,9 +233,9 @@ def test_create_telemost_event_rejects_conflicting_existing_conference_flags(mon
 
 
 def test_cli_defaults_remain_public(monkeypatch, capsys):
+    DummyCalendarClient.put_handler = lambda *args, **kwargs: DummyResponse(201)
     monkeypatch.setattr(create_event, "YandexCalendarClient", DummyCalendarClient)
     monkeypatch.setattr(create_event, "YandexTelemostClient", DummyTelemostClient)
-    monkeypatch.setattr(create_event.requests, "put", lambda *args, **kwargs: DummyResponse(201))
     monkeypatch.setattr(
         sys,
         "argv",
@@ -242,3 +257,64 @@ def test_cli_defaults_remain_public(monkeypatch, capsys):
     assert exit_code == 0
     assert out["telemost"]["access_level"] == "PUBLIC"
     assert out["telemost"]["waiting_room_level"] == "PUBLIC"
+
+
+def test_create_event_marks_calendar_token_good_through_standard_dispatch(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    # Business success is not enough for GH41: every token-backed method must
+    # pass through dispatch, which proves itself by writing good_at.
+    data_dir = tmp_path / "yandex-data"
+    auth_dir = data_dir / "auth"
+    auth_dir.mkdir(parents=True)
+    token_path = auth_dir / "acct.token"
+    token_path.write_text(
+        json.dumps(
+            {
+                "email": "user@example.com",
+                "calendar-token": {
+                    "client_id": "902e7ef779014d31b94d69d8cc863034",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    (data_dir / "config.agent.json").write_text("{}\n", encoding="utf-8")
+
+    captured = {}
+
+    class FakeDAVClient:
+        def __init__(self, *, url, username, password):
+            captured["dav_auth"] = (username, password)
+
+        def principal(self):
+            return type(
+                "Principal",
+                (),
+                {"calendars": lambda self: [DummyCalendar()]},
+            )()
+
+    def fake_put(url, auth=None, data=None, headers=None, timeout=None):
+        captured["put_auth"] = auth
+        captured["data"] = data
+        return DummyResponse(201)
+
+    monkeypatch.setattr(calendar_client_module.caldav, "DAVClient", FakeDAVClient)
+    monkeypatch.setattr(calendar_client_module.requests, "put", fake_put)
+    monkeypatch.setattr(create_event, "YandexTelemostClient", DummyTelemostClient)
+
+    result = create_event.create_telemost_event(
+        account="acct",
+        summary="Dispatch route",
+        start_str="2026-03-12T14:00:00",
+        duration_minutes=30,
+        attendees=[],
+        data_dir=str(data_dir),
+    )
+
+    saved = json.loads(token_path.read_text(encoding="utf-8"))
+    assert result["success"] is True
+    assert captured["dav_auth"] == ("user@example.com", "calendar-token")
+    assert captured["put_auth"] == ("user@example.com", "calendar-token")
+    assert "good_at" in saved["calendar-token"]

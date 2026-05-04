@@ -5,7 +5,7 @@ license: MIT
 compatibility: Requires Python 3.10+, network access to imap.yandex.ru
 metadata:
   author: bizyumov
-  version: "2026.04.20"
+  version: "2026.05.03"
 ---
 
 # Yandex Mail / Почта
@@ -20,8 +20,8 @@ Ask the user to verify that IMAP + OAuth is enabled for the target mailbox first
 - RU: Откройте Яндекс Почту в браузере, перейдите в Настройки → Почтовые программы (прямая ссылка: `https://mail.yandex.ru/#setup/client`), включите `С сервера imap.yandex.ru по протоколу IMAP` и `Пароли приложений и OAuth-токены`, затем сохраните изменения.
 
 ```bash
-# From the agent workspace CWD, using the full path to the shared Yandex skill:
-python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email user@yandex.ru --account alex --service mail
+# Use the full path to the shared Yandex skill:
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email user@yandex.ru --account alex --app mail-readonly
 
 # Fetch new emails with all enabled configured filters
 python3 scripts/fetch_emails.py
@@ -36,11 +36,12 @@ python3 scripts/fetch_emails.py --filter forms
 python3 scripts/fetch_emails.py --sender "Мария" --subject "Fwd:" --mailbox alex --dry-run
 ```
 
-> Recommended: use the default Mail app from root `config.skill.json` (the `oauth_apps.catalog` entry with `"service": "mail"` and `"is_default": true`) so the approval URL can use the app's baked-in scopes without passing `--client-id` each time. If you also need Disk access, run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <name> --service disk` from the agent workspace CWD.
+> Recommended: use `--app mail-readonly` for fetching. If you also need Disk
+> access, run the setup command again with `--app disk-read`.
 
 ## What It Does
 
-1. Loads shared root `config.json`
+1. Loads shared root `config.skill.json`
 2. Loads `{data_dir}/config.agent.json` from the resolved runtime data dir
 3. Connects to Yandex Mail via IMAP XOAUTH2
 4. Resolves the configured filters for the run, or an ad-hoc CLI filter
@@ -161,7 +162,7 @@ Notes:
 
 For large mailboxes, you can globally limit IMAP search to messages sent since a date.
 
-Root config (`config.json`):
+Root config (`config.skill.json`):
 
 ```json
 {
@@ -277,10 +278,12 @@ No business logic fields — downstream skills (telemost, etc.) enrich meta.json
 
 ## Configuration
 
-Uses shared root `config.json` plus agent-local `yandex-data/config.agent.json`. Key fields:
+Uses shared root `config.skill.json`, agent-local `yandex-data/config.agent.json`,
+and managed auth accounts. Key fields:
 
 - `imap.server` / `imap.port` — IMAP connection settings
-- `accounts` — Agent-local account list in `config.agent.json`
+- managed auth accounts are selected by account alias; legacy config
+  `accounts` / `mailboxes` entries are compatibility input only
 - `mail.filters.telemost` — configured Telemost filter definition
 - `mail.filters.<name>.sender` — FROM filter criterion
 - `mail.filters.<name>.subject` — SUBJECT filter criterion
@@ -293,29 +296,16 @@ Uses shared root `config.json` plus agent-local `yandex-data/config.agent.json`.
 - `mail.output.spill_dir` — relative output directory inside `{data_dir}` for spilled dry-run result files (default `latest-query`)
 - sender and subject filters are literal IMAP substring matches; no additional query language is implemented
 - `mail.state_file` — shared state file with per-filter mailbox cursors
-- runtime data dir defaults to `./yandex-data` from the agent workspace CWD, or `--data-dir` when explicitly passed
+- runtime data dir defaults to `./yandex-data`, or `--data-dir` when explicitly passed
 
-## Token Format
+## Managed Auth
 
-```json
-{
-  "email": "user@yandex.ru",
-  "token.mail": "y0_...",
-  "token.disk": "y0_...",
-  "token_meta": {
-    "token.mail": {
-      "app_id": "mail-readonly",
-      "client_id": "660686ff45f947f2ac6e3f6495a9ec74",
-      "scopes": ["mail:imap_ro"]
-    }
-  }
-}
-```
-
-Stored at `{data_dir}/auth/{account}.token` with 600 permissions. New token files are created automatically on first save.
+Use `scripts/oauth_setup.py` for OAuth intake and refresh, normally with
+`--app mail-readonly` for fetching. Runtime selects eligible credentials through
+the decorated IMAP auth metadata and config-backed OAuth app catalog.
 
 ## Files
 
 - `scripts/fetch_emails.py` — Main fetcher (CLI + Python API)
-- `scripts/oauth_setup.py` — Shared bootstrap/account/token setup tool for all Yandex sub-skills (invoke by full path from the agent workspace CWD)
+- `scripts/oauth_setup.py` — Shared bootstrap/account/token setup tool for all Yandex sub-skills (invoke by full path)
 - `scripts/fetch.sh` — Cron-safe shell wrapper with PID lock (passes `--num` and other args through)

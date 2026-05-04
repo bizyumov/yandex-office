@@ -19,15 +19,15 @@ Telemost meeting recordings (audio/video) with `yadi.sk` public share links **re
 | `HEAD` (any endpoint) | ❌ 405 Method Not Allowed | ❌ 302 redirect to captcha |
 
 ### Root Cause
-- Telemost recordings are not truly public; they require owner's OAuth token
-- Current `download.py` doesn't use OAuth token for "public" files
+- Telemost recordings are not necessarily public; organization-restricted links
+  can look public while remaining inaccessible through the public-link API
 
 ### Required Changes
 
 1. **Update `scripts/download.py`**:
-   - For `yadi.sk` links, always attempt OAuth authentication if token is available
-   - Don't assume "public" means "no auth required"
-   - Add `--force-auth` flag to explicitly use token even for public-looking URLs
+   - Keep public-link API methods tokenless
+   - Route non-public Disk operations through decorator-owned token lookup
+   - Require `--account` unless exactly one token-backed account exists
 
 2. **Update `disk/disk.md`** documentation:
    ```markdown
@@ -42,10 +42,9 @@ Telemost meeting recordings (audio/video) with `yadi.sk` public share links **re
    - GET with OAuth token: Returns working download URL
    
    ### Usage for Telemost
-   Ensure YANDEX_DISK_TOKEN is set:
+   Ensure the account has a stored Disk token:
    ```bash
-   export YANDEX_DISK_TOKEN="y0__..."
-   python3 scripts/download.py "https://yadi.sk/d/..." --output ./
+   python3 scripts/download.py "https://yadi.sk/d/..." --account <account> --output ./
    ```
    ```
 
@@ -140,12 +139,11 @@ The relationship between `fetch_emails.py`, `incoming/` directory, and downstrea
 
 ### 1. Environment Variable Handling
 
-**Issue**: Skills look for tokens in different places (env vars, `{account}.token` files).
+**Issue**: Older code looked for tokens in multiple direct credential sources.
 
-**Fix**: Standardize token resolution order in all skills:
-1. Environment variable (e.g., `YANDEX_DISK_TOKEN`)
-2. `{data_dir}/auth/{account}.token` file
-3. `{data_dir}/auth/default.token` fallback
+**Fix**: Standardize token resolution in all skills through decorator-owned
+managed auth lookup, with account inference only when there is exactly one
+account alias.
 
 ### 2. Error Messages
 
@@ -154,8 +152,7 @@ The relationship between `fetch_emails.py`, `incoming/` directory, and downstrea
 **Fix**: Add contextual error handling:
 ```python
 if response.status == 404 and "yadi.sk" in public_url:
-    logger.error("404 Not Found. Telemost recordings require OAuth token. "
-                 "Set YANDEX_DISK_TOKEN or ensure token file exists.")
+    logger.error("404 Not Found. The public-link API cannot access this resource.")
 ```
 
 ### 3. Logging Verbosity
@@ -173,8 +170,8 @@ if response.status == 404 and "yadi.sk" in public_url:
 
 Before marking these tasks complete, verify:
 
-- [ ] Can download Telemost audio with `YANDEX_DISK_TOKEN` set
-- [ ] Get 404 (with helpful error message) without token
+- [ ] Stored-account Disk operations use decorator-owned token lookup
+- [ ] Public-link API gets 404 for organization-restricted links when tokenless
 - [ ] HEAD request returns 405 (documented, not confusing)
 - [ ] `fetch_emails.py --dry-run` works and shows pending emails (NOTE: `migrate_meeting_dirs.py` already has `--dry-run`)
 - [ ] Root SKILL.md clearly explains meta-skill structure
@@ -196,14 +193,8 @@ Before marking these tasks complete, verify:
 
 **Test Case: Telemost Audio Download**
 ```bash
-# This should work
-export YANDEX_DISK_TOKEN="y0__..."
+# Public-link API path; organization-restricted links can return 404
 python3 disk/scripts/download.py "https://yadi.sk/d/kvnJPr7okDIY4g" --output ./downloads/
-
-# This should fail with helpful error
-unset YANDEX_DISK_TOKEN
-python3 disk/scripts/download.py "https://yadi.sk/d/kvnJPr7okDIY4g" --output ./downloads/
-# Expected: Error message explaining OAuth requirement
 ```
 
 **Discovered API Quirks:**

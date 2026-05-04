@@ -6,7 +6,7 @@ license: MIT
 compatibility: Python 3.10+, per-skill dependencies, network access for Yandex APIs
 metadata:
   author: bizyumov
-  version: "2026.04.20"
+  version: "2026.05.04"
   openclaw:
     emoji: "🟡"
     requires:
@@ -16,365 +16,184 @@ metadata:
 
 # yandex-office
 
-A collection of [agentskills.io](https://agentskills.io/specification)-compliant skills for working with Yandex platform services. Like `gog`, but for Yandex.
-
-Current release surface:
-
-- version is stored in `VERSION`
-- cumulative downloader-facing release notes are stored in `CHANGELOG.md`
-- public skill versions use the `YYYY.MM.DD` format
+A collection of [agentskills.io](https://agentskills.io/specification)-compliant skills for working with Yandex user account assets. Like `gog`, but for Yandex.
 
 ## Reading Map
 
-- Need the right sub-skill doc first? See `Where To Read Each Sub-Skill`, lines 52-62 below.
-- Need the config/data flow (`config.json` -> `{data_dir}/config.agent.json` -> `state.json`)? See `Shared Configuration`, lines 108-172 below, and `Data Directory`, lines 181-201 below.
-- Need first-time setup or account/token onboarding? See `Onboarding`, lines 64-106 below.
-- Need the most common operator sequence? See `Typical Workflow`, lines 203-226 below.
-- Need install instructions? See `Installation`, lines 269-286 below.
-- Need OAuth details? See `OAuth Setup`, lines 288-342 below, and `OAuth App Registration`, lines 343-349 below.
-- Need release/version pointers? See `Versioning`, lines 394-400 below.
-- Need to know where Yandex Search or Yandex Cloud went? See `Migration Note`, lines 386-392 below.
+- Need the right sub-skill doc first? See `Sub-Skills and Where To Read Them`, lines 31-42 below.
+- Need to onboard the user or add another account/token? See `Onboarding`, lines 44-114 below.
+- Need to choose what the skill pack can do? See `Typical Scenarios`, lines 116-138 below.
+- Need to extend managed auth? See `Managed Auth and Extensibility`, lines 140-196 below.
+- Need to know where Yandex Search or Yandex Cloud went? See `Migration Note`, lines 198-206 below.
+- Need release/version pointers? See `Versioning`, lines 208-214 below.
+- Need details on config schema, data structure or automated tests? See `references/config-data-and-tests.md`.
 
-## Sub-Skills
+## Sub-Skills and Where To Read Them
 
 | Sub-Skill | Description |
 |-------|-------------|
-| [mail](mail/) | Mail / Почта: generic email fetcher via IMAP XOAUTH2 — saves emails to incoming/ |
-| [calendar](calendar/) | Calendar / Календарь: CalDAV integration for Yandex Calendar — list/create/update events, find slots, Telemost binding |
-| [contacts](contacts/) | Contacts / Контакты: CardDAV integration for Yandex Contacts — fuzzy lookup, create/update contacts |
-| [directory](directory/) | Directory / Директория: Yandex 360 Directory API — users, departments, groups, and org-aware identity data |
-| [telemost](telemost/) | Telemost / Телемост: process Telemost emails, manage real conferences, and admin Telemost org defaults |
-| [disk](disk/) | Disk / Диск: download files from Yandex Disk, upload files to Disk, and manage public or organization-only share links (Telemost links may require OAuth) |
-| [forms](forms/) | Forms / Формы: export form responses from Yandex Forms — download results as XLSX or JSON |
-| [tracker](tracker/) | Tracker / Трекер: manage tasks in Yandex Tracker — create, search, update issues, manage Agile boards |
-
-## Where To Read Each Sub-Skill
-
-- Mail: `mail/mail.md`
-- Calendar: `calendar/calendar.md`
-- Contacts: `contacts/contacts.md`
-- Directory: `directory/directory.md`
-- Disk: `disk/disk.md`
-- Telemost: `telemost/telemost.md`
-- Forms: `forms/forms.md`
-- Tracker: `tracker/tracker.md`
+| [mail](mail/mail.md) | Mail / Почта: generic email fetcher via IMAP XOAUTH2 — saves emails to incoming/, supports filters |
+| [calendar](calendar/calendar.md) | Calendar / Календарь: CalDAV integration for Yandex Calendar — list/create/update events, find slots, Telemost binding |
+| [contacts](contacts/contacts.md) | Contacts / Контакты: CardDAV integration for Yandex Contacts — fuzzy lookup, create/update contacts |
+| [directory](directory/directory.md) | Directory / Директория: Yandex 360 Directory API — users, departments, groups, and org-aware identity data |
+| [telemost](telemost/telemost.md) | Telemost / Телемост: process Telemost emails, manage real conferences, and admin Telemost org defaults |
+| [disk](disk/disk.md) | Disk / Диск: download files from Yandex Disk, upload files to Disk, and manage public or organization-only share links (Telemost links may require OAuth) |
+| [forms](forms/forms.md) | Forms / Формы: export form responses from Yandex Forms — download results as XLSX or JSON |
+| [tracker](tracker/tracker.md) | Tracker / Трекер: manage tasks in Yandex Tracker — create, search, update issues, manage Agile boards |
 
 ## Onboarding
 
 ### First run
 
-When the user asks to onboard Yandex skills for the first time:
+**IMPORTANT:** Running scripts with `cd` outside CWD **WILL AUTOMATCALLY FAIL**; use the default CWD or pass `--data-dir`.
 
-1. Check `./yandex-data` in the current agent workspace CWD.
+You need to onboard the skill first. To onboard `yandex-office` skill pack for the first time:
+
+1. Check `./yandex-data` in the current working directory, do not `cd`.
 2. If it does not exist, run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py` from that CWD with no extra arguments.
-3. Do not inspect other workspaces.
-4. Do not create bootstrap files or directories manually.
-
-Bootstrap/runtime contract:
-
-- During first onboarding, OpenClaw must invoke the full filesystem path to `scripts/oauth_setup.py` while the current process CWD is still the agent workspace.
-- If the skill shared defaults `config.json` does not exist yet, onboarding creates it from `config.example.json`.
-- Bootstrap resolves `data_dir` as `./yandex-data` from the current workspace CWD.
-- `scripts/oauth_setup.py` with no account arguments creates `{data_dir}/config.agent.json` and the runtime directories inside that resolved path.
-- Normal runtime requires `{data_dir}/config.agent.json` to exist.
-- Running normal runtime from the skill root is not automatically safe; use the agent workspace CWD or pass `--data-dir`.
+3. Let `scripts/oauth_setup.py` create bootstrap files and directories.
 
 ### Adding Yandex accounts
 
-When the user wants to add another Yandex account:
+You need to know which accounts the assets are bound to. To add a user Yandex account:
 
-1. Stay in the same workspace CWD.
-2. Run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <name>`.
-3. Do not recreate or replace `./yandex-data` manually.
-4. If `./yandex-data` does not exist yet, the script bootstraps it first.
-5. The script updates `./yandex-data/config.agent.json`.
-
-### Issuing Service Tokens
-
-When the account already exists and the user wants to add a service token:
-
-1. Stay in the same workspace CWD.
-2. Run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <name> --service <service>`.
-3. The script prints the default OAuth profile and any other configured profiles for that service.
-4. Tell the user which profile is the default and which other profiles are available.
-5. After OAuth is completed and an `access_token` is returned, save it to `./yandex-data/auth/<account>.token`.
-6. If the user needs another profile later, re-run with optional `--app <profile_id>`.
-7. If the account is missing, the same command adds it first and then continues into the OAuth flow.
-
-NB: instructions for token revocation are in the Onboarding.md file.
-
-## Shared Configuration
-
-All Yandex sub-skills use the same two-level config:
-
-- root `config.json` for shared defaults
-- `{data_dir}/config.agent.json` for agent-specific overrides
-- runtime resolves `{data_dir}` to `./yandex-data` from the agent workspace CWD by default
-- scripts that support `--data-dir` can use an explicit external path instead
-
-Root `config.json`:
-
-```json
-{
-  "urls": {
-    "oauth": "https://oauth.yandex.ru/authorize",
-    "disk_api": "https://cloud-api.yandex.net",
-    "telemost_api": "https://cloud-api.yandex.net/v1/telemost-api"
-  },
-  "imap": { "server": "imap.yandex.com", "port": 993 },
-  "mail": {
-    "since": "off",
-    "filters": {
-      "telemost": {
-        "sender": "keeper@telemost.yandex.ru"
-      }
-    },
-    "fetch": { "sleep_seconds": 0.5 },
-    "state_file": "state.json"
-  }
-}
-```
-
-Agent override example `{data_dir}/config.agent.json`:
-
-```json
-{
-  "accounts": [{ "name": "primary", "email": "user@example.com" }],
-  "mail": {
-    "filters": {
-      "telemost": {
-        "sender": "keeper@telemost.yandex.ru"
-      },
-      "forms": {
-        "sender": "forms@yandex.ru",
-        "subject": "New response"
-      }
-    }
-  }
-}
-```
-
-Mail filter notes:
-
-- configured entries under `mail.filters` are peer filters such as `telemost` and `forms`
-- legacy top-level keys like `mail.filters.sender` are still upgraded in-memory into `mail.filters.telemost`
-- named filters support `enabled: false`; bare runs execute all enabled filters
-- filter keys must be lowercase English schema keys because they are also used as incoming subdirectory names
-- `default` is reserved for ad-hoc one-off runs and must not be used as a configured filter key
-- `mail/scripts/fetch_emails.py --filter <name>` runs exactly that named filter, even if it is disabled for bare runs
-- raw CLI overrides such as `--sender`, `--subject`, `--since-date`, and `--before-date` are treated as ad-hoc, do not advance persistent cursors, and search mailbox history by default when no `--filter` is selected
-- sender and subject filters are literal IMAP substring matches; no extra query language is implemented
-- large dry-run result sets spill into `{data_dir}/latest-query/`; the next spilled run replaces the previous artifact, so copy it elsewhere if you need to keep it
-
-## Regression Tests
-
-Run the checked-in regression suite from the repo root:
+1. Stay in the CWD.
+2. Initialize the account alias with the provided email:
 
 ```bash
-./scripts/test_regression.sh
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <alias>
 ```
 
-## Data Directory
+### Issuing OAuth App Tokens
 
-Runtime data lives **outside** the repo at `{data_dir}/`:
+You need actual OAuth tokens to access user assets. When the account already exists and the user wants you to gain access:
+
+1. Stay in the CWD.
+2. Help the user choose the app ID based on the desired capability. Use the read/default app unless the user explicitly requires write permissions.
+
+| Capability | Default App ID | Write-Capable App ID |
+|------------|----------------|-----------------------|
+| Mail read/fetch | `mail-readonly` | `mail-readwrite` |
+| Disk read/download | `disk-read` | `disk-full` |
+| Calendar | `calendar-user` | same |
+| Contacts | `contacts-default` | same |
+| Telemost meetings | `telemost-default` | same |
+| Tracker read/search | `tracker-read` | `tracker-full` |
+| Forms export/read | `forms-read` | `forms-full` |
+| Directory lookup/read | `directory-read` | `directory-full` |
+
+3. Offer `office-core` convenience bundle app when the user asks for multiple capabilites covering Mail, Disk, Calendar, and Telemost.
+
+4. Upon user approval, run the exact CLI command to obtain the URL for OAuth authorization:
+
+```bash
+# replace 'mail-readonly' with the appropriate app ID from the table above
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <alias> --app mail-readonly
+```
+
+5. Provide a URL to the user and ask to complete OAuth in the browser. The same terminal command then waits at this exact input line:
 
 ```text
-{data_dir}/
-├── auth/alex.token      # OAuth tokens (per-account)
-├── incoming/           # mail writes here
-├── state.json          # UID/date tracking keyed by filter and mailbox
-├── meetings/           # telemost output (bucketed by month)
-│   └── 2026-02/
-│       └── 2026-02-24_18-19_alex_1000349120/
-│           ├── transcript.txt
-│           ├── summary.txt
-│           └── meeting.meta.json
-├── archive/            # Processed email dirs
-└── forms/              # forms export output
-    └── {form_id}/
-        ├── responses_2026-03-03_080512.xlsx
-        └── meta.json
+Paste the access_token here:
 ```
 
-## Typical Workflow
+6. Paste the returned `access_token` at that hidden-input line and press Enter. `scripts/oauth_setup.py` verifies the pasted token and updates managed auth.
+
+7. If you already have the token value and you need a non-interactive import, run this exact CLI:
+
+```bash
+IFS= read -rsp 'Paste access_token: ' YANDEX_ACCESS_TOKEN
+printf '\n'
+export YANDEX_ACCESS_TOKEN
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --from-env YANDEX_ACCESS_TOKEN
+unset YANDEX_ACCESS_TOKEN
+```
+
+In `--from-env` mode, the script verifies the bearer and uses the returned email and client ID for the managed-auth account and app binding.
+
+**IMPORTANT:** instructions for token revocation are in the Onboarding.md file.
+
+## Typical Scenarios
+
+Use this section to answer "What can this skill pack do?" Start here, then
+read the named sub-skill entry point before running the command.
+
+1. Scenario #1: create a Telemost meeting in the calendar.
+   Entry point: `calendar/calendar.md` -> `### 2. Schedule a Meeting` ->
+   `#### Create a New Telemost Meeting in Calendar`.
 
 ```text
-[Mail] -> incoming/ -> [Telemost] -> meetings/
-                           |
-                           +-> [Disk] (optional recording downloads)
+Scenario #1: create a scheduled Telemost meeting
+[calendar/scripts/create_event.py] -> [Telemost conference] -> [Calendar event with join_url]
 ```
 
-1. `mail` fetches emails on a cron schedule, saves to `{data_dir}/incoming/<filter>/`
-2. `telemost` enriches Telemost emails, groups by meeting UID, merges + transforms
-3. `disk` (optional) downloads recording links
-
-Disk note:
-
-- organization-only sharing is live-verified for the documented `public_settings.accesses[].macros` payload
-- `available_until` behaves as an absolute Unix timestamp; omitting it means infinite sharing
-- resource metadata does not reliably echo ACLs back, so link behavior must be verified through the public-resource endpoints
-
-Telemost calendar note:
-
-- `calendar/scripts/create_event.py` can create a new Telemost conference or bind an existing one with `--telemost-conference-id`
-- existing-conference binding is strict and cannot be combined with new-conference flags
-
-Important: for "what is new", always run `mail/scripts/fetch_emails.py` first. Do not treat `archive/` or `meetings/` as source-of-truth for new messages.
-
-## Telemost Meeting Directory Contract
-
-`telemost` stores each meeting under:
-
-`{data_dir}/meetings/{YYYY-MM}/{YYYY-MM-DD_HH-MM}_{mailbox}_{MEETING_UID}/`
-
-Where:
-
-1. `YYYY-MM` is derived from first-seen meeting timestamp.
-2. Meeting folder starts with local date/time prefix `YYYY-MM-DD_HH-MM`.
-3. Date/time prefix is immediately followed by mailbox tag (`alex`, `work`, etc.).
-4. Folder always ends with meeting UID (`_{MEETING_UID}` or `_unknown`).
-5. Folder routing is constrained by same-day wildcard candidate matching.
-
-Processing semantics:
-
-1. Emails inside each `meeting_uid` are processed in natural `imap_uid` order.
-2. For each email event, resolver scans `YYYY-MM/YYYY-MM-DD_*-*_{mailbox}_{meeting_uid}`.
-3. If exactly one candidate exists, transcript/summary/metadata are appended there.
-4. If no candidate exists, a new `YYYY-MM/YYYY-MM-DD_HH-MM_{mailbox}_{meeting_uid}` directory is created.
-5. If multiple same-day candidates exist, event processing fails fast (integrity error, no heuristic pick).
-6. `meeting.meta.json.media_links` is append-unique (deduplicated, order preserved).
-7. `meeting.meta.json` stores recording links only in `media_links` (no `video_url`/`audio_url` fields).
-
-Migration for existing folders:
-
-```bash
-python3 telemost/scripts/migrate_meeting_dirs.py --dry-run
-python3 telemost/scripts/migrate_meeting_dirs.py
-```
-
-## Telemost Recording OAuth Caveat
-
-Yandex Disk links that look public (for example `yadi.sk/d/...`) may still require OAuth for Telemost recordings.
-
-- With token: API may return downloadable link.
-- Without token: API may return `404` for existing Telemost resources.
-- `HEAD` requests are not a reliable probe for availability.
-
-Use token-based auth when handling Telemost media links.
-
-## Installation
-
-### Full clone
-
-```bash
-git clone https://github.com/bizyumov/yandex-office.git
-```
-
-### Single skill (sparse checkout)
-
-```bash
-git clone --filter=blob:none --sparse https://github.com/bizyumov/yandex-office.git
-cd yandex-office
-git sparse-checkout set mail
-
-# Add more skills later
-git sparse-checkout add telemost disk
-```
-
-## OAuth Setup
-
-### Token Format
-
-```json
-{
-  "email": "user@yandex.ru",
-  "token.mail": "y0_...",
-  "token.disk": "y0_...",
-  "token_meta": {
-    "token.mail": {
-      "app_id": "mail-readonly",
-      "client_id": "660686ff45f947f2ac6e3f6495a9ec74",
-      "scopes": ["mail:imap_ro"]
-    }
-  }
-}
-```
-
-Canonical convention is `token.<service>`. Each service stores and resolves its own token directly.
-
-### Generate a Token
-
-```bash
-# From the agent workspace CWD, using the full path to the shared Yandex skill:
-python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email user@yandex.ru --account alex --service mail
-
-# Recommended: choose a non-default preconfigured app variant
-python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email user@yandex.ru --account alex --service disk --app disk-full
-
-# Advanced: explicit client ID and explicit scope override
-python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --client-id DISK_CLIENT_ID --scope cloud_api:disk.write --scope cloud_api:disk.app_folder --email user@yandex.ru --account alex --service disk
-```
-
-Recommended flow:
-
-- keep the app catalog in root `config.json` under `oauth_apps.catalog`
-- keep default app selection in root `config.skill.json` by marking one catalog entry per service with `is_default: true`
-- use `--app <app_id>` only when selecting a non-default variant
-- add the account first with `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <name>` when needed
-- then run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <name> --service <name>`
-- the generated URL omits `scope=` by default and uses the app's baked-in permissions
-- new token files are created automatically on first save
-
-Advanced flow:
-
-- pass `--client-id` explicitly
-- add `--scope` values when you need a one-off override or debugging path
-
-Important:
-
-- Mail and Disk can use different OAuth apps and therefore different Client IDs.
-- If an OAuth app's permission set changes later, tokens must be reissued.
-- For mail fetching, prefer read-only scope (`mail:imap_ro`).
-
-## OAuth App Registration
-
-| Step | URL |
-|------|-----|
-| Register API app | https://yandex.ru/dev/id/doc/ru/register-api |
-| Create new API key | https://oauth.yandex.ru/client/new/api |
-| View existing tokens | https://oauth.yandex.ru/ |
-
-## Service-Specific Documentation
-
-| Service | Documentation |
-|---------|---------------|
-| Yandex Disk API | https://yandex.ru/dev/disk-api/doc/ru/concepts/quickstart |
-| Yandex Mail IMAP | https://yandex.ru/support/mail/mail-clients/others.html |
-
-## Structure
-
-This is a meta-skill containing multiple Yandex service integrations:
+2. Scenario #2: process Telemost transcripts.
+   Entry point: `telemost/telemost.md` -> `### Process Telemost Transcripts`.
+   Always fetch emails with the predefined `telemost` mail filter before processing.
 
 ```text
-yandex-office/
-├── SKILL.md                  (this file: root index)
-├── config.json               (shared defaults)
-├── config.agent.example.json (workspace override example)
-├── mail/
-│   └── mail.md
-├── calendar/
-│   └── calendar.md
-├── contacts/
-│   └── contacts.md
-├── directory/
-│   └── directory.md
-├── disk/
-│   └── disk.md
-├── telemost/
-│   └── telemost.md
-├── forms/
-    └── forms.md
+[mail/scripts/fetch_emails.py --filter telemost] -> incoming/telemost/
+  -> [telemost/scripts/process_meeting.py] -> meetings/
+                                      \-> [Disk] optional recording downloads
 ```
+
+## Managed Auth and Extensibility
+
+Use this section only when auditing or extending low-level Yandex API methods.
+To add a Yandex account or import an OAuth token, follow `## Onboarding` in this
+file, lines 44-114. To run a workflow command, open the named sub-skill doc.
+
+Runtime auth lives on decorated methods. A low-level method declares exactly one
+auth shape: `@yandex_api_method(method_id, public=True)`,
+`@yandex_api_method(method_id, one_of=[...])`, or
+`@yandex_api_method(method_id, all_of=[...])`.
+The wrapper reads that metadata, resolves eligible managed tokens from token
+`client_id` plus app-config scopes, tries candidates ordered by token-level
+`good_at`, marks a token GOOD only after a normal return, marks BAD only for
+`403 ForbiddenError`, and raises blocked-method feedback before the API call
+when no eligible candidate exists. Callers do not pass tokens.
+
+To find the method declaration and auth shape:
+
+1. Search `capabilities/methods.json`; it inventories 315 Yandex API methods.
+   Use `classification` and `local_sources` to identify methods used by current
+   code.
+2. Read `capabilities/method-scope-map.json` for the proven `public`, `one_of`,
+   or `all_of` auth shape, and `capabilities/matrix.json` for denial evidence.
+3. Treat `capabilities/README.md` as the authoritative yandex-office reference
+   for method IDs, classifications, generated map shape, and probe provenance;
+   treat `references/yandex-office-auth-principles.md` as the auth-model
+   reference for accounts, apps, scopes, tokens, and response authority.
+4. Run `python3 capabilities/audit-method-auth.py`; the method must be declared
+   exactly once and must match the generated scope map.
+
+Example:
+
+```python
+@yandex_api_method("disk.resources.get.disk", one_of=["cloud_api:disk.read"])
+def _api_get_resource(ctx: YandexApiContext, endpoint: str, path: str) -> dict:
+    return request_json(ctx, "GET", endpoint, params={"path": path})
+```
+
+For public methods use a complete decorator such as
+`@yandex_api_method("disk.public.resources.get", public=True)`. Use
+`all_of=[...]` only when one token must contain every listed scope; use
+`one_of=[...]` for alternative sufficient auth contexts.
+
+Non-examples: do not add `token` parameters, bypass managed auth with raw-token
+environment fallbacks or raw-token CLIs, wrap call sites in `auth_call(...)`,
+maintain a parallel method-auth registry, add per-method `response.ok` / JSON /
+`403` handling, or add service-specific HTTP subclasses.
+
+Response handling is central. Low-level methods call `request_json()`; it sends
+the context-bound request and raises the shared provider exceptions while
+preserving provider status, error, message, and payload. Only `TokenRejected`
+from `403 ForbiddenError` rotates candidate tokens. All other `YandexApiError`
+payloads pass through unchanged and do not update
+`good_at` / `bad_at`; agents may add derived feedback labels:
+`missing_or_invalid_credentials`, `missing_scope_or_wrong_app`,
+`account_or_org_policy_blocked`, `missing_resource_or_fixture`,
+`request_validation_failed`, or `transient_or_unknown`.
 
 ## Migration Note
 
@@ -384,7 +203,7 @@ Yandex Search moved to the standalone `yandex-search-skill` repository:
 
 Use that skill when you need Yandex Cloud Search API v2. This `yandex-office` meta-skill no longer includes search instructions.
 
-Yandex Cloud infrastructure guidance moved to the private standalone `yandex-cloud` skill repository at `/opt/openclaw/shared/skills/yandex-cloud`.
+Yandex Cloud infrastructure guidance moved to the private standalone `yandex-cloud` skill repository.
 
 ## Versioning
 

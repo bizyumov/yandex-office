@@ -14,16 +14,14 @@ real OAuth tokens, and controlled fixtures into generated access-rights evidence
   verbs/protocols, classifications, request shapes, setup actions, cleanup
   actions, and service auth contexts here.
 - `atomic.client_id.json` maps tested auth-context ids to OAuth app client ids.
-- `atomic.token` is the `.gitignore`d local file mapping tested auth-context ids
-  to actual OAuth tokens.
+- Humans maintain private OAuth bearer fixtures out-of-band for live probes.
 
-`public` is the universal no-OAuth auth context. It is not an OAuth scope and
-must not be stored in `atomic.token`.
+`public` is the universal no-OAuth auth context. It is not an OAuth scope.
 
-`atomic.token` values must be bearer OAuth tokens, not OAuth app client ids.
+Credential fixture values must be bearer OAuth tokens, not OAuth app client ids.
 `validate.py` rejects entries that equal their `atomic.client_id.json` value or
 look like 32-character hex client ids. A service is not probe-ready until every
-auth context selected by its probe plan has a real token.
+auth context selected by its probe plan has a human-provided credential fixture.
 
 Do not add `expected_scopes` to method rows. The map is generated from live
 probe evidence, not from hardcoded scope guesses.
@@ -114,8 +112,8 @@ truth, per `../references/yandex-office-auth-principles.md`.
    - Add/update one-scope app client ids in `atomic.client_id.json`.
    - Add combined-scope app client ids only when failed atomic results require a
      combined-token test. Use brace syntax such as `cloud_api:disk.{read,write}`.
-   - Fill matching real bearer OAuth tokens in `.gitignore`d `atomic.token`.
-     Do not paste client ids there as placeholders.
+   - Coordinate human-provided bearer OAuth fixtures for the selected auth
+     contexts. Use bearer fixture values rather than client ids.
 5. Probe from least authority to more authority.
    - Test `public` first.
    - If `public` works, stop for that method.
@@ -169,8 +167,7 @@ and rebuild `method-scope-map.json`. It must not contain service-specific method
 lists, paths, request params, fixture paths, or capability rules.
 
 Live fixture values that identify real mailboxes, contacts, users, or domains
-must not be committed. Put them in ignored `capabilities/probe.local.json` when
-a probe needs them:
+belong in ignored `capabilities/probe.local.json` when a probe needs them:
 
 ```json
 {

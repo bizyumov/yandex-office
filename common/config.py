@@ -85,6 +85,54 @@ def find_account_by_email(payload: dict[str, Any], email: str) -> dict[str, str]
     return None
 
 
+def list_token_accounts(data_dir: str | Path) -> list[dict[str, Any]]:
+    auth_dir = Path(data_dir).resolve() / "auth"
+    if not auth_dir.exists():
+        return []
+    accounts: list[dict[str, Any]] = []
+    for token_path in sorted(auth_dir.glob("*.token")):
+        try:
+            payload = _read_json(token_path)
+        except json.JSONDecodeError:
+            continue
+        email = str(payload.get("email", "")).strip()
+        if not email:
+            continue
+        tokens: dict[str, str] = {}
+        for key, value in payload.items():
+            if key == "email":
+                continue
+            if key.startswith("token."):
+                continue
+            if isinstance(value, dict):
+                client_id = str(value.get("client_id", "")).strip()
+                if client_id:
+                    tokens[str(key)] = client_id
+            elif isinstance(value, str):
+                # Legacy transitional read for pre-runtime-state token files.
+                tokens[str(key)] = value
+        accounts.append(
+            {
+                "name": token_path.stem,
+                "alias": token_path.stem,
+                "email": email,
+                "token_path": str(token_path),
+                "tokens": tokens,
+            }
+        )
+    return accounts
+
+
+def find_token_account_by_email(data_dir: str | Path, email: str) -> dict[str, Any] | None:
+    normalized_email = str(email).strip().lower()
+    if not normalized_email:
+        return None
+    for account in list_token_accounts(data_dir):
+        if str(account.get("email", "")).strip().lower() == normalized_email:
+            return account
+    return None
+
+
 def _suggest_account_name(email: str, preferred_name: str | None = None) -> str:
     preferred = str(preferred_name or "").strip()
     if preferred:
@@ -92,6 +140,22 @@ def _suggest_account_name(email: str, preferred_name: str | None = None) -> str:
     local_part = str(email).split("@", 1)[0].strip().lower()
     slug = re.sub(r"[^a-z0-9]+", "-", local_part).strip("-")
     return slug or "account"
+
+
+def choose_account_alias(
+    data_dir: str | Path,
+    email: str,
+    preferred_name: str | None = None,
+) -> str:
+    auth_dir = Path(data_dir).resolve() / "auth"
+    used_names = {path.stem for path in auth_dir.glob("*.token")} if auth_dir.exists() else set()
+    base_name = _suggest_account_name(email, preferred_name)
+    resolved_name = base_name
+    suffix = 2
+    while resolved_name in used_names:
+        resolved_name = f"{base_name}-{suffix}"
+        suffix += 1
+    return resolved_name
 
 
 def ensure_account(
@@ -198,28 +262,15 @@ def _bootstrap_agent_config(
     else:
         template_path = skill_root / AGENT_CONFIG_TEMPLATE_NAME
         payload = _read_json(template_path) if template_path.exists() else {}
+        if payload.get("accounts") == []:
+            payload.pop("accounts", None)
 
-    accounts, updated = _normalized_accounts(payload)
-    if account is not None and email is not None:
-        for account_entry in accounts:
-            if account_entry.get("name") == account:
-                if account_entry.get("email") != email:
-                    account_entry["email"] = email
-                    updated = True
-                break
-        else:
-            accounts.append({"name": account, "email": email})
-            updated = True
-
+    _, updated = _normalized_accounts(payload)
     if "mailboxes" in payload:
         payload.pop("mailboxes", None)
         updated = True
 
-    if "accounts" not in payload:
-        updated = True
-
     if not agent_config_path.exists() or updated:
-        payload["accounts"] = accounts
         _write_json(agent_config_path, payload)
 
 
@@ -277,9 +328,16 @@ def load_agent_config(
     agent_config_path = data_path / AGENT_CONFIG_NAME
     if agent_config_path.exists():
         payload = _read_json(agent_config_path)
-        if "accounts" not in payload and "mailboxes" in payload:
-            payload["accounts"] = payload["mailboxes"]
-        payload["accounts"] = list_accounts(payload)
+        token_accounts = list_token_accounts(data_path)
+        if token_accounts:
+            payload["accounts"] = [
+                {"name": item["alias"], "email": item["email"]}
+                for item in token_accounts
+            ]
+        else:
+            if "accounts" not in payload and "mailboxes" in payload:
+                payload["accounts"] = payload["mailboxes"]
+            payload["accounts"] = list_accounts(payload)
         payload.pop("mailboxes", None)
         return agent_config_path, payload
     if required:
@@ -290,6 +348,18 @@ def load_agent_config(
             "or pass --data-dir explicitly."
         )
     return agent_config_path, {}
+
+
+def load_agent_config_payload(data_dir: str | Path) -> tuple[Path, dict[str, Any]]:
+    data_path = Path(data_dir).resolve()
+    agent_config_path = data_path / AGENT_CONFIG_NAME
+    if agent_config_path.exists():
+        return agent_config_path, _read_json(agent_config_path)
+    return agent_config_path, {}
+
+
+def save_agent_config_payload(agent_config_path: str | Path, payload: dict[str, Any]) -> None:
+    _write_json(Path(agent_config_path).resolve(), payload)
 
 
 def load_runtime_context(

@@ -16,14 +16,8 @@ A CardDAV-based Contacts / Контакты skill for managing Yandex Contacts (
 - **Authentication**: OAuth 2.0 token with `addressbook:all` scope
 
 ### Authentication
-```json
-{
-  "email": "user@yandex.ru",
-  "token.contacts": "y0_..."
-}
-```
-
-Token stored per-account at: `{data_dir}/auth/{account}.token`
+Use a Contacts OAuth app token created by `scripts/oauth_setup.py`, normally
+with `--app contacts-default`. Runtime uses managed auth for Contacts requests.
 
 ### Account Structure
 - Each user has a principal: `/principals/users/{email}/`
@@ -314,7 +308,6 @@ Add shared defaults to root `config.json` and contact-specific overrides to `yan
 ### State Files
 ```
 {data_dir}/
-├── auth/{account}.token     # Existing OAuth tokens
 └── contacts/
     ├── cache.json           # Local contact cache
     ├── cache_meta.json      # Cache timestamps, ETags
@@ -354,7 +347,7 @@ Add shared defaults to root `config.json` and contact-specific overrides to `yan
 
 ## Security Considerations
 
-1. **Token storage**: Reuse existing `{data_dir}/auth/{account}.token` pattern
+1. **Managed auth**: Use `scripts/oauth_setup.py` for OAuth intake and refresh
 2. **No token logging**: Never log OAuth tokens
 3. **Contact privacy**: Respect Yandex ACLs (Personal vs Shared addressbooks)
 4. **Cache encryption**: Consider encrypting local cache at rest

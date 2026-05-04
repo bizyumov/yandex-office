@@ -13,7 +13,8 @@ https://api360.yandex.net/directory/v1
 
 ### Authentication
 - OAuth 2.0 token with `directory:read_users`, `directory:read_departments`, `directory:read_groups` scopes
-- Token field: `{account}.token` → `token.directory`
+- Use managed auth created by `scripts/oauth_setup.py`, normally with
+  `--app directory-read`
 
 ### Required Scopes
 ```
