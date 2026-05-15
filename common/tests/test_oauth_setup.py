@@ -23,6 +23,11 @@ import common.oauth_token_import as token_import
 import scripts.oauth_setup as oauth_setup
 
 
+def verified(email: str, client_id: str):
+    """Build a verified-token identity test double."""
+    return type("VerifiedTokenIdentity", (), {"email": email, "client_id": client_id})()
+
+
 def test_oauth_setup_access_token_prompt_uses_hidden_input(monkeypatch) -> None:
     calls: dict[str, str] = {}
 
@@ -132,11 +137,7 @@ def test_oauth_setup_bootstraps_from_workspace_cwd(monkeypatch, tmp_path: Path) 
     monkeypatch.setattr(
         token_import,
         "verify_token_identity",
-        lambda *_args, **_kwargs: type(
-            "VerifiedTokenIdentity",
-            (),
-            {"email": "work@example.com", "client_id": "660686ff45f947f2ac6e3f6495a9ec74"},
-        )(),
+        lambda *_args, **_kwargs: verified("work@example.com", "660686ff45f947f2ac6e3f6495a9ec74"),
     )
     monkeypatch.setattr(token_import, "save_token_file", fake_save)
     monkeypatch.setattr(token_import, "load_token_file", fake_load)
@@ -222,7 +223,6 @@ def test_oauth_setup_without_args_bootstraps_only(monkeypatch, tmp_path: Path, c
     assert calls["email"] is None
     assert calls["cwd"] == workspace.resolve()
     assert calls["data_dir_override"] is None
-    assert "Yandex bootstrap complete" in captured.out
     assert str(data_dir.resolve()) in captured.out
 
 
@@ -286,14 +286,12 @@ def test_oauth_setup_bootstraps_without_creating_account_without_token(
     assert calls["email"] == "user@example.com"
     assert calls["cwd"] == workspace.resolve()
     assert calls["data_dir_override"] is None
-    assert "Yandex account initialized" in captured.out
-    assert "Account: alex" in captured.out
-    assert "Email:   user@example.com" in captured.out
+    assert captured.out == '{"alias":"alex","email":"user@example.com","tokens":0}\n'
     assert saved["path"] == data_dir / "auth" / "alex.token"
     assert saved["token_data"] == {"email": "user@example.com"}
 
 
-def test_oauth_setup_rejects_partial_identity_args(monkeypatch, tmp_path: Path) -> None:
+def test_oauth_setup_bare_account_bootstraps_token_file(monkeypatch, tmp_path: Path, capsys) -> None:
     workspace = tmp_path / "workspace"
     workspace.mkdir(parents=True, exist_ok=True)
     monkeypatch.chdir(workspace)
@@ -303,12 +301,21 @@ def test_oauth_setup_rejects_partial_identity_args(monkeypatch, tmp_path: Path) 
         ["oauth_setup.py", "--account", "work"],
     )
 
-    try:
+    oauth_setup.main()
+
+    captured = capsys.readouterr()
+    assert captured.out == '{"alias":"work","tokens":0}\n'
+    assert json.loads((workspace / "yandex-data" / "auth" / "work.token").read_text()) == {}
+
+    for argv, expected in (
+        (["--email", "work@example.com", "--account", "work"], '{"alias":"work","email":"work@example.com","tokens":0}\n'),
+        (["--accounts", "list"], "work\n"),
+        (["--accounts", "delete", "--account", "work"], "deleted work\n"),
+        (["--accounts", "reset"], "reset 0\n"),
+    ):
+        monkeypatch.setattr(sys, "argv", ["oauth_setup.py", *argv])
         oauth_setup.main()
-    except SystemExit as exc:
-        assert exc.code == 2
-    else:
-        raise AssertionError("Expected argparse failure for partial identity args")
+        assert capsys.readouterr().out == expected
 
 
 def test_oauth_setup_rejects_service_without_identity(monkeypatch, tmp_path: Path) -> None:
@@ -351,11 +358,7 @@ def test_oauth_setup_rejects_service_without_identity(monkeypatch, tmp_path: Pat
     monkeypatch.setattr(
         token_import,
         "verify_token_identity",
-        lambda *_args, **_kwargs: type(
-            "VerifiedTokenIdentity",
-            (),
-            {"email": "user@example.com", "client_id": "660686ff45f947f2ac6e3f6495a9ec74"},
-        )(),
+        lambda *_args, **_kwargs: verified("user@example.com", "660686ff45f947f2ac6e3f6495a9ec74"),
     )
     monkeypatch.setattr(token_import, "save_token_file", lambda path, token_data: saved.update(path=path, token_data=token_data))
     monkeypatch.setattr(token_import, "load_token_file", lambda _path: (_ for _ in ()).throw(FileNotFoundError()))
@@ -411,11 +414,7 @@ def test_oauth_setup_creates_account_from_verified_email(monkeypatch, tmp_path: 
     monkeypatch.setattr(
         token_import,
         "verify_token_identity",
-        lambda *_args, **_kwargs: type(
-            "VerifiedTokenIdentity",
-            (),
-            {"email": "new.user@example.com", "client_id": "660686ff45f947f2ac6e3f6495a9ec74"},
-        )(),
+        lambda *_args, **_kwargs: verified("new.user@example.com", "660686ff45f947f2ac6e3f6495a9ec74"),
     )
     monkeypatch.setattr(token_import, "save_token_file", lambda path, token_data: saved.update(path=path, token_data=token_data))
     monkeypatch.setattr(token_import, "load_token_file", lambda _path: (_ for _ in ()).throw(FileNotFoundError()))
@@ -484,11 +483,7 @@ def test_oauth_setup_imports_legacy_yandex_disk_token_from_env(
     monkeypatch.setattr(
         token_import,
         "verify_token_identity",
-        lambda *_args, **kwargs: type(
-            "VerifiedTokenIdentity",
-            (),
-            {"email": "legacy@example.com", "client_id": "disk-client"},
-        )(),
+        lambda *_args, **kwargs: verified("legacy@example.com", "disk-client"),
     )
     monkeypatch.setattr(token_import, "save_token_file", lambda path, token_data: saved.update(path=path, token_data=token_data))
     monkeypatch.setattr(token_import, "load_token_file", lambda _path: (_ for _ in ()).throw(FileNotFoundError()))
@@ -502,10 +497,10 @@ def test_oauth_setup_imports_legacy_yandex_disk_token_from_env(
     oauth_setup.main()
 
     captured = capsys.readouterr()
-    assert "Token source: environment variable" in captured.out
+    assert captured.out == "legacy\n"
     assert "YANDEX_DISK_TOKEN" not in captured.out
-    assert "Imported token from environment variable" in captured.out
-    assert saved["path"] == data_dir / "auth" / "diskacct.token"
+    assert 'Provided --account "diskacct"' in captured.err
+    assert saved["path"] == data_dir / "auth" / "legacy.token"
     assert saved["token_data"] == {
         "email": "legacy@example.com",
         "legacy-env-token": {"client_id": "disk-client"},
@@ -557,11 +552,7 @@ def test_oauth_setup_imports_generic_env_token_without_app(
     monkeypatch.setattr(
         token_import,
         "verify_token_identity",
-        lambda *_args, **_kwargs: type(
-            "VerifiedTokenIdentity",
-            (),
-            {"email": "user@example.com", "client_id": "mail-client"},
-        )(),
+        lambda *_args, **_kwargs: verified("user@example.com", "mail-client"),
     )
     monkeypatch.setattr(token_import, "save_token_file", lambda path, token_data: saved.update(path=path, token_data=token_data))
     monkeypatch.setattr(token_import, "load_token_file", lambda _path: (_ for _ in ()).throw(FileNotFoundError()))
@@ -579,14 +570,39 @@ def test_oauth_setup_imports_generic_env_token_without_app(
     oauth_setup.main()
 
     captured = capsys.readouterr()
-    assert "Mode:    env_import" in captured.out
-    assert "Token source: environment variable" in captured.out
+    assert captured.out == "user\n"
     assert "YANDEX_ACCESS_TOKEN" not in captured.out
     assert saved["path"] == data_dir / "auth" / "user.token"
     assert saved["token_data"] == {
         "email": "user@example.com",
         "env-token": {"client_id": "mail-client"},
     }
+
+
+def test_managed_import_issue_48_identity_rules(monkeypatch, tmp_path: Path) -> None:
+    config = {"oauth_apps": {"catalog": {"mail": {"client_id": "mail-client"}}}}
+    cases = [
+        ("example-user", "example-user@yandex.ru", None, "example-user", ""),
+        ("verified@example.com", "wrong@example.com", "manual", "verified", "Provided --email"),
+    ]
+    for identity_email, email_arg, account_arg, alias, warning in cases:
+        monkeypatch.setattr(
+            token_import,
+            "verify_token_identity",
+            lambda *_args, email=identity_email, **_kwargs: verified(email, "mail-client"),
+        )
+        result = token_import.import_managed_oauth_token(
+            config=config,
+            data_dir=tmp_path / alias,
+            agent_config={},
+            agent_config_path=tmp_path / alias / "config.agent.json",
+            token=f"{alias}-token",
+            email=email_arg,
+            account=account_arg,
+        )
+        assert result.token_path.name == f"{alias}.token"
+        assert bool(warning) == bool(result.warnings)
+        assert not warning or warning in "\n".join(result.warnings)
 
 
 def test_oauth_setup_warns_on_preconfigured_app_mismatch(monkeypatch, tmp_path: Path, capsys) -> None:
@@ -628,11 +644,7 @@ def test_oauth_setup_warns_on_preconfigured_app_mismatch(monkeypatch, tmp_path: 
     monkeypatch.setattr(
         token_import,
         "verify_token_identity",
-        lambda *_args, **_kwargs: type(
-            "VerifiedTokenIdentity",
-            (),
-            {"email": "user@example.com", "client_id": "other-client"},
-        )(),
+        lambda *_args, **_kwargs: verified("user@example.com", "other-client"),
     )
     monkeypatch.setattr(
         token_import,
@@ -647,7 +659,7 @@ def test_oauth_setup_warns_on_preconfigured_app_mismatch(monkeypatch, tmp_path: 
     oauth_setup.main()
 
     captured = capsys.readouterr()
-    assert "non-standard token" in captured.out
+    assert "non-standard token" in captured.err
     assert saved["token_data"]["token-value"] == {"client_id": "other-client"}
     assert "token_meta" not in saved["token_data"]
 
@@ -695,11 +707,7 @@ def test_oauth_setup_accepts_app_without_service(monkeypatch, tmp_path: Path) ->
     monkeypatch.setattr(
         token_import,
         "verify_token_identity",
-        lambda *_args, **_kwargs: type(
-            "VerifiedTokenIdentity",
-            (),
-            {"email": "user@example.com", "client_id": "office-core-client"},
-        )(),
+        lambda *_args, **_kwargs: verified("user@example.com", "office-core-client"),
     )
     monkeypatch.setattr(token_import, "save_token_file", lambda path, token_data: saved.update(path=path, token_data=token_data))
     monkeypatch.setattr(token_import, "load_token_file", lambda _path: (_ for _ in ()).throw(FileNotFoundError()))
@@ -777,11 +785,7 @@ def test_oauth_setup_propagates_multi_service_app_token(monkeypatch, tmp_path: P
     monkeypatch.setattr(
         token_import,
         "verify_token_identity",
-        lambda *_args, **_kwargs: type(
-            "VerifiedTokenIdentity",
-            (),
-            {"email": "user@example.com", "client_id": "office-core-client"},
-        )(),
+        lambda *_args, **_kwargs: verified("user@example.com", "office-core-client"),
     )
     monkeypatch.setattr(token_import, "save_token_file", lambda path, token_data: saved.update(path=path, token_data=token_data))
     monkeypatch.setattr(token_import, "load_token_file", lambda _path: (_ for _ in ()).throw(FileNotFoundError()))
@@ -835,11 +839,7 @@ def test_oauth_setup_accepts_custom_app_without_permissions_note(monkeypatch, tm
     monkeypatch.setattr(
         token_import,
         "verify_token_identity",
-        lambda *_args, **_kwargs: type(
-            "VerifiedTokenIdentity",
-            (),
-            {"email": "user@example.com", "client_id": "custom-client"},
-        )(),
+        lambda *_args, **_kwargs: verified("user@example.com", "custom-client"),
     )
     monkeypatch.setattr(token_import, "oauth_app_for_client_id", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(token_import, "save_token_file", lambda path, token_data: saved.update(path=path, token_data=token_data))
@@ -930,11 +930,7 @@ def test_oauth_setup_prints_default_and_other_profiles(
     monkeypatch.setattr(
         token_import,
         "verify_token_identity",
-        lambda *_args, **_kwargs: type(
-            "VerifiedTokenIdentity",
-            (),
-            {"email": "user@example.com", "client_id": "24f7b757a90749dfb3039bbac2d3c350"},
-        )(),
+        lambda *_args, **_kwargs: verified("user@example.com", "24f7b757a90749dfb3039bbac2d3c350"),
     )
     monkeypatch.setattr(token_import, "save_token_file", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(token_import, "load_token_file", lambda _path: (_ for _ in ()).throw(FileNotFoundError()))
@@ -1017,11 +1013,7 @@ def test_oauth_setup_uses_data_dir_parent_as_bootstrap_cwd(monkeypatch, tmp_path
     monkeypatch.setattr(
         token_import,
         "verify_token_identity",
-        lambda *_args, **_kwargs: type(
-            "VerifiedTokenIdentity",
-            (),
-            {"email": "work@example.com", "client_id": "660686ff45f947f2ac6e3f6495a9ec74"},
-        )(),
+        lambda *_args, **_kwargs: verified("work@example.com", "660686ff45f947f2ac6e3f6495a9ec74"),
     )
     monkeypatch.setattr(token_import, "save_token_file", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(token_import, "load_token_file", lambda _path: (_ for _ in ()).throw(FileNotFoundError()))

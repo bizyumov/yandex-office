@@ -5,14 +5,8 @@
 A CalDAV-based Calendar / Календарь skill for managing Yandex Calendar events, integrated with the Yandex office skill pack. Provides read/write access to calendars, meeting scheduling, and multi-user availability queries.
 
 ---
-## NEW - needs editing
 
-1. --accounts list (empty -> onboarding)
-2. --account <account> --apps list (no `calendar-user` -> warning)
-3. --from-env (returns updated --apps list)
-
-
-BLACKLISTED: OAuth token, `calendar:all`, agent config
+Auth: `--accounts list` discovers token-file aliases; absent aliases are imported by the agent through `yandex-office` under user authorization. Use `--app calendar-user`; avoid raw bearer tokens, scope-first choices, and config-backed account inventory.
 ---
 
 ## API Discovery
@@ -20,15 +14,15 @@ BLACKLISTED: OAuth token, `calendar:all`, agent config
 ### Endpoint
 - **CalDAV URL**: `https://caldav.yandex.ru`
 - **Protocol**: CalDAV (RFC 4791)
-- **Authentication**: OAuth 2.0 token issued by an app that declares `calendar:all`
+- **Authentication**: managed OAuth token linked to an app that declares `calendar:all`
 
 ### Authentication
-Use a Calendar OAuth app token created by `scripts/oauth_setup.py`, normally
+Use a Calendar OAuth app token authorized through `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py`, normally
 with `--app calendar-user`. Runtime joins managed auth to the config-backed
 OAuth app catalog and the decorated Calendar method auth shape.
 
 ### Account Structure
-- Each user has a principal with multiple calendars
+- Each selected Yandex account identity has a principal with multiple calendars
 - Default calendars: "Мои события", "Не забыть"
 - Calendar discovery via `principal.calendars()`
 
@@ -79,8 +73,8 @@ OAuth app catalog and the decorated Calendar method auth shape.
 
 **CLI Interface:**
 ```bash
-python3 calendar/scripts/list_events.py --account mary --date tomorrow
-python3 calendar/scripts/list_events.py --account mary --date 2026-03-03 --calendar "Мои события"
+python3 <full-path-to-yandex-office>/calendar/scripts/list_events.py --account mary --date tomorrow
+python3 <full-path-to-yandex-office>/calendar/scripts/list_events.py --account mary --date 2026-03-03 --calendar "Мои события"
 ```
 
 ---
@@ -190,15 +184,20 @@ Attachment implementation note:
 - Warn user about conflicts
 - Option to proceed anyway
 
-**CLI Interface:**
+**Planned CLI Interface:**
+
+**Implementation status:** unimplemented design contract. Do not run until
+`calendar/scripts/reschedule.py` exists. Tracking issue:
+GitHub #45.
+
 ```bash
-python3 calendar/scripts/reschedule.py \
+python3 <full-path-to-yandex-office>/calendar/scripts/reschedule.py \
   --account mary \
   --search "Сбер ЦФА" \
   --date "2026-03-03" \
   --new-start "2026-03-03T16:00:00"
 
-python3 calendar/scripts/reschedule.py \
+python3 <full-path-to-yandex-office>/calendar/scripts/reschedule.py \
   --account mary \
   --event-uid "uuid-here" \
   --postpone 30  # minutes
@@ -225,14 +224,19 @@ python3 calendar/scripts/reschedule.py \
 - Confirmation prompt for multi-attendee events
 - Require --force flag for non-interactive deletion
 
-**CLI Interface:**
+**Planned CLI Interface:**
+
+**Implementation status:** unimplemented design contract. Do not run until
+`calendar/scripts/cancel.py` exists. Tracking issue:
+GitHub #45.
+
 ```bash
-python3 calendar/scripts/cancel.py \
+python3 <full-path-to-yandex-office>/calendar/scripts/cancel.py \
   --account mary \
   --search "Team Sync" \
   --date "2026-03-03"
 
-python3 calendar/scripts/cancel.py \
+python3 <full-path-to-yandex-office>/calendar/scripts/cancel.py \
   --account mary \
   --event-uid "uuid-here" \
   --cancel-series
@@ -299,16 +303,21 @@ python3 calendar/scripts/cancel.py \
 }
 ```
 
-**CLI Interface:**
+**Planned CLI Interface:**
+
+**Implementation status:** unimplemented design contract. Do not run until
+`calendar/scripts/find_slots.py` exists. Tracking issue:
+GitHub #45.
+
 ```bash
-python3 calendar/scripts/find_slots.py \
+python3 <full-path-to-yandex-office>/calendar/scripts/find_slots.py \
   --duration 120 \
   --attendees "alex,mary,colleague@yandex.ru" \
   --from "tomorrow" \
   --to "friday" \
   --time-window "9:00-18:00"
 
-python3 calendar/scripts/find_slots.py \
+python3 <full-path-to-yandex-office>/calendar/scripts/find_slots.py \
   --duration 60 \
   --attendees "alex,mary" \
   --next-available
@@ -357,7 +366,7 @@ def update_telemost_link(
 **Data Contract:**
 - Telemost link stored in `LOCATION`
 - Event description may include Telemost dial-in info
-- `calendar/scripts/create_event.py` now creates the Telemost conference first, then writes the returned `join_url` into the event
+- `python3 <full-path-to-yandex-office>/calendar/scripts/create_event.py` now creates the Telemost conference first, then writes the returned `join_url` into the event
 - if `--telemost-conference-id` is provided, the script fetches the existing conference and writes that conference's `join_url` into the event instead of creating a new conference
 
 ---
@@ -371,9 +380,10 @@ calendar/
 ├── scripts/
 │   ├── list_events.py
 │   ├── create_event.py
-│   ├── reschedule.py
-│   ├── cancel.py
-│   └── find_slots.py
+│   ├── reschedule.py       # planned; unimplemented
+│   ├── cancel.py           # planned; unimplemented
+│   ├── find_slots.py       # planned; unimplemented
+│   └── test_create_event.py
 ├── lib/
 │   ├── __init__.py
 │   ├── client.py            # CalDAV client wrapper
@@ -391,7 +401,7 @@ python-dateutil>=2.8.0
 ```
 
 ### Configuration Extension
-Add shared defaults to root `config.skill.json` and per-agent overrides to
+Add shared defaults to root `config.skill.json` and local overrides to
 `yandex-data/config.agent.json`:
 ```json
 {
@@ -415,7 +425,7 @@ Add shared defaults to root `config.skill.json` and per-agent overrides to
 ## Error Handling
 
 ### Common Error Cases
-1. **Token expired** → Prompt for re-auth via `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <name> --app calendar-user`
+1. **Managed auth expired** → Refresh through `yandex-office` under user authorization: `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account <alias> --app calendar-user`
 2. **Calendar not found** → List available calendars
 3. **Event not found** → Suggest similar titles, show events for that date
 4. **Conflict detected** → Show conflicting events, ask for confirmation
@@ -434,7 +444,7 @@ Add shared defaults to root `config.skill.json` and per-agent overrides to
 
 ## Security Considerations
 
-1. **Managed auth**: Use `scripts/oauth_setup.py` for OAuth intake and refresh
+1. **Managed auth**: Use `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py` for OAuth intake and refresh
 2. **No token logging**: Never log OAuth tokens
 3. **Calendar permissions**: Respect Yandex ACLs (read-only vs read-write)
 4. **Attendee privacy**: Don't expose other users' full event details in availability queries

@@ -9,11 +9,11 @@ This document contains all discovered issues and required changes for the yandex
 ## 🔴 CRITICAL: disk - Telemost Recordings OAuth Issue
 
 ### Problem
-Telemost meeting recordings (audio/video) with `yadi.sk` public share links **require OAuth authentication** to download via API. Without token, API returns 404 "DiskNotFoundError" even though links appear to be public.
+Telemost meeting recordings (audio/video) with `yadi.sk` public share links may require managed OAuth authentication for the selected account alias to download via API. Without managed auth, API returns 404 "DiskNotFoundError" even though links appear to be public.
 
 ### Current Behavior
 
-| Request Type | With Token | Without Token |
+| Request Type | With managed auth | Without managed auth |
 |--------------|------------|---------------|
 | `GET /v1/disk/public/resources/download` | ✅ Returns working download URL | ❌ 404 DiskNotFoundError |
 | `HEAD` (any endpoint) | ❌ 405 Method Not Allowed | ❌ 302 redirect to captcha |
@@ -24,9 +24,9 @@ Telemost meeting recordings (audio/video) with `yadi.sk` public share links **re
 
 ### Required Changes
 
-1. **Update `scripts/download.py`**:
+1. **Update `disk/scripts/download.py`**:
    - Keep public-link API methods tokenless
-   - Route non-public Disk operations through decorator-owned token lookup
+   - Route non-public Disk operations through decorator-declared auth lookup
    - Require `--account` unless exactly one token-backed account exists
 
 2. **Update `disk/disk.md`** documentation:
@@ -38,18 +38,18 @@ Telemost meeting recordings (audio/video) with `yadi.sk` public share links **re
    
    ### API Behavior
    - HEAD requests: NOT supported (always returns 405)
-   - GET without token: 404 "Resource not found" for Telemost files
-   - GET with OAuth token: Returns working download URL
+   - GET without managed auth: 404 "Resource not found" for Telemost files
+   - GET with managed auth for the selected account alias: Returns working download URL
    
    ### Usage for Telemost
-   Ensure the account has a stored Disk token:
+   Ensure `yandex-office` has a managed Disk token for the selected account alias:
    ```bash
-   python3 scripts/download.py "https://yadi.sk/d/..." --account <account> --output ./
+   python3 <full-path-to-yandex-office>/disk/scripts/download.py "https://yadi.sk/d/..." --account <account> --output ./
    ```
    ```
 
 3. **Add test case**:
-   - Test downloading a Telemost recording with and without token
+   - Test downloading a Telemost recording with and without managed auth
    - Document expected 404 vs 200 behavior
 
 ---
@@ -99,7 +99,7 @@ The relationship between `fetch_emails.py`, `incoming/` directory, and downstrea
    ```
    yandex-office/
    ├── SKILL.md              (this file - overview)
-   ├── config.json           (shared configuration)
+	   ├── config.skill.json     (shared configuration)
    ├── mail/          (IMAP email fetching)
    │   └── mail.md
    ├── disk/          (file downloads)
@@ -141,7 +141,7 @@ The relationship between `fetch_emails.py`, `incoming/` directory, and downstrea
 
 **Issue**: Older code looked for tokens in multiple direct credential sources.
 
-**Fix**: Standardize token resolution in all skills through decorator-owned
+**Fix**: Standardize token resolution in all skills through decorator-declared
 managed auth lookup, with account inference only when there is exactly one
 account alias.
 
@@ -161,7 +161,7 @@ if response.status == 404 and "yadi.sk" in public_url:
 
 **Fix**: Add `--verbose` flag to all scripts that logs:
 - API endpoints being called
-- Auth method being used (token vs none)
+   - Auth method being used (managed auth vs public)
 - Response status codes
 
 ---
@@ -170,7 +170,7 @@ if response.status == 404 and "yadi.sk" in public_url:
 
 Before marking these tasks complete, verify:
 
-- [ ] Stored-account Disk operations use decorator-owned token lookup
+- [ ] Stored-account Disk operations use decorator-declared managed auth lookup
 - [ ] Public-link API gets 404 for organization-restricted links when tokenless
 - [ ] HEAD request returns 405 (documented, not confusing)
 - [ ] `fetch_emails.py --dry-run` works and shows pending emails (NOTE: `migrate_meeting_dirs.py` already has `--dry-run`)
@@ -181,11 +181,11 @@ Before marking these tasks complete, verify:
 
 ## Related Files
 
-- `/home/velizar/src/migrate-openclaw/skills/yandex-office/config.json` - Shared config
-- `/home/velizar/src/migrate-openclaw/skills/yandex-office/disk/scripts/download.py` - Needs OAuth fix
-- `/home/velizar/src/migrate-openclaw/skills/yandex-office/disk/disk.md` - Needs Telemost docs
-- `/home/velizar/src/migrate-openclaw/skills/yandex-office/mail/scripts/fetch_emails.py` - Needs `--dry-run` (NOTE: `migrate_meeting_dirs.py` already has it)
-- `/home/velizar/src/migrate-openclaw/skills/yandex-office/SKILL.md` - Needs structure diagram
+- `<full-path-to-yandex-office>/config.skill.json` - Shared config
+- `<full-path-to-yandex-office>/disk/scripts/download.py` - Needs managed auth fix
+- `<full-path-to-yandex-office>/disk/disk.md` - Needs Telemost docs
+- `<full-path-to-yandex-office>/mail/scripts/fetch_emails.py` - Needs `--dry-run` (NOTE: `migrate_meeting_dirs.py` already has it)
+- `<full-path-to-yandex-office>/SKILL.md` - Needs structure diagram
 
 ---
 
@@ -194,12 +194,12 @@ Before marking these tasks complete, verify:
 **Test Case: Telemost Audio Download**
 ```bash
 # Public-link API path; organization-restricted links can return 404
-python3 disk/scripts/download.py "https://yadi.sk/d/kvnJPr7okDIY4g" --output ./downloads/
+python3 <full-path-to-yandex-office>/disk/scripts/download.py "https://yadi.sk/d/kvnJPr7okDIY4g" --output ./downloads/
 ```
 
 **Discovered API Quirks:**
 - Yandex Disk API doesn't support HEAD requests (always 405)
-- Telemost public links aren't truly public (need owner's OAuth)
+- Telemost public links aren't truly public (may need managed auth for an account that can access the asset)
 - 404 can mean "not found" OR "exists but you need auth"
 
 ---

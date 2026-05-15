@@ -14,12 +14,18 @@ from common.auth import (
     save_token_file,
     verify_token_identity,
 )
-from common.config import choose_account_alias, find_token_account_by_email
+from common.config import (
+    choose_account_alias,
+    find_token_account_by_email,
+    yandex_identity_matches,
+)
 from common.oauth_apps import oauth_app_for_client_id, upsert_agent_oauth_app
 
 
 @dataclass(frozen=True)
 class ManagedTokenImportResult:
+    """Result of importing one verified OAuth token into managed auth."""
+
     identity: VerifiedTokenIdentity
     resolved_account: str
     token_path: Path
@@ -28,6 +34,7 @@ class ManagedTokenImportResult:
 
     @property
     def token_count(self) -> int:
+        """Return the number of stored token bindings in the account file."""
         return len([key for key in self.token_data if key != "email"])
 
 
@@ -44,34 +51,36 @@ def import_managed_oauth_token(
     selected_app_id: str | None = None,
     selected_scopes: list[str] | None = None,
     permissions_note_provider: Callable[[], str | None] | None = None,
+    account_context_only: bool = False,
 ) -> ManagedTokenImportResult:
+    """Verify and store a managed OAuth token under the resolved account file."""
     identity = verify_token_identity(config, token=token)
 
     warnings: list[str] = []
-    if email and email.strip().lower() != identity.email.lower():
+    if email and not yandex_identity_matches(email, identity.email):
         warnings.append(
-            f'Provided --email "{email}" does not match token-linked email "{identity.email}". '
-            "Using the verified token email."
+            f'Provided --email "{email}" differs from verified token identity '
+            f'"{identity.email}". Writing the token by verified identity.'
         )
 
-    existing_account = find_token_account_by_email(data_dir, identity.email)
-    if existing_account is not None:
-        resolved_account = existing_account["alias"]
-        if account and account != resolved_account:
-            warnings.append(
-                f'Provided --account "{account}" does not match existing account '
-                f'"{resolved_account}" for {identity.email}. Using "{resolved_account}".'
-            )
+    if account_context_only and account:
+        resolved_account = account
     else:
-        resolved_account = choose_account_alias(
-            data_dir,
-            identity.email,
-            account,
-        )
-        if account and account != resolved_account:
-            warnings.append(
-                f'Account name "{account}" was unavailable; created "{resolved_account}" for {identity.email}.'
-            )
+        existing_account = find_token_account_by_email(data_dir, identity.email)
+        if existing_account is not None:
+            resolved_account = existing_account["alias"]
+            if account and account != resolved_account:
+                warnings.append(
+                    f'Provided --account "{account}" does not match existing account '
+                    f'"{resolved_account}" for {identity.email}. Using "{resolved_account}".'
+                )
+        else:
+            resolved_account = choose_account_alias(data_dir, identity.email)
+            if account and account != resolved_account:
+                warnings.append(
+                    f'Provided --account "{account}" differs from token-resolved account '
+                    f'"{resolved_account}". Writing "{resolved_account}".'
+                )
 
     matched_app = oauth_app_for_client_id(config, identity.client_id, service=service)
     if selected_app_id and matched_app is not None and matched_app.app_id != selected_app_id:
@@ -95,7 +104,6 @@ def import_managed_oauth_token(
         )
         updated_agent_config = dict(agent_config)
         updated_agent_config.pop("accounts", None)
-        updated_agent_config.pop("mailboxes", None)
         app_id = upsert_agent_oauth_app(
             updated_agent_config,
             client_id=identity.client_id,

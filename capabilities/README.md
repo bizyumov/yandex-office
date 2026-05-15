@@ -522,8 +522,7 @@ Current capability summary:
 
 Cloud infrastructure is no longer part of `yandex-office`. The Cloud Functions,
 Object Storage, IAM-token, service-account, and `yc` CLI material moved to the
-private standalone `yandex-cloud` skill repo at
-`/opt/openclaw/shared/skills/yandex-cloud`.
+private standalone `yandex-cloud` skill repo.
 
 The yandex-office capability matrix now covers the Yandex 360 office service
 surface only. Do not add `cloud:auth`, Cloud IAM-token exchange rows, Search API

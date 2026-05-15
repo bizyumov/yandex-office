@@ -48,6 +48,7 @@ class YandexApiError(RuntimeError):
         message: str,
         payload: Any = None,
     ) -> None:
+        """Capture provider error details for callers and diagnostics."""
         super().__init__(message)
         self.provider_error = provider_error
         self.status_code = status_code
@@ -74,6 +75,7 @@ class BlockedYandexMethodError(RuntimeError):
         client_ids: list[str],
         authorization_urls: list[str],
     ) -> None:
+        """Capture the missing method-auth context."""
         super().__init__(message)
         self.method_id = method_id
         self.required = required
@@ -146,17 +148,20 @@ class YandexApiContext:
 
 
 def _clean_scopes(scopes: Any) -> set[str]:
+    """Normalize a scope list into a non-empty string set."""
     if not isinstance(scopes, list):
         return set()
     return {str(scope).strip() for scope in scopes if str(scope).strip()}
 
 
 def _catalog(config: dict[str, Any]) -> dict[str, Any]:
+    """Return the OAuth app catalog object from merged config."""
     raw = config.get("oauth_apps", {}).get("catalog", {})
     return raw if isinstance(raw, dict) else {}
 
 
 def _app_for_client_id(config: dict[str, Any], client_id: str) -> dict[str, Any] | None:
+    """Find the configured OAuth app entry for a client id."""
     normalized = str(client_id).strip()
     for raw in _catalog(config).values():
         if isinstance(raw, dict) and str(raw.get("client_id", "")).strip() == normalized:
@@ -165,6 +170,7 @@ def _app_for_client_id(config: dict[str, Any], client_id: str) -> dict[str, Any]
 
 
 def _validate_auth_shape(method_id: str, public: bool, one_of: Any, all_of: Any) -> MethodAuth:
+    """Validate and normalize decorator auth metadata."""
     one = tuple(str(scope).strip() for scope in one_of or [] if str(scope).strip())
     all_scopes = tuple(str(scope).strip() for scope in all_of or [] if str(scope).strip())
     shape_count = sum([bool(public), bool(one), bool(all_scopes)])
@@ -192,10 +198,12 @@ def yandex_api_method(
     auth = _validate_auth_shape(method_id, public, one_of, all_of)
 
     def decorate(func: Callable[..., Any]) -> Callable[..., Any]:
+        """Attach auth metadata and dispatch decorated calls."""
         setattr(func, "_yandex_api_method", auth)
 
         @functools.wraps(func)
         def wrapped(*args: Any, **kwargs: Any) -> Any:
+            """Dispatch one decorated API call through managed auth."""
             invocation = _decorated_invocation(func, args, kwargs)
             if invocation is None:
                 return func(*args, **kwargs)
@@ -263,6 +271,7 @@ def _decorated_invocation(
 
 
 def _token_matches(auth: MethodAuth, app_scopes: set[str]) -> bool:
+    """Return whether an app scope set satisfies method auth."""
     if auth.public:
         return True
     if auth.one_of:
@@ -306,6 +315,7 @@ def candidate_tokens(
 
 
 def _agent_catalog_entry(config: dict[str, Any], app_id: str) -> dict[str, Any] | None:
+    """Return one agent-local OAuth app entry if present."""
     raw = _catalog(config).get(app_id)
     return raw if isinstance(raw, dict) else None
 
@@ -316,6 +326,7 @@ def _merge_agent_oauth_app(
     app_id: str,
     app_entry: dict[str, Any],
 ) -> None:
+    """Merge one OAuth app entry into runtime config."""
     apps = config.setdefault("oauth_apps", {})
     if not isinstance(apps, dict):
         raise TokenConfigError("oauth_apps must be an object")
@@ -433,10 +444,12 @@ def authorization_urls(*, auth: MethodAuth, config: dict[str, Any]) -> list[str]
 
 
 def _timestamp() -> str:
+    """Return the current UTC timestamp in token-state format."""
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def _mark_token(token_data: dict[str, Any], token_ref: TokenRef, *, good: bool) -> None:
+    """Mark one token candidate as good or bad."""
     entry = token_data.get(token_ref.source_key)
     if not isinstance(entry, dict):
         entry = {"client_id": token_ref.client_id}
@@ -447,6 +460,7 @@ def _mark_token(token_data: dict[str, Any], token_ref: TokenRef, *, good: bool) 
 
 
 def _provider_payload(response: requests.Response) -> tuple[Any, str | None, str]:
+    """Extract provider payload, error name, and display message."""
     try:
         payload = response.json()
     except ValueError:
@@ -470,6 +484,7 @@ def _provider_payload(response: requests.Response) -> tuple[Any, str | None, str
 
 
 def _raise_provider_error(response: requests.Response) -> None:
+    """Raise the shared provider exception for one response."""
     payload, provider_error, message = _provider_payload(response)
     error_cls = (
         TokenRejected
@@ -600,6 +615,7 @@ def digest_legacy_disk_token_env(ctx: YandexApiContext) -> None:
         token=token,
         account=ctx.account,
         service="disk",
+        account_context_only=True,
     )
 
 

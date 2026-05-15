@@ -17,7 +17,7 @@ def write_json(path: Path, payload: dict) -> None:
     path.write_text(json.dumps(payload), encoding="utf-8")
 
 
-def test_load_runtime_context_uses_cwd_agent_config(tmp_path: Path) -> None:
+def test_load_runtime_context_ignores_config_account_inventory(tmp_path: Path) -> None:
     repo = tmp_path / "repo" / "skills" / "yandex"
     script_path = repo / "mail" / "scripts" / "fetch_emails.py"
     script_path.parent.mkdir(parents=True, exist_ok=True)
@@ -41,7 +41,7 @@ def test_load_runtime_context_uses_cwd_agent_config(tmp_path: Path) -> None:
     runtime = load_runtime_context(script_path, cwd=workspace)
 
     assert runtime.data_dir == (workspace / "yandex-data").resolve()
-    assert runtime.config["accounts"][0]["name"] == "primary"
+    assert runtime.config["accounts"] == []
 
 
 def test_bootstrap_runtime_context_initializes_data_dir(tmp_path: Path) -> None:
@@ -103,7 +103,7 @@ def test_load_runtime_context_accepts_explicit_data_dir_override(tmp_path: Path)
     )
 
     assert runtime.data_dir == external_data_dir.resolve()
-    assert runtime.config["accounts"][0]["name"] == "work"
+    assert runtime.config["accounts"] == []
 
 
 def test_load_runtime_context_reads_accounts_from_token_files(tmp_path: Path) -> None:

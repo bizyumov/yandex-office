@@ -2,6 +2,13 @@
 
 All public `yandex-office` skill releases use the `YYYY.MM.DD` version format.
 
+## 2026.05.07
+
+- Account-first auth uses token files as source of truth: `--accounts list` prints aliases only; `--account <alias>` creates/reads the alias and returns compact JSON with `alias`, optional `email`, and `tokens`; `--email <email> --account <alias>` records email on the supplied alias.
+- OAuth routing now separates account handles, approval links, and token import: `--app <app_id>` prints an OAuth URL without email; `--from-env <ENV_VAR>` imports by verified Yandex identity.
+- Mail adds selected-account `--account`, one-message `--uid`, dry-run `--extract-links`, and non-persistent ad-hoc sender/subject/date searches.
+- Restored planned Calendar, Contacts, Directory, and Tracker command/API shapes as explicitly unimplemented contracts with tracking issues.
+
 ## 2026.05.04
 
 ### Changed

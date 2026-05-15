@@ -2,14 +2,14 @@
 """
 Yandex Mail fetcher via IMAP XOAUTH2.
 
-Connects to Yandex Mail, fetches emails from configured senders, downloads
+Connects to Yandex Mail, fetches emails from configured accounts, downloads
 attachments and email body into structured `incoming/` directories.
 
 Designed to be run as a cron job. State is persisted after each email
 to prevent data loss on interruption.
 
 Output structure per email:
-    {data_dir}/incoming/{filter}/{YYYY-MM-DD}_{mailbox}_uid{N}/
+    {data_dir}/incoming/{filter}/{YYYY-MM-DD}_{account}_uid{N}/
         {original_attachment_filename}   # Preserved original name
         email_body.txt                   # HTML→text converted body
         email_body.html                  # Raw HTML body (if available)
@@ -49,6 +49,8 @@ REMOVED_FILTER_SCHEMA_KEY = "profiles"
 
 
 class EmailFetcher:
+    """Fetch Yandex Mail messages for token-backed Yandex accounts."""
+
     def __init__(
         self,
         *,
@@ -58,9 +60,11 @@ class EmailFetcher:
         subject: str | None = None,
         since_date: str | None = None,
         before_date: str | None = None,
-        mailbox_name: str | None = None,
+        account_name: str | None = None,
         from_uid: int | None = None,
+        uid: int | None = None,
         no_persist: bool = False,
+        extract_links: bool = False,
     ):
         """Initialize fetcher from shared + agent config."""
         self.runtime = load_runtime_context(
@@ -74,7 +78,7 @@ class EmailFetcher:
         self.data_dir = self.runtime.data_dir
         self.state = self._load_state()
         self.downloaded: list[dict[str, Any]] = []
-        self.mailbox_counts: dict[str, int] = {}
+        self.account_counts: dict[str, int] = {}
         self.filter_counts: dict[str, int] = {}
         self.run_options = {
             "filter": self._clean_value(filter_name),
@@ -82,9 +86,11 @@ class EmailFetcher:
             "subject": self._clean_value(subject),
             "since_date": self._clean_value(since_date),
             "before_date": self._clean_value(before_date),
-            "mailbox": self._clean_value(mailbox_name),
+            "account": self._clean_value(account_name),
             "from_uid": from_uid,
+            "uid": uid,
             "no_persist": bool(no_persist),
+            "extract_links": bool(extract_links),
         }
         self.named_filters = self._resolve_named_filters()
         self.run_filters = self._resolve_run_filters()
@@ -92,6 +98,7 @@ class EmailFetcher:
 
     @staticmethod
     def _clean_value(raw: Any) -> str | None:
+        """Normalize empty CLI/config values to None."""
         if raw is None:
             return None
         value = str(raw).strip()
@@ -99,6 +106,7 @@ class EmailFetcher:
 
     @staticmethod
     def _validate_filter_key(name: str) -> str:
+        """Validate a configured mail filter schema key."""
         if name == AD_HOC_FILTER_NAME:
             raise ValueError(
                 f'"{AD_HOC_FILTER_NAME}" is reserved for ad-hoc runs; use a real filter key such as "{LEGACY_FILTER_NAME}"'
@@ -115,35 +123,34 @@ class EmailFetcher:
         return name
 
     def _load_config(self) -> dict:
+        """Return the merged runtime configuration."""
         return self.runtime.config
 
     def _normalize_state(self, payload: dict[str, Any] | None) -> dict[str, Any]:
+        """Normalize cursor state to the current account-keyed format."""
         raw = payload if isinstance(payload, dict) else {}
         filters_payload = raw.get("filters")
         if isinstance(filters_payload, dict):
             normalized_filters: dict[str, dict[str, Any]] = {}
             for filter_name, filter_state in filters_payload.items():
-                mailboxes = {}
-                if isinstance(filter_state, dict):
-                    mailboxes_raw = filter_state.get("mailboxes", {})
-                    if isinstance(mailboxes_raw, dict):
-                        mailboxes = mailboxes_raw
+                accounts = filter_state.get("accounts", {}) if isinstance(filter_state, dict) else {}
                 normalized_name = (
                     LEGACY_FILTER_NAME if str(filter_name) == AD_HOC_FILTER_NAME else str(filter_name)
                 )
-                bucket = normalized_filters.setdefault(normalized_name, {"mailboxes": {}})
-                bucket_mailboxes = bucket.setdefault("mailboxes", {})
-                for mailbox_name, mailbox_state in mailboxes.items():
-                    bucket_mailboxes.setdefault(mailbox_name, mailbox_state)
+                bucket = normalized_filters.setdefault(normalized_name, {"accounts": {}})
+                bucket_accounts = bucket.setdefault("accounts", {})
+                if isinstance(accounts, dict):
+                    bucket_accounts.update(accounts)
             if normalized_filters:
                 return {"filters": normalized_filters}
 
-        mailboxes = raw.get("mailboxes", {})
-        if not isinstance(mailboxes, dict):
-            mailboxes = {}
-        return {"filters": {LEGACY_FILTER_NAME: {"mailboxes": mailboxes}}}
+        accounts = raw.get("accounts")
+        if not isinstance(accounts, dict):
+            accounts = {}
+        return {"filters": {LEGACY_FILTER_NAME: {"accounts": accounts}}}
 
     def _load_state(self) -> dict[str, Any]:
+        """Load persistent mail cursor state from the data directory."""
         state_file = self.config.get("mail", {}).get("state_file", "state.json")
         state_path = self.data_dir / state_file
         if state_path.exists():
@@ -151,6 +158,7 @@ class EmailFetcher:
         return self._normalize_state({})
 
     def _save_state(self) -> None:
+        """Atomically persist the normalized mail cursor state."""
         state_file = self.config.get("mail", {}).get("state_file", "state.json")
         state_path = self.data_dir / state_file
         state_path.parent.mkdir(parents=True, exist_ok=True)
@@ -168,48 +176,53 @@ class EmailFetcher:
         return max(0.0, value)
 
     def _get_filter_bucket(self, filter_name: str) -> dict[str, Any]:
+        """Return the mutable cursor bucket for a mail filter."""
         filters = self.state.setdefault("filters", {})
-        filter_bucket = filters.setdefault(filter_name, {"mailboxes": {}})
-        mailboxes = filter_bucket.setdefault("mailboxes", {})
-        if not isinstance(mailboxes, dict):
-            filter_bucket["mailboxes"] = {}
+        filter_bucket = filters.setdefault(filter_name, {"accounts": {}})
+        accounts = filter_bucket.setdefault("accounts", {})
+        if not isinstance(accounts, dict):
+            filter_bucket["accounts"] = {}
         return filter_bucket
 
-    def _get_mailbox_state(self, mailbox_name: str, filter_name: str) -> dict[str, Any]:
+    def _get_account_state(self, account_name: str, filter_name: str) -> dict[str, Any]:
+        """Return the mutable cursor state for one account/filter pair."""
         filter_bucket = self._get_filter_bucket(filter_name)
-        mailboxes = filter_bucket.setdefault("mailboxes", {})
-        mailbox_state = mailboxes.setdefault(mailbox_name, {})
-        if not isinstance(mailbox_state, dict):
-            mailboxes[mailbox_name] = {}
-        return mailboxes[mailbox_name]
+        accounts = filter_bucket.setdefault("accounts", {})
+        account_state = accounts.setdefault(account_name, {})
+        if not isinstance(account_state, dict):
+            accounts[account_name] = {}
+        return accounts[account_name]
 
-    def _get_last_uid(self, mailbox_name: str, filter_name: str) -> int:
-        return int(self._get_mailbox_state(mailbox_name, filter_name).get("last_uid", 0))
+    def _get_last_uid(self, account_name: str, filter_name: str) -> int:
+        """Return the last processed UID for one account/filter pair."""
+        return int(self._get_account_state(account_name, filter_name).get("last_uid", 0))
 
-    def _get_last_received_date(self, mailbox_name: str, filter_name: str) -> str | None:
-        raw = self._get_mailbox_state(mailbox_name, filter_name).get("last_received_date")
+    def _get_last_received_date(self, account_name: str, filter_name: str) -> str | None:
+        """Return the last received UTC date cursor for one account/filter pair."""
+        raw = self._get_account_state(account_name, filter_name).get("last_received_date")
         return self._clean_value(raw)
 
-    def _update_last_uid(self, mailbox_name: str, filter_name: str, uid: int) -> None:
-        mailbox_state = self._get_mailbox_state(mailbox_name, filter_name)
-        mailbox_state["last_uid"] = uid
-        mailbox_state["last_check"] = datetime.now().isoformat()
+    def _update_last_uid(self, account_name: str, filter_name: str, uid: int) -> None:
+        """Persist the last processed UID for one account/filter pair."""
+        account_state = self._get_account_state(account_name, filter_name)
+        account_state["last_uid"] = uid
+        account_state["last_check"] = datetime.now().isoformat()
 
     def _update_last_received_date(
         self,
-        mailbox_name: str,
+        account_name: str,
         filter_name: str,
         timestamp_utc: str | None,
     ) -> None:
-        """Persist last received message date (UTC day) in mailbox state."""
+        """Persist last received message date in the account cursor state."""
         if not timestamp_utc:
             return
         raw = str(timestamp_utc).strip()
         if not raw:
             return
         date_only = raw.split("T", 1)[0] if "T" in raw else raw[:10]
-        mailbox_state = self._get_mailbox_state(mailbox_name, filter_name)
-        mailbox_state["last_received_date"] = date_only
+        account_state = self._get_account_state(account_name, filter_name)
+        account_state["last_received_date"] = date_only
 
     @staticmethod
     def _to_imap_date(raw_value: str | None) -> str | None:
@@ -228,6 +241,7 @@ class EmailFetcher:
             return None
 
     def _resolve_named_filters(self) -> dict[str, dict[str, Any]]:
+        """Resolve configured named filters into normalized filter records."""
         filters_cfg = self.config.get("mail", {}).get("filters", {})
         filters: dict[str, dict[str, Any]] = {}
         legacy_keys = {"sender", "subject", "since_date", "before_date"}
@@ -275,10 +289,11 @@ class EmailFetcher:
         return filters
 
     def _resolve_run_filters(self) -> list[dict[str, Any]]:
+        """Choose the filter set for this invocation."""
         explicit_filter = self.run_options.get("filter")
         has_raw_overrides = any(
             self.run_options.get(key) is not None
-            for key in ("sender", "subject", "since_date", "before_date")
+            for key in ("sender", "subject", "since_date", "before_date", "uid")
         )
 
         if explicit_filter is not None:
@@ -309,17 +324,21 @@ class EmailFetcher:
         ]
 
     def _uses_ad_hoc_overrides(self) -> bool:
+        """Return true when this invocation should not use stored cursors."""
         return any(
             self.run_options.get(key) is not None
-            for key in ("sender", "subject", "since_date", "before_date")
+            for key in ("sender", "subject", "since_date", "before_date", "uid")
         )
 
     def _should_persist_state(self, *, dry_run: bool) -> bool:
+        """Return whether this invocation may advance persistent cursors."""
         if dry_run:
             return False
         if self.run_options.get("no_persist"):
             return False
         if self.run_options.get("from_uid") is not None:
+            return False
+        if self.run_options.get("uid") is not None:
             return False
         if self._uses_ad_hoc_overrides():
             return False
@@ -327,10 +346,11 @@ class EmailFetcher:
 
     def _effective_since(
         self,
-        mailbox_name: str,
+        account_name: str,
         filter_name: str,
         run_filter: dict[str, Any],
     ) -> str | None:
+        """Resolve the SINCE criterion for one account/filter pair."""
         explicit_since = run_filter.get("since_date")
         if explicit_since:
             return explicit_since
@@ -339,17 +359,19 @@ class EmailFetcher:
         since_mode = str(self.config.get("mail", {}).get("since", "off")).strip().lower()
         if since_mode != "on":
             return None
-        return self._get_last_received_date(mailbox_name, filter_name)
+        return self._get_last_received_date(account_name, filter_name)
 
-    def _effective_last_uid(self, mailbox_name: str, filter_name: str) -> int:
+    def _effective_last_uid(self, account_name: str, filter_name: str) -> int:
+        """Resolve the UID floor for one account/filter pair."""
         if self.run_options.get("from_uid") is not None:
             return int(self.run_options["from_uid"])
         if self._uses_ad_hoc_overrides() and self.run_options.get("filter") is None:
             return 1
-        return self._get_last_uid(mailbox_name, filter_name)
+        return self._get_last_uid(account_name, filter_name)
 
     @staticmethod
     def _mail_credentials(ctx: YandexApiContext) -> tuple[str, str]:
+        """Resolve verified email and bearer token from the API context."""
         if ctx.token_ref is None:
             raise RuntimeError("Mail API context is not token-bound")
         email_addr = str((ctx.token_data or {}).get("email") or "").strip()
@@ -386,6 +408,7 @@ class EmailFetcher:
 
     @staticmethod
     def _decode_header(header_value: str) -> str:
+        """Decode an RFC 2047 message header into display text."""
         if header_value is None:
             return ""
         if not isinstance(header_value, (str, bytes)):
@@ -418,6 +441,45 @@ class EmailFetcher:
         return "\n".join(lines)
 
     @staticmethod
+    def _message_bodies(msg) -> tuple[str | None, str | None]:
+        """Extract first text/plain and text/html bodies from a message."""
+        email_body_text = None
+        email_body_html = None
+        for part in msg.walk():
+            if part.get_content_maintype() == "multipart":
+                continue
+            if part.get("Content-Disposition") is not None:
+                continue
+            charset = part.get_content_charset() or "utf-8"
+            payload = part.get_payload(decode=True)
+            if not payload:
+                continue
+            if part.get_content_type() == "text/plain" and email_body_text is None:
+                email_body_text = payload.decode(charset, errors="replace")
+            elif part.get_content_type() == "text/html" and email_body_html is None:
+                email_body_html = payload.decode(charset, errors="replace")
+        return email_body_text, email_body_html
+
+    @classmethod
+    def _extract_links(cls, *, text_body: str | None, html_body: str | None) -> list[str]:
+        """Extract unique HTTP(S) links from plain text and HTML bodies."""
+        chunks = [text_body or ""]
+        if html_body:
+            chunks.extend(
+                re.findall(r"""(?:href|src)\s*=\s*["']([^"']+)""", html_body, re.I)
+            )
+            chunks.append(cls._html_to_text(html_body))
+
+        result = []
+        seen = set()
+        for link in re.findall(r"https?://[^\s<>'\"]+", "\n".join(chunks)):
+            cleaned = link.strip().rstrip(".,;:)]}")
+            if cleaned and cleaned not in seen:
+                seen.add(cleaned)
+                result.append(cleaned)
+        return result
+
+    @staticmethod
     def _safe_filename(filename: str) -> str:
         """Sanitize attachment filename for local filesystem writes."""
         name = str(filename).strip()
@@ -429,6 +491,7 @@ class EmailFetcher:
 
     @staticmethod
     def _sender_criteria(sender: str | None) -> list[str]:
+        """Build IMAP FROM criteria from an email address or text fragment."""
         sender_value = (sender or "").strip()
         if not sender_value:
             return []
@@ -439,10 +502,12 @@ class EmailFetcher:
 
     @staticmethod
     def _criteria_has_nonascii(criteria: list[str]) -> bool:
+        """Return true when search criteria need UTF-8 IMAP search."""
         return any(not value.isascii() for value in criteria)
 
     @staticmethod
     def _extract_uid(fetch_response: Any) -> int | None:
+        """Extract a UID integer from an IMAP FETCH response."""
         if not fetch_response:
             return None
         for item in fetch_response:
@@ -466,6 +531,7 @@ class EmailFetcher:
 
     @staticmethod
     def _extract_message_bytes(fetch_response: Any) -> bytes | None:
+        """Extract raw message bytes from an IMAP FETCH response."""
         if not fetch_response:
             return None
 
@@ -484,6 +550,7 @@ class EmailFetcher:
         return None
 
     def _get_output_max_inline_symbols(self) -> int:
+        """Return the maximum dry-run JSON payload size to print inline."""
         raw = self.config.get("mail", {}).get("output", {}).get("max_inline_symbols", 2000)
         try:
             value = int(raw)
@@ -492,6 +559,7 @@ class EmailFetcher:
         return max(1, value)
 
     def _get_output_dir(self) -> Path:
+        """Create and return the dry-run spill output directory."""
         raw = self.config.get("mail", {}).get("output", {}).get("spill_dir", "latest-query")
         name = str(raw).strip() or "latest-query"
         path = self.data_dir / name
@@ -499,6 +567,7 @@ class EmailFetcher:
         return path
 
     def _spill_payload_to_file(self, payload: dict[str, Any], *, prefix: str) -> Path:
+        """Write a large dry-run payload to the configured spill directory."""
         output_dir = self._get_output_dir()
         for existing in output_dir.glob("*.json"):
             existing.unlink(missing_ok=True)
@@ -511,6 +580,7 @@ class EmailFetcher:
         return output_path
 
     def _search_uids(self, conn, criteria: list[str]) -> list[bytes]:
+        """Search IMAP and return matching UID byte strings."""
         if not criteria:
             return []
 
@@ -592,7 +662,7 @@ class EmailFetcher:
         conn,
         uid_bytes: bytes,
         uid: int,
-        mailbox_name: str,
+        account_name: str,
         filter_name: str,
         *,
         ctx: YandexApiContext | None = None,
@@ -604,12 +674,12 @@ class EmailFetcher:
         """
         now_utc = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         now_date = datetime.now().strftime("%Y-%m-%d")
-        dir_name = f"{now_date}_{mailbox_name}_uid{uid}"
+        dir_name = f"{now_date}_{account_name}_uid{uid}"
         email_dir: Path | None = None
 
         meta = {
             "imap_uid": uid,
-            "mailbox": mailbox_name,
+            "account": account_name,
             "filter": filter_name,
             "subject": "",
             "sender": "",
@@ -643,7 +713,7 @@ class EmailFetcher:
                 self.data_dir
                 / "incoming"
                 / filter_name
-                / f"{date_formatted}_{mailbox_name}_uid{uid}"
+                / f"{date_formatted}_{account_name}_uid{uid}"
             )
             email_dir.mkdir(parents=True, exist_ok=True)
 
@@ -653,22 +723,7 @@ class EmailFetcher:
             meta["dir_name"] = email_dir.name
             meta["dir_relpath"] = str(email_dir.relative_to(self.data_dir / "incoming"))
 
-            # Extract email body (prefer text/plain, fallback to text/html)
-            email_body_text = None
-            email_body_html = None
-            for part in msg.walk():
-                if part.get_content_maintype() == "multipart":
-                    continue
-                if part.get("Content-Disposition") is not None:
-                    continue
-                charset = part.get_content_charset() or "utf-8"
-                payload = part.get_payload(decode=True)
-                if not payload:
-                    continue
-                if part.get_content_type() == "text/plain" and email_body_text is None:
-                    email_body_text = payload.decode(charset, errors="replace")
-                elif part.get_content_type() == "text/html" and email_body_html is None:
-                    email_body_html = payload.decode(charset, errors="replace")
+            email_body_text, email_body_html = self._message_bodies(msg)
 
             body_for_text = email_body_text or (
                 self._html_to_text(email_body_html) if email_body_html else ""
@@ -711,7 +766,7 @@ class EmailFetcher:
                     self.data_dir
                     / "incoming"
                     / filter_name
-                    / f"{now_date}_{mailbox_name}_uid{uid}"
+                    / f"{now_date}_{account_name}_uid{uid}"
                 )
                 email_dir.mkdir(parents=True, exist_ok=True)
                 meta["dir_name"] = email_dir.name
@@ -721,46 +776,51 @@ class EmailFetcher:
                 encoding="utf-8",
             )
 
-    def _resolve_mailboxes(self) -> list[dict[str, str]]:
+    def _resolve_accounts(self) -> list[dict[str, str]]:
+        """Return account records selected for this invocation."""
         accounts = list(self.config.get("accounts", []))
-        requested_mailbox = self.run_options.get("mailbox")
-        if requested_mailbox is None:
+        requested_account = self.run_options.get("account")
+        available = ", ".join(account.get("name", "") for account in accounts) or "<none>"
+        if requested_account is None:
+            if self.run_options.get("uid") is not None and len(accounts) != 1:
+                raise ValueError(
+                    f"--uid requires --account when aliases are ambiguous: {available}"
+                )
             return accounts
 
-        selected = [account for account in accounts if account.get("name") == requested_mailbox]
+        selected = [account for account in accounts if account.get("name") == requested_account]
         if selected:
             return selected
 
-        available = ", ".join(account.get("name", "") for account in accounts) or "<none>"
         raise ValueError(
-            f'Unknown mailbox "{requested_mailbox}". Available mailboxes: {available}'
+            f'Unknown account alias "{requested_account}". Available aliases: {available}'
         )
 
-    def fetch_mailbox(
+    def fetch_account(
         self,
-        mailbox_config: dict,
+        account_config: dict,
         run_filter: dict[str, Any],
         max_messages: int | None = None,
         dry_run: bool = False,
     ) -> int:
-        """Fetch emails from a single mailbox.
+        """Fetch emails from a single Yandex account.
 
         Args:
-            mailbox_config: Mailbox config entry with name/email.
-            max_messages: Optional cap for this mailbox in current run.
+            account_config: Account config entry with name/email.
+            max_messages: Optional cap for this account in current run.
 
         Returns:
             Number of successfully fetched messages.
         """
-        mailbox_name = mailbox_config["name"]
+        account_name = account_config["name"]
         filter_name = run_filter["name"]
 
         logger.info(
-            f"Checking mailbox: {mailbox_config['email']} ({mailbox_name}) using filter {filter_name}"
+            f"Checking account: {account_config['email']} ({account_name}) using filter {filter_name}"
         )
 
         api_ctx = YandexApiContext(
-            account=mailbox_name,
+            account=account_name,
             data_dir=self.data_dir,
             config=self.config,
             session=requests.Session(),
@@ -781,32 +841,37 @@ class EmailFetcher:
             logger.error("All connection attempts failed")
             return 0
 
-        last_uid = self._effective_last_uid(mailbox_name, filter_name)
-        logger.info(f"Last processed UID: {last_uid}")
+        single_uid = self.run_options.get("uid")
+        if single_uid is not None:
+            matching = [(single_uid, str(single_uid).encode("ascii"))]
+            logger.info(f"Fetching exact UID: {single_uid}")
+        else:
+            last_uid = self._effective_last_uid(account_name, filter_name)
+            logger.info(f"Last processed UID: {last_uid}")
 
-        sender = run_filter.get("sender")
-        subject = run_filter.get("subject")
-        since = self._effective_since(mailbox_name, filter_name, run_filter)
-        before = run_filter.get("before_date")
-        if not any([sender, subject, since, before]):
-            logger.error("No mail filter criteria configured for this run")
-            conn.logout()
-            return 0
+            sender = run_filter.get("sender")
+            subject = run_filter.get("subject")
+            since = self._effective_since(account_name, filter_name, run_filter)
+            before = run_filter.get("before_date")
+            if not any([sender, subject, since, before]):
+                logger.error("No mail filter criteria configured for this run")
+                conn.logout()
+                return 0
 
-        try:
-            matching = self._search_emails(
-                conn,
-                sender,
-                last_uid,
-                subject=subject,
-                since=since,
-                before=before,
-                ctx=api_ctx,
-            )
-        except Exception as exc:
-            logger.error(f"Search failed: {exc}")
-            conn.logout()
-            return 0
+            try:
+                matching = self._search_emails(
+                    conn,
+                    sender,
+                    last_uid,
+                    subject=subject,
+                    since=since,
+                    before=before,
+                    ctx=api_ctx,
+                )
+            except Exception as exc:
+                logger.error(f"Search failed: {exc}")
+                conn.logout()
+                return 0
 
         if max_messages is not None:
             matching = matching[:max_messages]
@@ -817,15 +882,20 @@ class EmailFetcher:
         if dry_run:
             for uid, uid_bytes in matching:
                 try:
+                    fetch_query = (
+                        "(RFC822)"
+                        if self.run_options.get("extract_links")
+                        else "(BODY.PEEK[HEADER.FIELDS (SUBJECT FROM DATE)])"
+                    )
                     _, msg_data = self._fetch_message_data(
                         conn,
                         uid_bytes,
-                        "(BODY.PEEK[HEADER.FIELDS (SUBJECT FROM DATE)])",
+                        fetch_query,
                         ctx=api_ctx,
                     )
                     raw_header = self._extract_message_bytes(msg_data)
                     if raw_header is None:
-                        raise ValueError("No header payload returned by IMAP FETCH")
+                        raise ValueError("No message payload returned by IMAP FETCH")
                     msg = email.message_from_bytes(raw_header)
                     subject_value = self._decode_header(msg.get("Subject", ""))
                     sender_value = self._decode_header(msg.get("From", ""))
@@ -837,17 +907,22 @@ class EmailFetcher:
                         )
                     except Exception:
                         timestamp = ""
-                    self.downloaded.append(
-                        {
-                            "imap_uid": uid,
-                            "mailbox": mailbox_name,
-                            "subject": subject_value,
-                            "sender": sender_value,
-                            "timestamp": timestamp,
-                            "dry_run": True,
-                            "filter": filter_name,
-                        }
-                    )
+                    row = {
+                        "imap_uid": uid,
+                        "account": account_name,
+                        "subject": subject_value,
+                        "sender": sender_value,
+                        "timestamp": timestamp,
+                        "dry_run": True,
+                        "filter": filter_name,
+                    }
+                    if self.run_options.get("extract_links"):
+                        text_body, html_body = self._message_bodies(msg)
+                        row["links"] = self._extract_links(
+                            text_body=text_body,
+                            html_body=html_body,
+                        )
+                    self.downloaded.append(row)
                 except Exception as exc:
                     logger.warning(f"Dry-run header fetch failed for UID {uid}: {exc}")
             conn.logout()
@@ -867,16 +942,16 @@ class EmailFetcher:
                     conn,
                     uid_bytes,
                     uid,
-                    mailbox_name,
+                    account_name,
                     filter_name,
                     ctx=api_ctx,
                 )
                 if meta:
                     self.downloaded.append(meta)
                     if persist_state:
-                        self._update_last_uid(mailbox_name, filter_name, uid)
+                        self._update_last_uid(account_name, filter_name, uid)
                         self._update_last_received_date(
-                            mailbox_name,
+                            account_name,
                             filter_name,
                             meta.get("timestamp"),
                         )
@@ -898,33 +973,31 @@ class EmailFetcher:
         return fetched_count
 
     def fetch_all(self, num_messages: int | None = None, dry_run: bool = False) -> list[dict]:
-        """Fetch from all configured mailboxes.
+        """Fetch from all selected accounts.
 
         Args:
             num_messages: Optional global cap for fetched messages in this run.
         """
         remaining = num_messages
-        self.mailbox_counts = {}
+        accounts = self._resolve_accounts()
+        self.account_counts = {account["name"]: 0 for account in accounts}
         self.filter_counts = {}
-
-        for mailbox_config in self._resolve_mailboxes():
-            self.mailbox_counts[mailbox_config["name"]] = 0
 
         for run_filter in self.run_filters:
             filter_name = run_filter["name"]
             self.filter_counts[filter_name] = 0
-            for mailbox_config in self._resolve_mailboxes():
+            for account_config in accounts:
                 if remaining is not None and remaining <= 0:
-                    logger.info("Reached --num cap; stopping mailbox scan")
+                    logger.info("Reached --num cap; stopping account scan")
                     break
 
-                fetched = self.fetch_mailbox(
-                    mailbox_config,
+                fetched = self.fetch_account(
+                    account_config,
                     run_filter,
                     max_messages=remaining,
                     dry_run=dry_run,
                 )
-                self.mailbox_counts[mailbox_config["name"]] += fetched
+                self.account_counts[account_config["name"]] += fetched
                 self.filter_counts[filter_name] += fetched
                 if remaining is not None:
                     remaining -= fetched if not dry_run else 0
@@ -936,12 +1009,13 @@ class EmailFetcher:
 
 
 def main() -> None:
+    """Run the Yandex Mail fetcher command-line interface."""
     parser = argparse.ArgumentParser(description="Fetch emails from Yandex Mail")
     parser.add_argument(
         "--num",
         type=int,
         default=None,
-        help="Maximum number of new messages to fetch in this run (global cap across mailboxes)",
+        help="Maximum number of new messages to fetch in this run (global cap across accounts)",
     )
     parser.add_argument(
         "--filter",
@@ -964,13 +1038,23 @@ def main() -> None:
         help="Add BEFORE search date (YYYY-MM-DD or DD-Mon-YYYY)",
     )
     parser.add_argument(
-        "--mailbox",
-        help="Run only for the named configured mailbox",
+        "--account",
+        help="Run only for the named token-backed account alias",
     )
     parser.add_argument(
         "--from-uid",
         type=int,
         help="Start this run from the given UID floor without persisting state",
+    )
+    parser.add_argument(
+        "--uid",
+        type=int,
+        help="Fetch exactly one UID without filter search logic or state updates",
+    )
+    parser.add_argument(
+        "--extract-links",
+        action="store_true",
+        help="In dry-run mode, fetch message bodies and include extracted links",
     )
     parser.add_argument(
         "--no-persist",
@@ -990,7 +1074,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--data-dir",
-        help="Explicit Yandex data directory override for non-workspace execution",
+        help="Explicit Yandex data directory override for non-CWD execution",
     )
     args = parser.parse_args()
 
@@ -998,6 +1082,10 @@ def main() -> None:
         parser.error("--num must be a positive integer")
     if args.from_uid is not None and args.from_uid <= 0:
         parser.error("--from-uid must be a positive integer")
+    if args.uid is not None and args.uid <= 0:
+        parser.error("--uid must be a positive integer")
+    if args.uid is not None and args.from_uid is not None:
+        parser.error("--uid cannot be combined with --from-uid")
 
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.WARNING,
@@ -1012,9 +1100,11 @@ def main() -> None:
             subject=args.subject,
             since_date=args.since_date,
             before_date=args.before_date,
-            mailbox_name=args.mailbox,
+            account_name=args.account,
             from_uid=args.from_uid,
-            no_persist=args.no_persist,
+            uid=args.uid,
+            no_persist=args.no_persist or args.uid is not None,
+            extract_links=args.extract_links,
         )
         results = fetcher.fetch_all(num_messages=args.num, dry_run=args.dry_run)
     except ValueError as exc:
@@ -1022,17 +1112,19 @@ def main() -> None:
 
     pending_rows = []
     if args.dry_run:
-        pending_rows = [
-            {
+        pending_rows = []
+        for item in results:
+            row = {
                 "uid": item.get("imap_uid"),
-                "mailbox": item.get("mailbox"),
+                "account": item.get("account"),
                 "sender": item.get("sender", ""),
                 "subject": item.get("subject", ""),
                 "timestamp": item.get("timestamp", ""),
                 "filter": item.get("filter", ""),
             }
-            for item in results
-        ]
+            if "links" in item:
+                row["links"] = item.get("links", [])
+            pending_rows.append(row)
 
     response = {
         "dry_run": bool(args.dry_run),
@@ -1042,7 +1134,8 @@ def main() -> None:
         "fetched_total": 0 if args.dry_run else len(results),
         "pending_total": len(pending_rows) if args.dry_run else 0,
         "pending": pending_rows if args.dry_run else [],
-        "mailboxes": fetcher.mailbox_counts,
+        "extract_links": bool(args.extract_links) if args.dry_run else False,
+        "accounts": fetcher.account_counts,
         "filter_counts": fetcher.filter_counts,
     }
 

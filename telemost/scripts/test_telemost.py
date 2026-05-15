@@ -61,7 +61,7 @@ YANDEX_GPT_SUMMARY = """\
 # Post-enrichment meta (as produced by enrich_incoming + mail)
 SUMMARY_META = {
     "imap_uid": 2550,
-    "mailbox": "test",
+    "account": "test",
     "subject": "Конспект встречи 8 февр. 2026 г.",
     "sender": "Хранитель встреч Телемоста <keeper@telemost.yandex.ru>",
     "timestamp": "2026-02-08T16:27:00Z",
@@ -76,7 +76,7 @@ SUMMARY_META = {
 
 RECORDING_META = {
     "imap_uid": 2551,
-    "mailbox": "test",
+    "account": "test",
     "subject": "Запись встречи «Стендап» готова",
     "sender": "Хранитель встреч Телемоста <keeper@telemost.yandex.ru>",
     "timestamp": "2026-02-08T17:00:00Z",
@@ -313,7 +313,7 @@ def test_existing_meta_non_destructive_merge():
                     "imap_uid": 2550,
                     "email_type": "summary",
                     "subject": "Конспект встречи",
-                    "mailbox": "test",
+                    "account": "test",
                     "timestamp": "2026-02-08T16:27:00Z",
                     "meeting_start_local": "2026-02-08T19:07",
                     "dir_name": "2026-02-08_test_uid2550",
@@ -343,7 +343,7 @@ def test_existing_meta_non_destructive_merge():
                     "imap_uid": 2551,
                     "email_type": "recording",
                     "subject": "Запись встречи «Стендап» готова",
-                    "mailbox": "test",
+                    "account": "test",
                     "timestamp": "2026-02-08T17:00:00Z",
                     "meeting_start_local": "2026-02-08T19:07",
                     "dir_name": "2026-02-08_test_uid2551",
@@ -374,7 +374,7 @@ def test_standalone_no_uid():
         # Manual drop with no meeting_uid
         manual_meta = {
             "imap_uid": 0,
-            "mailbox": "manual",
+            "account": "manual",
             "subject": "Manual upload",
             "sender": "user",
             "timestamp": "2026-02-12T10:00:00Z",
@@ -430,7 +430,7 @@ def test_enrich_incoming():
 
         raw_meta = {
             "imap_uid": 2550,
-            "mailbox": "test",
+            "account": "test",
             "subject": "Конспект встречи от 08.02.2026",
             "sender": "Хранитель встреч Телемоста <keeper@telemost.yandex.ru>",
             "timestamp": "2026-02-08T16:27:00Z",
@@ -452,7 +452,7 @@ def test_enrich_incoming():
         other_dir.mkdir(parents=True)
         other_meta = {
             "imap_uid": 9999,
-            "mailbox": "test",
+            "account": "test",
             "subject": "Newsletter",
             "sender": "news@example.com",
             "timestamp": "2026-02-08T10:00:00Z",
@@ -496,12 +496,12 @@ def test_classify_email():
 
 
 def test_build_meeting_output_path():
-    """Output path includes YYYY-MM bucket and date+HH-MM mailbox prefix."""
+    """Output path includes YYYY-MM bucket and date+HH-MM account prefix."""
     meeting_data = {
         "meeting_uid": MEETING_UID,
         "date": "2026-02-08T16:27:00Z",
         "source_emails": [
-            {"mailbox": "test", "timestamp": "2026-02-08T16:27:00Z", "dir_name": "2026-02-08_test_uid2550"}
+            {"account": "test", "timestamp": "2026-02-08T16:27:00Z", "dir_name": "2026-02-08_test_uid2550"}
         ],
     }
     path = build_meeting_output_path(meeting_data, Path("/tmp/out"))

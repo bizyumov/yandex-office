@@ -5,7 +5,7 @@ license: MIT
 compatibility: Requires Python 3.10+, network access to imap.yandex.ru
 metadata:
   author: bizyumov
-  version: "2026.05.03"
+  version: "2026.05.07"
 ---
 
 # Yandex Mail / Почта
@@ -14,62 +14,72 @@ Generic email fetcher for Yandex Mail via IMAP XOAUTH2. Saves incoming emails ma
 
 ## Quick Start
 
-Ask the user to verify that IMAP + OAuth is enabled for the target mailbox first:
+Ask the user to verify that IMAP + OAuth is enabled for the target account first:
 
 - EN: Open Yandex Mail in a browser, go to Settings → Mail clients (direct URL: `https://mail.yandex.ru/#setup/client`), enable `From imap.yandex.ru server via IMAP` and `App passwords and OAuth tokens`, then save.
 - RU: Откройте Яндекс Почту в браузере, перейдите в Настройки → Почтовые программы (прямая ссылка: `https://mail.yandex.ru/#setup/client`), включите `С сервера imap.yandex.ru по протоколу IMAP` и `Пароли приложений и OAuth-токены`, затем сохраните изменения.
 
 ```bash
-# Use the full path to the shared Yandex skill:
-python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email user@yandex.ru --account alex --app mail-readonly
+# Print an OAuth approval URL; add --account only if alias alex is already known:
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --app mail-readonly
+
+# Discover available account aliases before using Mail
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --accounts list
 
 # Fetch new emails with all enabled configured filters
-python3 scripts/fetch_emails.py
+python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py
 
 # Fetch at most N new messages in this run (global cap)
-python3 scripts/fetch_emails.py --num 20
+python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --num 20
 
 # Run one named filter only
-python3 scripts/fetch_emails.py --filter forms
+python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --filter forms
 
 # Run an ad-hoc one-off search without touching persistent cursor state
-python3 scripts/fetch_emails.py --sender "Мария" --subject "Fwd:" --mailbox alex --dry-run
+python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --sender "Мария" --subject "Fwd:" --account alex --dry-run --extract-links
+
+# Fetch exactly one message without advancing state
+python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account alex --uid 5131
 ```
 
-> Recommended: use `--app mail-readonly` for fetching. If you also need Disk
-> access, run the setup command again with `--app disk-read`.
+> Recommended: use `--app mail-readonly` for fetching. If Disk access is also
+> needed, the agent runs setup again with `--app disk-read` under user
+> authorization.
 
 ## What It Does
 
-1. Loads shared root `config.skill.json`
-2. Loads `{data_dir}/config.agent.json` from the resolved runtime data dir
-3. Connects to Yandex Mail via IMAP XOAUTH2
-4. Resolves the configured filters for the run, or an ad-hoc CLI filter
-5. Searches for new emails using sender / subject / date criteria
-6. Supports UTF-8 IMAP fallback for non-ASCII search values
-7. Maintains per-filter cursor state in `state.json`
-8. Supports one-off non-persistent searches for debugging / backfills
-9. Downloads attachments (preserving original filenames)
-10. Saves email body (text + HTML)
-11. Writes structured directory to `{data_dir}/incoming/<filter>/` with generic `meta.json`
-12. Persists UID state after each email (crash-safe, atomic writes) only for persistent named-filter runs
-13. Optionally limits intake with `--num` to avoid flood on newly added mailboxes
-14. Optionally narrows IMAP search with global `SINCE` mode for large mailboxes
-15. Applies configurable sleep between message-processing iterations (global)
+- Loads shared skill config plus `{data_dir}/config.agent.json`.
+- Connects to Yandex Mail via IMAP XOAUTH2 using managed auth.
+- Runs configured filters or one-off ad-hoc searches.
+- Writes message body, attachments, and `meta.json` under `{data_dir}/incoming/<filter>/`.
+- Persists cursors only for persistent named-filter runs; `--uid`, raw filters,
+  and dry runs are non-persistent.
+
+## Typical Agent Workflow
+
+1. Run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --accounts list`.
+2. Pick only a listed account alias requested by the user.
+3. Run `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --sender "<pattern>" --dry-run --extract-links`.
+4. If a full saved copy is needed, run `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --uid <uid>`.
+5. Read `email_body.html` or `email_body.txt` from the saved incoming directory.
+
+If the requested account alias is missing, stop. The agent imports that account
+through `yandex-office` under user authorization. Do not use another account as
+a fallback.
 
 ## Flood Control (`--num`)
 
 Use `--num` to cap the total number of newly fetched messages per run:
 
 ```bash
-python3 scripts/fetch_emails.py --num 25
+python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --num 25
 ```
 
 Behavior:
 
-- Cap is global across all configured mailboxes.
+- Cap is global across all selected accounts.
 - Messages are fetched in ascending UID order (oldest unseen first).
-- Once the cap is reached, remaining mailboxes are skipped for that run.
+- Once the cap is reached, remaining accounts are skipped for that run.
 - UID state is persisted after each successfully processed message.
 - `--num` must be a positive integer.
 
@@ -104,7 +114,7 @@ Filter key rules:
 
 Run model:
 
-- bare run with no filter CLI arguments executes all enabled configured filters across all selected mailboxes
+- bare run with no filter CLI arguments executes all enabled configured filters across all selected accounts
 - configured entries under `mail.filters` are peer filters such as `telemost` or `forms`
 - the legacy top-level keys (`mail.filters.sender`, etc.) are still upgraded in-memory into `mail.filters.telemost`
 - `enabled: false` excludes that named filter from bare runs
@@ -114,24 +124,27 @@ CLI options:
 
 - `--filter NAME` selects one named filter and keeps persistent state isolated to that filter.
 - `--sender`, `--subject`, `--since-date`, `--before-date` run as one raw ad-hoc filter when used without `--filter`.
-- raw ad-hoc criteria without `--filter` search mailbox history by default instead of inheriting a stored filter cursor.
+- raw ad-hoc criteria without `--filter` search account history by default instead of inheriting a stored filter cursor.
 - when `--filter NAME` is present, those same flags override that named filter for the current run only.
 - use `--filter NAME` whenever you need one specific configured filter only; bare run means “all enabled filters”, not “one selected filter”
-- `--mailbox NAME` restricts the run to one configured mailbox.
+- `--account NAME` restricts the run to one token-backed account alias.
 - `--from-uid UID` starts from a specific UID floor for a one-off backfill.
+- `--uid UID` fetches exactly one message, skips filter search logic, and implies non-persistence.
+- `--extract-links` with `--dry-run` includes a `links` array by fetching message bodies without writing incoming files.
 - `--no-persist` disables state writes for the run.
 
 Persistence rules:
 
 - `--dry-run` never writes state.
 - `--from-uid` is always treated as non-persistent.
+- `--uid` is always treated as non-persistent.
 - Raw CLI filter overrides used without `--filter` are treated as ad-hoc runs and do not advance persistent cursors.
-- Raw CLI filter overrides used without `--filter` also ignore stored filter cursors by default, so one-off lookups do not need `--from-uid 1` just to search mailbox history.
+- Raw CLI filter overrides used without `--filter` also ignore stored filter cursors by default, so one-off lookups do not need `--from-uid 1` just to search account history.
 - Selecting a named filter with `--filter` and no ad-hoc overrides keeps normal persistent behavior.
 
 ## Heavy Output Handling
 
-Broad mailbox lookups can return too much data for efficient inline assistant use. In dry-run mode:
+Broad account lookups can return too much data for efficient inline assistant use. In dry-run mode:
 
 - pending results stay inline only while the rendered payload is within the configured symbol threshold
 - when the threshold is exceeded, the full result set is saved to `{data_dir}/latest-query/` instead
@@ -160,7 +173,7 @@ Notes:
 
 ## Optional `SINCE` Mode
 
-For large mailboxes, you can globally limit IMAP search to messages sent since a date.
+For large accounts, you can globally limit IMAP search to messages sent since a date.
 
 Root config (`config.skill.json`):
 
@@ -177,7 +190,7 @@ Root config (`config.skill.json`):
 
 Behavior:
 
-- When `mail.since` is `"on"`, fetcher reads per-mailbox `last_received_date` from the active filter state in `state.json` and applies IMAP `SINCE <date>`.
+- When `mail.since` is `"on"`, fetcher reads per-account `last_received_date` from the active filter state in `state.json` and applies IMAP `SINCE <date>`.
 - Search criteria is an intersection (AND): `SINCE` + sender criteria.
 - Sender criteria remains based on configured full address and is queried as `FROM "<left-of-@>" AND FROM "<right-of-@>"`.
 - State now persists both:
@@ -205,7 +218,7 @@ You can configure a global pause between `_process_email` iterations:
 
 Behavior:
 
-- Applies between processed messages within a mailbox loop.
+- Applies between processed messages within an account loop.
 - Unit: seconds.
 - Default: `0.5`.
 - `0` disables the delay.
@@ -220,7 +233,7 @@ Default stdout is intentionally brief JSON:
   "filter": "telemost",
   "persist_state": true,
   "fetched_total": 12,
-  "mailboxes": {
+  "accounts": {
     "alex": 4,
     "mary": 8
   }
@@ -236,7 +249,7 @@ Large dry-run output example:
   "persist_state": false,
   "pending_total": 178,
   "pending": [],
-  "mailboxes": {
+  "accounts": {
     "work": 0
   },
   "output_file": "/path/to/yandex-data/latest-query/mail_dry_run_20260409T183247123456Z.json",
@@ -251,7 +264,7 @@ Verbose mode (`-v`) keeps detailed logs in stderr/logger output.
 ## Output Structure
 
 ```
-{data_dir}/incoming/{filter}/{YYYY-MM-DD}_{mailbox}_uid{N}/
+{data_dir}/incoming/{filter}/{YYYY-MM-DD}_{account}_uid{N}/
     {original_filename}.txt    # Attachments (preserved names)
     email_body.txt             # Email body (text)
     email_body.html            # Email body (raw HTML, for downstream parsing)
@@ -263,7 +276,7 @@ Verbose mode (`-v`) keeps detailed logs in stderr/logger output.
 ```json
 {
   "imap_uid": 2550,
-  "mailbox": "alex",
+  "account": "alex",
   "filter": "telemost",
   "subject": "Конспект встречи от 08.02.2026",
   "sender": "Хранитель встреч Телемоста <keeper@telemost.yandex.ru>",
@@ -278,12 +291,11 @@ No business logic fields — downstream skills (telemost, etc.) enrich meta.json
 
 ## Configuration
 
-Uses shared root `config.skill.json`, agent-local `yandex-data/config.agent.json`,
+Uses shared root `config.skill.json`, local `yandex-data/config.agent.json`,
 and managed auth accounts. Key fields:
 
 - `imap.server` / `imap.port` — IMAP connection settings
-- managed auth accounts are selected by account alias; legacy config
-  `accounts` / `mailboxes` entries are compatibility input only
+- managed auth accounts are selected by account alias
 - `mail.filters.telemost` — configured Telemost filter definition
 - `mail.filters.<name>.sender` — FROM filter criterion
 - `mail.filters.<name>.subject` — SUBJECT filter criterion
@@ -295,17 +307,17 @@ and managed auth accounts. Key fields:
 - `mail.output.max_inline_symbols` — spill dry-run result sets to a file when inline output would exceed this symbol threshold (default `2000`)
 - `mail.output.spill_dir` — relative output directory inside `{data_dir}` for spilled dry-run result files (default `latest-query`)
 - sender and subject filters are literal IMAP substring matches; no additional query language is implemented
-- `mail.state_file` — shared state file with per-filter mailbox cursors
+- `mail.state_file` — shared state file with per-filter account cursors
 - runtime data dir defaults to `./yandex-data`, or `--data-dir` when explicitly passed
 
 ## Managed Auth
 
-Use `scripts/oauth_setup.py` for OAuth intake and refresh, normally with
+Use `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py` for OAuth intake and refresh, normally with
 `--app mail-readonly` for fetching. Runtime selects eligible credentials through
 the decorated IMAP auth metadata and config-backed OAuth app catalog.
 
 ## Files
 
-- `scripts/fetch_emails.py` — Main fetcher (CLI + Python API)
-- `scripts/oauth_setup.py` — Shared bootstrap/account/token setup tool for all Yandex sub-skills (invoke by full path)
-- `scripts/fetch.sh` — Cron-safe shell wrapper with PID lock (passes `--num` and other args through)
+- `mail/scripts/fetch_emails.py` — Main fetcher (CLI + Python API)
+- `<full-path-to-yandex-office>/scripts/oauth_setup.py` — Shared bootstrap/account alias/managed auth setup tool for all Yandex sub-skills
+- `mail/scripts/fetch.sh` — Cron-safe shell wrapper with PID lock (passes `--num` and other args through)
