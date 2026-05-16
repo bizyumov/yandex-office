@@ -53,11 +53,13 @@ Local runtime override example `{data_dir}/config.agent.json`:
 Config management boundary:
 
 - `oauth_setup.py --accounts list` bootstraps `{data_dir}/config.agent.json`
-  and prints token-backed aliases only.
+  and prints managed account aliases only.
 - `oauth_setup.py --email <email>` or `oauth_setup.py --account <alias>`
-  initializes an account token file and prints compact account-info JSON.
-- `oauth_setup.py --account <alias> --app <app_id>` prints an OAuth link for an
-  `oauth_apps.catalog` profile such as `mail-readonly`.
+  initializes a local account handle and prints compact account JSON with
+  `alias`, optional `email`, and `apps`.
+- `oauth_setup.py --app <app_id>` prints an OAuth link for an
+  `oauth_apps.catalog` profile such as `mail-readonly`; `--account` is an
+  optional hint, not a URL-generation requirement.
 - `oauth_setup.py --from-env <ENV_VAR>` imports a token by verified identity.
 - Edit `{data_dir}/config.agent.json` for local runtime settings such as
   `mail.filters`. There is currently no dedicated CLI for those settings.

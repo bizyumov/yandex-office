@@ -2,12 +2,49 @@
 
 All public `yandex-office` skill releases use the `YYYY.MM.DD` version format.
 
-## 2026.05.07
+## 2026.05.16
 
-- Account-first auth uses token files as source of truth: `--accounts list` prints aliases only; `--account <alias>` creates/reads the alias and returns compact JSON with `alias`, optional `email`, and `tokens`; `--email <email> --account <alias>` records email on the supplied alias.
-- OAuth routing now separates account handles, approval links, and token import: `--app <app_id>` prints an OAuth URL without email; `--from-env <ENV_VAR>` imports by verified Yandex identity.
-- Mail adds selected-account `--account`, one-message `--uid`, dry-run `--extract-links`, and non-persistent ad-hoc sender/subject/date searches.
-- Restored planned Calendar, Contacts, Directory, and Tracker command/API shapes as explicitly unimplemented contracts with tracking issues.
+### Fixed
+
+- Completed PR 42 account/Mail/auth scope for #31, #40, and #48.
+- Made `oauth_setup.py --accounts list` the agent-facing account discovery
+  helper. It prints managed account aliases only, one per line.
+- Made `oauth_setup.py --account <alias>` the compact account capability
+  helper. It creates or updates the local account handle and prints JSON with
+  `alias`, optional `email`, and `apps`.
+- Added app coverage to account summaries. `apps` maps stored token `client_id`
+  values to configured app IDs such as `mail-readonly` or custom labels such as
+  `custom(scope1, scope2)`.
+- Fixed `oauth_setup.py --email <email> --account <alias>` so it records email
+  on the supplied alias instead of creating a suffixed alias.
+- Separated OAuth link generation from account metadata. `oauth_setup.py --app
+  <app_id>` prints an approval URL without requiring email.
+- Simplified managed token import. `oauth_setup.py --from-env <ENV_VAR>` stores
+  by verified Yandex identity; supplied `--email` / `--account` values are
+  diagnostics, not storage authority.
+- Added Mail `--account`, one-message `--uid`, dry-run `--extract-links`, and
+  non-persistent ad-hoc sender/subject/date searches.
+- Restored planned Calendar, Contacts, Directory, and Tracker command/API
+  shapes as explicitly unimplemented contracts with tracking issues.
+
+### Changed
+
+- Updated root and sub-skill agent-facing docs to use account-first routing,
+  app-aware account summaries, and full
+  `python3 <full-path-to-yandex-office>/...` command paths.
+- Reworked root `SKILL.md` into a first-read router with a top document map,
+  no Markdown tables, current OAuth app selector, and a link to the low-level
+  managed-auth extension reference.
+- Aligned `VERSION`, root skill metadata, README release summary, and touched
+  sub-skill metadata to `2026.05.16`.
+
+### Verification
+
+- `python3 capabilities/audit-method-auth.py`
+- focused account/Mail/docs/runtime pytest suite
+- full `pytest` with one existing `datetime.utcnow()` deprecation warning
+- `scripts/test_regression.sh`
+- `git diff --check`
 
 ## 2026.05.04
 

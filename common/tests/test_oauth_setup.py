@@ -286,7 +286,7 @@ def test_oauth_setup_bootstraps_without_creating_account_without_token(
     assert calls["email"] == "user@example.com"
     assert calls["cwd"] == workspace.resolve()
     assert calls["data_dir_override"] is None
-    assert captured.out == '{"alias":"alex","email":"user@example.com","tokens":0}\n'
+    assert captured.out == '{"alias":"alex","email":"user@example.com","apps":[]}\n'
     assert saved["path"] == data_dir / "auth" / "alex.token"
     assert saved["token_data"] == {"email": "user@example.com"}
 
@@ -304,11 +304,11 @@ def test_oauth_setup_bare_account_bootstraps_token_file(monkeypatch, tmp_path: P
     oauth_setup.main()
 
     captured = capsys.readouterr()
-    assert captured.out == '{"alias":"work","tokens":0}\n'
+    assert captured.out == '{"alias":"work","apps":[]}\n'
     assert json.loads((workspace / "yandex-data" / "auth" / "work.token").read_text()) == {}
 
     for argv, expected in (
-        (["--email", "work@example.com", "--account", "work"], '{"alias":"work","email":"work@example.com","tokens":0}\n'),
+        (["--email", "work@example.com", "--account", "work"], '{"alias":"work","email":"work@example.com","apps":[]}\n'),
         (["--accounts", "list"], "work\n"),
         (["--accounts", "delete", "--account", "work"], "deleted work\n"),
         (["--accounts", "reset"], "reset 0\n"),
@@ -316,6 +316,49 @@ def test_oauth_setup_bare_account_bootstraps_token_file(monkeypatch, tmp_path: P
         monkeypatch.setattr(sys, "argv", ["oauth_setup.py", *argv])
         oauth_setup.main()
         assert capsys.readouterr().out == expected
+
+
+def test_oauth_setup_account_info_lists_apps(monkeypatch, tmp_path: Path, capsys) -> None:
+    workspace = tmp_path / "workspace"
+    auth_dir = workspace / "yandex-data" / "auth"
+    auth_dir.mkdir(parents=True, exist_ok=True)
+    (workspace / "yandex-data" / "config.agent.json").write_text(
+        json.dumps(
+            {
+                "oauth_apps": {
+                    "catalog": {
+                        "custom-custom-client": {
+                            "client_id": "custom-client",
+                            "scopes": ["scope:b", "scope:a"],
+                        }
+                    }
+                }
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (auth_dir / "work.token").write_text(
+        json.dumps(
+            {
+                "email": "work@example.com",
+                "known-token": {"client_id": "660686ff45f947f2ac6e3f6495a9ec74"},
+                "custom-token": {"client_id": "custom-client"},
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.chdir(workspace)
+    monkeypatch.setattr(sys, "argv", ["oauth_setup.py", "--account", "work"])
+
+    oauth_setup.main()
+
+    assert capsys.readouterr().out == (
+        '{"alias":"work","email":"work@example.com",'
+        '"apps":["custom(scope:a, scope:b)","mail-readonly"]}\n'
+    )
 
 
 def test_oauth_setup_rejects_service_without_identity(monkeypatch, tmp_path: Path) -> None:

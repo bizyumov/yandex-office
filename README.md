@@ -4,9 +4,22 @@ A collection of [agentskills.io](https://agentskills.io/specification)-compliant
 
 Current release:
 
-- version: `2026.05.07`
+- version: `2026.05.16`
 - version file: `VERSION`
 - cumulative release notes: `CHANGELOG.md`
+
+2026.05.16 completes PR 42 account/Mail/auth work:
+
+- account discovery is via `scripts/oauth_setup.py --accounts list`, which
+  prints managed account aliases only
+- account capability info is explicit: `scripts/oauth_setup.py --account
+  <alias>` prints compact JSON with `alias`, optional `email`, and `apps`
+- OAuth links do not require email: `scripts/oauth_setup.py --app <app_id>`
+  prints the approval URL
+- token import is identity-driven: `scripts/oauth_setup.py --from-env <ENV_VAR>`
+  stores by verified Yandex identity
+- Mail supports `--account`, one-message `--uid`, dry-run `--extract-links`,
+  and non-persistent ad-hoc sender/subject/date searches
 
 ## Versioning
 
@@ -125,18 +138,21 @@ Mail filter notes:
 - sender and subject filters are literal IMAP substring matches; no extra query language is implemented
 - large dry-run result sets spill into `{data_dir}/latest-query/`; the next spilled run replaces the previous artifact, so copy it elsewhere if you need to keep it
 
-First account discovery runs `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --accounts list` from CWD. This bootstraps `./yandex-data` and prints token-backed aliases only.
+First account discovery runs `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --accounts list` from CWD. This bootstraps `./yandex-data` and prints managed account aliases only.
 
 ## Auth Task Routing
 
 - Discover aliases: `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --accounts list` prints aliases only.
-- Create/read a local handle: `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account alex` prints `{"alias":"alex","tokens":0}` when no email is known.
-- Record email on a handle: `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email user@yandex.ru --account alex` prints compact JSON with `alias`, `email`, and `tokens`.
-- Print an OAuth approval URL: `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --app mail-readonly`; include `--account alex` only when that alias is already known.
+- Create/update a local handle: `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account alex` prints `{"alias":"alex","apps":[]}` when no email or app-backed token is known.
+- Record email on a handle: `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email user@yandex.ru --account alex` prints `{"alias":"alex","email":"user@yandex.ru","apps":[]}` until a token is imported.
+- Check account app coverage: `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account alex` prints configured app IDs such as `mail-readonly` or custom app labels such as `custom(scope1, scope2)`.
+- Print an OAuth approval URL: `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --app mail-readonly`; include `--account alex` only as an optional hint when that alias is already known.
 - Import a supplied token: `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --from-env YANDEX_ACCESS_TOKEN`.
 
 Do not ask for email to print an OAuth URL. `--app` is an `oauth_apps.catalog`
 profile; token import verifies identity and stores by verified Yandex identity.
+For whole-package onboarding use `--app office-core`; `--email` and `--account`
+are optional hints and may not match the verified token identity.
 
 ### Data Directory
 
@@ -299,7 +315,7 @@ If you want write-capable variants later, keep them as separate app scenarios in
 
 ### Managed Auth
 
-Use `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --app <app_id>` to print an approval URL; add `--account <alias>` only when that alias is already known. After authorization, the script verifies the pasted token, stores it under the verified Yandex identity, and adds a local app catalog override only for unknown `client_id` values. Runtime clients select credentials through decorator-declared auth metadata and the config-backed app catalog.
+Use `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --app <app_id>` to print an approval URL; add `--account <alias>` only as an optional hint when that alias is already known. After authorization, the script verifies the pasted token, stores it under the verified Yandex identity, and adds a local app catalog override only for unknown `client_id` values. Runtime clients select credentials through decorator-declared auth metadata and the config-backed app catalog.
 
 Current-used API methods declare auth directly in code through
 `@yandex_api_method(method_id, public=True | one_of=[...] | all_of=[...])`.

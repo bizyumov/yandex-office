@@ -23,6 +23,7 @@ from common.auth import load_token_file, save_token_file, token_refs
 from common.config import bootstrap_runtime_context, choose_account_alias, find_token_account_by_email
 from common.oauth_apps import (
     list_service_profiles,
+    oauth_app_for_client_id,
     plan_oauth_app_setup,
     plan_oauth_setup,
 )
@@ -42,13 +43,37 @@ def _print_warnings(warnings: list[str]) -> None:
             print(f"  - {warning}", file=sys.stderr)
 
 
-def _print_account_info(alias: str, token_data: dict[str, object]) -> None:
+def _format_custom_app(scopes: list[str]) -> str:
+    """Return the compact label for a non-shipped OAuth app."""
+    return f"custom({', '.join(scopes)})" if scopes else "custom()"
+
+
+def _account_apps(config: dict[str, object], token_data: dict[str, object]) -> list[str]:
+    """Return configured app labels present in an account token file."""
+    apps: set[str] = set()
+    for ref in token_refs(token_data):
+        app = oauth_app_for_client_id(config, ref.client_id)
+        if app is None:
+            apps.add("custom()")
+        elif app.app_id.startswith("custom-") or not app.services:
+            apps.add(_format_custom_app(app.scopes))
+        else:
+            apps.add(app.app_id)
+    return sorted(apps)
+
+
+def _print_account_info(
+    alias: str,
+    token_data: dict[str, object],
+    *,
+    config: dict[str, object],
+) -> None:
     """Print compact account summary JSON."""
     info: dict[str, object] = {"alias": alias}
     email = str(token_data.get("email") or "").strip()
     if email:
         info["email"] = email
-    info["tokens"] = len(token_refs(token_data))
+    info["apps"] = _account_apps(config, token_data)
     print(json.dumps(info, ensure_ascii=False, separators=(",", ":")))
 
 
@@ -185,7 +210,7 @@ def main() -> None:
             token_data["email"] = normalized_email
         save_token_file(token_path, token_data)
 
-        _print_account_info(resolved_account, token_data)
+        _print_account_info(resolved_account, token_data, config=config)
         return
 
     has_oauth_selector = (
