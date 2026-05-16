@@ -6,6 +6,10 @@ A CardDAV-based Contacts / Контакты skill for managing Yandex Contacts (
 
 **Single Source of Truth:** Yandex CardDAV server is the primary source. Local cache is maintained for performance and offline access, but all writes go through to Yandex.
 
+**Implementation status:** unimplemented design contract. Do not run until
+the Contacts CLI scripts exist. Tracking issue:
+GitHub #46.
+
 ---
 
 ## API Discovery
@@ -13,23 +17,18 @@ A CardDAV-based Contacts / Контакты skill for managing Yandex Contacts (
 ### Endpoint
 - **CardDAV URL**: `https://carddav.yandex.ru`
 - **Protocol**: CardDAV (RFC 6352)
-- **Authentication**: OAuth 2.0 token with `addressbook:all` scope
+- **Authentication**: managed OAuth token linked to an app covering `addressbook:all`
 
 ### Authentication
-```json
-{
-  "email": "user@yandex.ru",
-  "token.contacts": "y0_..."
-}
-```
-
-Token stored per-account at: `{data_dir}/auth/{account}.token`
+Use a Contacts OAuth app token authorized through
+`python3 <full-path-to-yandex-office>/scripts/oauth_setup.py`, normally with
+`--app contacts-default`. Runtime uses managed auth for Contacts requests.
 
 ### Account Structure
-- Each user has a principal: `/principals/users/{email}/`
+- Each selected Yandex account identity has a principal: `/principals/users/{email}/`
 - Addressbook home: `/addressbook/{email}/`
 - Default addressbooks:
-  - **Personal** — `/addressbook/{email}/1/` (user-created contacts)
+  - **Personal** — `/addressbook/{email}/1/` (personal contacts)
   - **Shared** — `/addressbook/{email}/2/` (organization/shared contacts)
 - Contact files: `{uuid}.vcf` (vCard 3.0 format)
 
@@ -81,11 +80,11 @@ Token stored per-account at: `{data_dir}/auth/{account}.token`
 }
 ```
 
-**CLI Interface:**
+**Planned CLI Interface:**
 ```bash
-python3 contacts/scripts/search.py --account mary --query "Иван"
-python3 contacts/scripts/search.py --account mary --query "Ivanov" --json
-python3 contacts/scripts/search.py --account mary --domain "transneft.ru"
+python3 <full-path-to-yandex-office>/contacts/scripts/search.py --account mary --query "Иван"
+python3 <full-path-to-yandex-office>/contacts/scripts/search.py --account mary --query "Ivanov" --json
+python3 <full-path-to-yandex-office>/contacts/scripts/search.py --account mary --domain "transneft.ru"
 ```
 
 ### 2. Add New Contact
@@ -113,9 +112,9 @@ python3 contacts/scripts/search.py --account mary --domain "transneft.ru"
 - Match by similar name + organization
 - Prompt user for confirmation on potential duplicates
 
-**CLI Interface:**
+**Planned CLI Interface:**
 ```bash
-python3 contacts/scripts/add.py \
+python3 <full-path-to-yandex-office>/contacts/scripts/add.py \
   --account mary \
   --first-name "Иван" \
   --last-name "Иванов" \
@@ -124,7 +123,7 @@ python3 contacts/scripts/add.py \
   --org "Транснефть"
 
 # Batch import
-python3 contacts/scripts/add.py --account mary --from-json contacts.json
+python3 <full-path-to-yandex-office>/contacts/scripts/add.py --account mary --from-json contacts.json
 ```
 
 ### 3. Update Existing Contact
@@ -141,16 +140,16 @@ python3 contacts/scripts/add.py --account mary --from-json contacts.json
 - Preserve existing data not being modified
 - Update vCard and sync to server
 
-**CLI Interface:**
+**Planned CLI Interface:**
 ```bash
-python3 contacts/scripts/update.py \
+python3 <full-path-to-yandex-office>/contacts/scripts/update.py \
   --account mary \
   --search "Иванов" \
   --phone "+79161234567" \
   --phone-type "mobile"
 
 # Update by UID
-python3 contacts/scripts/update.py \
+python3 <full-path-to-yandex-office>/contacts/scripts/update.py \
   --account mary \
   --uid "uuid-here" \
   --org "Новая компания"
@@ -168,10 +167,10 @@ python3 contacts/scripts/update.py \
 - Require --force for non-interactive deletion
 - Soft delete option (move to archive before permanent delete)
 
-**CLI Interface:**
+**Planned CLI Interface:**
 ```bash
-python3 contacts/scripts/delete.py --account mary --search "Иванов"
-python3 contacts/scripts/delete.py --account mary --uid "uuid" --force
+python3 <full-path-to-yandex-office>/contacts/scripts/delete.py --account mary --search "Иванов"
+python3 <full-path-to-yandex-office>/contacts/scripts/delete.py --account mary --uid "uuid" --force
 ```
 
 ### 5. Sync Contacts from Email History
@@ -194,16 +193,16 @@ python3 contacts/scripts/delete.py --account mary --uid "uuid" --force
 - Email prefix matching known pattern → derive name
 - Common email formats: firstname.lastname@domain
 
-**CLI Interface:**
+**Planned CLI Interface:**
 ```bash
-python3 contacts/scripts/sync_from_email.py \
+python3 <full-path-to-yandex-office>/contacts/scripts/sync_from_email.py \
   --account mary \
   --domain "transneft.ru" \
   --require-full-name \
   --dry-run
 
 # Full sync
-python3 contacts/scripts/sync_from_email.py --account mary --all
+python3 <full-path-to-yandex-office>/contacts/scripts/sync_from_email.py --account mary --all
 ```
 
 ### 6. List All Contacts
@@ -219,11 +218,11 @@ python3 contacts/scripts/sync_from_email.py --account mary --all
 - Export to JSON/CSV/vCard
 - Paginated output for large contact lists
 
-**CLI Interface:**
+**Planned CLI Interface:**
 ```bash
-python3 contacts/scripts/list.py --account mary
-python3 contacts/scripts/list.py --account mary --source Personal --json
-python3 contacts/scripts/list.py --account mary --export contacts_backup.json
+python3 <full-path-to-yandex-office>/contacts/scripts/list.py --account mary
+python3 <full-path-to-yandex-office>/contacts/scripts/list.py --account mary --source Personal --json
+python3 <full-path-to-yandex-office>/contacts/scripts/list.py --account mary --export contacts_backup.json
 ```
 
 ---
@@ -247,7 +246,7 @@ def suggest_attendees(account: str, partial_name: str, limit: int = 5) -> List[C
 
 **Usage in Calendar:**
 ```bash
-python3 calendar/scripts/create_event.py \
+python3 <full-path-to-yandex-office>/calendar/scripts/create_event.py \
   --account mary \
   --contact "Иванов" \
   --start "2026-03-04T11:00:00" \
@@ -273,21 +272,13 @@ def get_contact_by_email(account: str, email: str) -> Optional[Contact]:
 ```
 contacts/
 ├── contacts.md              # This file
-├── scripts/
-│   ├── search.py
-│   ├── add.py
-│   ├── update.py
-│   ├── delete.py
-│   ├── list.py
-│   └── sync_from_email.py
-├── lib/
-│   ├── __init__.py
-│   ├── client.py            # CardDAV client wrapper
-│   ├── vcard.py             # vCard parsing/generation
-│   ├── search.py            # Fuzzy search logic
-│   ├── cache.py             # Local cache management
-│   └── sync.py              # Email sync logic
-└── tests/
+└── scripts/                 # Planned; not present yet
+    ├── search.py
+    ├── add.py
+    ├── update.py
+    ├── delete.py
+    ├── sync_from_email.py
+    └── list.py
 ```
 
 ### Dependencies
@@ -299,7 +290,8 @@ python-Levenshtein>=0.21.0  # Speeds up fuzzy matching
 ```
 
 ### Configuration Extension
-Add shared defaults to root `config.json` and contact-specific overrides to `yandex-data/config.agent.json`:
+Add shared defaults to root `config.skill.json` and local Contacts settings to
+`yandex-data/config.agent.json`:
 ```json
 {
   "contacts": {
@@ -314,7 +306,6 @@ Add shared defaults to root `config.json` and contact-specific overrides to `yan
 ### State Files
 ```
 {data_dir}/
-├── auth/{account}.token     # Existing OAuth tokens
 └── contacts/
     ├── cache.json           # Local contact cache
     ├── cache_meta.json      # Cache timestamps, ETags
@@ -332,7 +323,7 @@ Add shared defaults to root `config.json` and contact-specific overrides to `yan
 ## Error Handling
 
 ### Common Error Cases
-1. **Token expired** → Prompt for re-auth via existing OAuth flow
+1. **Managed auth expired** → Refresh through `yandex-office` under user authorization via the existing OAuth flow
 2. **Contact not found** → Suggest similar names, offer to create
 3. **Duplicate detected** → Show existing contact, ask for confirmation
 4. **CardDAV server error** → Retry with exponential backoff, fallback to cache
@@ -354,7 +345,7 @@ Add shared defaults to root `config.json` and contact-specific overrides to `yan
 
 ## Security Considerations
 
-1. **Token storage**: Reuse existing `{data_dir}/auth/{account}.token` pattern
+1. **Managed auth**: Use `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py` for OAuth intake and refresh
 2. **No token logging**: Never log OAuth tokens
 3. **Contact privacy**: Respect Yandex ACLs (Personal vs Shared addressbooks)
 4. **Cache encryption**: Consider encrypting local cache at rest

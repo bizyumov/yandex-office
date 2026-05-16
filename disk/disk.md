@@ -5,7 +5,7 @@ license: MIT
 compatibility: Requires Python 3.10+, requests, network access to Yandex Disk API
 metadata:
   author: bizyumov
-  version: "2026.04.10"
+  version: "2026.05.16"
 ---
 
 # Yandex Disk / Диск
@@ -15,28 +15,28 @@ Download public files from Yandex Disk, upload files to Disk, and manage share l
 ## Quick Start
 
 ```bash
-python3 scripts/download.py "https://yadi.sk/d/x4dG3ImjPMSvzg" --output ./downloads/
+python3 <full-path-to-yandex-office>/disk/scripts/download.py "https://yadi.sk/d/x4dG3ImjPMSvzg" --output ./downloads/
 
 # Publish a Disk file for public read access
-python3 scripts/share.py publish --account alex --path "disk:/Docs/report.pdf" --access all --rights read
+python3 <full-path-to-yandex-office>/disk/scripts/share.py publish --account alex --path "disk:/Docs/report.pdf" --access all --rights read
 
 # Upload a local file and auto-create missing parent folders
-python3 scripts/upload.py --account alex --local ./photo.jpg --remote "disk:/Проекты/photo.jpg"
+python3 <full-path-to-yandex-office>/disk/scripts/upload.py --account alex --local ./photo.jpg --remote "disk:/Проекты/photo.jpg"
 
 # Upload and publish in one step
-python3 scripts/upload.py --account alex --local ./photo.jpg --remote "disk:/Проекты/photo.jpg" --publish --access all --rights read
+python3 <full-path-to-yandex-office>/disk/scripts/upload.py --account alex --local ./photo.jpg --remote "disk:/Проекты/photo.jpg" --publish --access all --rights read
 
 # Inspect current share settings
-python3 scripts/share.py info --account alex --path "disk:/Docs/report.pdf"
+python3 <full-path-to-yandex-office>/disk/scripts/share.py info --account alex --path "disk:/Docs/report.pdf"
 
 # Revoke access
-python3 scripts/share.py unpublish --account alex --path "disk:/Docs/report.pdf"
+python3 <full-path-to-yandex-office>/disk/scripts/share.py unpublish --account alex --path "disk:/Docs/report.pdf"
 ```
 
 ## Python API
 
 ```python
-from scripts.download import YandexDisk
+from disk.scripts.download import YandexDisk
 
 disk = YandexDisk()
 meta = disk.get_public_meta("https://yadi.sk/d/x4dG3ImjPMSvzg")
@@ -64,11 +64,12 @@ print(upload["public_url"])
 
 For public files: no token required.
 
-For private files, uploads, higher rate limits, or any share-management operation, use a Yandex Disk OAuth token:
+For private files, uploads, or any share-management operation, use managed auth
+authorized through `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py`. Raw-token environment fallbacks are not
+supported runtime auth paths.
 
-```bash
-export YANDEX_DISK_TOKEN="your_oauth_token"
-```
+If multiple managed accounts exist, pass `--account` so runtime selects the
+intended account.
 
 Download-only scopes:
 - `cloud_api:disk.read`
@@ -78,47 +79,49 @@ Upload/share-management scopes:
 - `cloud_api:disk.write`
 - `cloud_api:disk.app_folder`
 
-From the agent workspace CWD, using the full path to the shared Yandex skill, generate a download token:
+Using the full path to the shared Yandex skill, authorize a download-capable app token:
 
 ```bash
 python3 <full-path-to-yandex-office>/scripts/oauth_setup.py \
   --email user@yandex.ru \
   --account alex \
-  --service disk
+  --app disk-read
 ```
 
-Generate an upload/share-management token:
+Authorize an upload/share-management app token:
 
 ```bash
 python3 <full-path-to-yandex-office>/scripts/oauth_setup.py \
-  --client-id DISK_CLIENT_ID \
   --email user@yandex.ru \
   --account alex \
-  --service disk \
-  --scope cloud_api:disk.write \
-  --scope cloud_api:disk.app_folder
+  --app disk-full
 ```
 
-Recommended: use the default Disk app from root `config.json` (`oauth_apps.service_defaults.disk`, currently `disk-read`) for the read-only approval link. Use `--app disk-full` for the write-capable preconfigured app, and use explicit `--client-id` plus `--scope` only for advanced/operator flows. If the app's scopes change later, reissue tokens.
+Recommended: use `--app disk-read` for read/download. Use `--app disk-full`
+only when the user explicitly approves upload/share-management permissions. If
+the app's scopes change later, refresh authorization through `yandex-office`.
 
 ## Important: Telemost Recordings
 
-Telemost recording links may look public (`yadi.sk/d/...`) but still require OAuth authentication.
+Telemost recording links may look public (`yadi.sk/d/...`) but can still be
+organization-restricted by Yandex.
 
 Behavior to expect:
 
-- Without token: API can return `404` for existing Telemost recordings.
-- With token: API returns a working download URL.
+- Public-link Disk API calls are tokenless and can return `404` for
+  organization-restricted recordings.
 - `HEAD` requests are not a reliable availability check.
 
 CLI notes:
 
-- `--force-auth` requires a token and fails fast if no token is configured.
-- Use `--verbose` to see endpoint calls and auth mode (`auth=yes/no`).
+- Use `--account` for non-public Disk operations. If omitted, the central auth
+  dispatcher may infer the account only when exactly one account alias is
+  available.
+- Use `--verbose` to see endpoint calls.
 
 ## Share Management
 
-`scripts/share.py` exposes four commands:
+`disk/scripts/share.py` exposes four commands:
 
 - `publish`
 - `update`
@@ -130,7 +133,7 @@ CLI notes:
 | Option | Meaning |
 |---|---|
 | `--access` | `all` creates a public link; `employees` creates an organization-only link when used with the documented publish payload |
-| `--org-id` | Organization ID for `--access employees`; optional if `org_id` is already stored in the token file |
+| `--org-id` | Organization ID for `--access employees`; optional only when runtime already knows the organization for the selected account |
 | `--rights` | `read`, `write`, `read_without_download`, `read_with_password`, `read_with_password_without_download` |
 | `--password` | Required for password-protected rights |
 | `--available-until` | TTL in seconds; future Unix timestamps are also accepted for compatibility. Omit or pass `null` for infinite sharing |
@@ -142,29 +145,26 @@ CLI notes:
 
 Reliable method:
 
-1. Use an admin account token with `directory:read_organization`.
-2. Call `GET https://api360.yandex.net/directory/v1/org`.
+1. Use a selected account alias whose authorized app covers `directory:read_organization`.
+2. Query organization data through `yandex-office` managed auth.
 3. Read `organizations[].id` from the response.
-4. Store that value as `org_id` in the account token file for reuse.
+4. Pass that value with `--org-id` for organization-restricted publishing.
 
-Example:
-
-```bash
-curl "https://api360.yandex.net/directory/v1/org" \
-  -H "Authorization: OAuth $TOKEN_ORG"
-```
+Do not extract bearer tokens or call this API with raw `Authorization` headers
+from agent code; token storage and use stay inside `yandex-office`.
 
 Notes:
 
-- This works only if the token has the right scope and the user is allowed to view organization data. In practice, that means an admin path.
-- Non-admin users may get `403` and should not be expected to auto-discover `org_id`.
-- If `org_id` is already stored in `{data_dir}/auth/<account>.token`, Disk publishing does not need `--org-id`.
+- This works only if the selected account alias has managed auth linked to an app covering the required scope and that Yandex account can view organization data. In practice, that means an admin path.
+- Non-admin Yandex accounts may get `403` and should not be expected to auto-discover `org_id`.
+- If runtime already knows `org_id` for the selected account, Disk publishing
+  does not need `--org-id`.
 
 ### Associate Org ID With Domain Name
 
 Operationally, the safe association rule is:
 
-1. discover `org_id` via `GET /directory/v1/org` using an admin token;
+1. discover `org_id` via `GET /directory/v1/org` using managed auth for an admin-capable account alias;
 2. fetch organization users via `GET /directory/v1/org/{orgId}/users`;
 3. derive the organization's corporate email domains from user emails and cache the mapping.
 
@@ -179,7 +179,7 @@ This is a practical deployment mapping, not a claim that the `Organizations` res
 Public share:
 
 ```bash
-python3 scripts/share.py publish \
+python3 <full-path-to-yandex-office>/disk/scripts/share.py publish \
   --account alex \
   --path "disk:/Docs/report.pdf" \
   --access all \
@@ -189,7 +189,7 @@ python3 scripts/share.py publish \
 Organization-only share:
 
 ```bash
-python3 scripts/share.py publish \
+python3 <full-path-to-yandex-office>/disk/scripts/share.py publish \
   --account mary \
   --path "disk:/Docs/report.pdf" \
   --access employees \
@@ -203,7 +203,7 @@ Live-verified on March 11, 2026:
 Password-protected share:
 
 ```bash
-python3 scripts/share.py publish \
+python3 <full-path-to-yandex-office>/disk/scripts/share.py publish \
   --account alex \
   --path "disk:/Docs/report.pdf" \
   --access all \
@@ -214,7 +214,7 @@ python3 scripts/share.py publish \
 Expiring public share:
 
 ```bash
-python3 scripts/share.py update \
+python3 <full-path-to-yandex-office>/disk/scripts/share.py update \
   --account alex \
   --path "disk:/Docs/report.pdf" \
   --access all \
@@ -226,13 +226,13 @@ python3 scripts/share.py update \
 
 ## Upload Workflow
 
-`scripts/upload.py` uploads one local file to a Disk path.
+`disk/scripts/upload.py` uploads one local file to a Disk path.
 
 Behavior:
 
 - parent directories are created automatically by default
 - overwrite is disabled by default
-- `--publish` reuses the same share options as `scripts/share.py`
+- `--publish` reuses the same share options as `disk/scripts/share.py`
 - Unicode remote paths such as `disk:/Проекты/photo.jpg` work directly; do not pre-encode them
 
 ### Upload-only examples
@@ -240,7 +240,7 @@ Behavior:
 Upload into a new nested folder:
 
 ```bash
-python3 scripts/upload.py \
+python3 <full-path-to-yandex-office>/disk/scripts/upload.py \
   --account alex \
   --local ./build/report.pdf \
   --remote "disk:/Projects/2026/report.pdf"
@@ -249,7 +249,7 @@ python3 scripts/upload.py \
 Upload with overwrite:
 
 ```bash
-python3 scripts/upload.py \
+python3 <full-path-to-yandex-office>/disk/scripts/upload.py \
   --account alex \
   --local ./build/report.pdf \
   --remote "disk:/Projects/2026/report.pdf" \
@@ -259,7 +259,7 @@ python3 scripts/upload.py \
 Disable parent auto-creation:
 
 ```bash
-python3 scripts/upload.py \
+python3 <full-path-to-yandex-office>/disk/scripts/upload.py \
   --account alex \
   --local ./build/report.pdf \
   --remote "disk:/Projects/2026/report.pdf" \
@@ -271,7 +271,7 @@ python3 scripts/upload.py \
 Upload and immediately publish a public read link:
 
 ```bash
-python3 scripts/upload.py \
+python3 <full-path-to-yandex-office>/disk/scripts/upload.py \
   --account alex \
   --local ./photo.jpg \
   --remote "disk:/Проекты/photo.jpg" \
@@ -283,7 +283,7 @@ python3 scripts/upload.py \
 Upload and attempt an org-only link:
 
 ```bash
-python3 scripts/upload.py \
+python3 <full-path-to-yandex-office>/disk/scripts/upload.py \
   --account mary \
   --local ./report.pdf \
   --remote "disk:/Проекты/Какой-то проект на русском/report.pdf" \
@@ -299,7 +299,7 @@ This flow is live-verified with the documented request shape:
 Inspect current share settings after upload:
 
 ```bash
-python3 scripts/share.py info --account alex --path "disk:/Проекты/photo.jpg"
+python3 <full-path-to-yandex-office>/disk/scripts/share.py info --account alex --path "disk:/Проекты/photo.jpg"
 ```
 
 ## Live Verification Matrix
@@ -317,11 +317,11 @@ Observed verification rule:
 
 - organization-only links still receive a `public_url`
 - anonymous `GET /v1/disk/public/resources*` returns `404`
-- authenticated access for organization-only resources should use `/v1/disk/resources?path=disk:/...` or other owner/org-authenticated resource APIs when the path is known
+- authenticated access for organization-only resources should use `/v1/disk/resources?path=disk:/...` or other selected-account/org-authorized resource APIs when the path is known
 
 Operational rule for link access:
 
-- if an OAuth token is available, the disk client uses it by default even for public-looking links
+- if managed auth is available for the selected account alias, the disk client uses it by default even for public-looking links
 - anonymous access is opt-in only, for explicit anonymous-access checks (`--anonymous`) or test scenarios
 - `/v1/disk/public/resources*` should be treated as public-share infrastructure, not as the canonical retrieval API for organization-only shares
 

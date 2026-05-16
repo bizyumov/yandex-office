@@ -7,7 +7,7 @@ import argparse
 import json
 import logging
 import sys
-from download import DISK_WRITE_SCOPES, YandexDisk
+from download import YandexDisk
 
 
 def _csv_list(value: str | None) -> list[str] | None:
@@ -34,8 +34,6 @@ def _build_share_kwargs(args: argparse.Namespace) -> dict:
 
 def add_common_auth(subparser: argparse.ArgumentParser) -> None:
     subparser.add_argument("--account", help="Account name for token resolution")
-    subparser.add_argument("--token-file", help="Path to token JSON file ({account}.token)")
-    subparser.add_argument("--auth-dir", default=None, help="Auth directory (default: from config)")
 
 
 def add_path_arg(
@@ -112,11 +110,12 @@ def main() -> int:
     )
 
     disk = YandexDisk(
-        token_file=args.token_file,
         account=args.account,
-        auth_dir=args.auth_dir,
-        required_scopes=DISK_WRITE_SCOPES,
     )
+    try:
+        disk.digest_legacy_disk_token_env()
+    except Exception:
+        pass
 
     try:
         if args.command == "publish":

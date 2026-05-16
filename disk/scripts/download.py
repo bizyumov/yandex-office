@@ -13,14 +13,12 @@ Usage:
     python download.py "https://disk.yandex.ru/d/abc123" --output ./downloads/
 """
 
-import os
 import sys
 import json
 import argparse
 import logging
 import time
 from pathlib import Path
-from urllib.parse import urlparse
 
 try:
     import requests
@@ -37,7 +35,12 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from common.auth import default_scopes, load_token_file, resolve_token
+from common.api import (
+    YandexApiContext,
+    digest_legacy_disk_token_env as digest_legacy_disk_token_env_ctx,
+    request_json,
+    yandex_api_method,
+)
 from common.config import load_runtime_context
 
 SHARE_RIGHTS = {
@@ -52,8 +55,6 @@ PASSWORD_RIGHTS = {
     "read_with_password_without_download",
 }
 ACCESS_MODES = {"employees", "all"}
-DISK_READ_SCOPES = default_scopes("disk", "read")
-DISK_WRITE_SCOPES = default_scopes("disk", "write")
 
 
 class YandexDisk:
@@ -61,127 +62,41 @@ class YandexDisk:
 
     def __init__(
         self,
-        token: str | None = None,
-        token_file: str | None = None,
         account: str | None = None,
-        auth_dir: str | None = None,
         data_dir: str | None = None,
-        required_scopes: list[str] | None = None,
     ):
-        """Initialize with token resolution chain.
+        """Initialize Disk client state without resolving tokens.
 
-        Priority: token > token_file > account > YANDEX_DISK_TOKEN env > None (public only)
-
-        If auth_dir is None, resolves from shared config's data_dir.
+        Token selection is owned by the method decorators. Public methods run
+        tokenless; non-public methods require an account unless the central
+        dispatcher can infer the only token file.
         """
-        data_dir_override = data_dir
-        if data_dir_override is None and auth_dir is not None:
-            data_dir_override = str(Path(auth_dir).resolve().parent)
         self.runtime = load_runtime_context(
             __file__,
-            data_dir_override=data_dir_override,
-            require_external_data_dir=data_dir_override is not None,
+            data_dir_override=data_dir,
+            require_external_data_dir=data_dir is not None,
         )
         self._config = self.runtime.config
         self._data_dir = self.runtime.data_dir
         self.api_base = self._config.get("urls", {}).get("disk_api", API_BASE)
         self.account = account
-        self._required_scopes = list(required_scopes or DISK_READ_SCOPES)
-        self._explicit_token = token is not None
-        self._token_file_path = Path(token_file).resolve() if token_file else None
-
-        resolved_auth_dir = Path(auth_dir).resolve() if auth_dir else None
-        self._auth_dir = resolved_auth_dir
-
-        self.token = token
-        if not self.token and token_file:
-            self.token = self._read_token(Path(token_file))
-        if not self.token and account:
-            if resolved_auth_dir is None:
-                try:
-                    self.token = self._resolve_account_token(self._required_scopes)
-                except Exception as exc:
-                    logger.debug(str(exc))
-            else:
-                self.token = self._read_token(resolved_auth_dir / f"{account}.token")
-        if not self.token:
-            self.token = os.getenv("YANDEX_DISK_TOKEN")
         self.session = requests.Session()
-        if self.token:
-            self._set_session_token(self.token)
 
-    def _link_access_session(self, anonymous: bool = False) -> requests.Session:
-        """Return the session used for public-link endpoints.
-
-        By default we use the authenticated session when a token is available,
-        even for public-looking links. Anonymous access is opt-in and should be
-        used only to verify anonymous reachability or when explicitly requested.
+    def _api_context(self) -> YandexApiContext:
+        """Build the shared API context used by decorated Disk methods.
         """
-        if not anonymous:
-            return self.session
-        return requests.Session()
 
-    def _request_json(self, method: str, endpoint: str, **kwargs) -> dict:
-        resp = self.session.request(method, endpoint, **kwargs)
-        try:
-            resp.raise_for_status()
-        except requests.HTTPError as err:
-            status = err.response.status_code if err.response is not None else None
-            message = err.response.text if err.response is not None else str(err)
-            if status == 401:
-                raise RuntimeError("Disk authentication failed: invalid or expired token") from err
-            if status == 403:
-                raise RuntimeError("Disk access denied: token lacks required permissions") from err
-            if status == 404:
-                raise RuntimeError(f"Disk resource not found: {message}") from err
-            raise RuntimeError(f"Disk API error {status}: {message}") from err
-        if resp.content:
-            return resp.json()
-        return {}
-
-    def _set_session_token(self, token: str) -> None:
-        self.token = token
-        self.session.headers["Authorization"] = f"OAuth {token}"
-
-    def _resolve_account_token(self, required_scopes: list[str]) -> str:
-        if not self.account:
-            raise RuntimeError("Disk account is required for token resolution")
-        token_info = resolve_token(
+        return YandexApiContext(
             account=self.account,
-            skill="disk",
             data_dir=self._data_dir,
             config=self._config,
-            required_scopes=required_scopes,
+            session=self.session,
         )
-        self._set_session_token(token_info.token)
-        return token_info.token
 
-    def _ensure_disk_token(
-        self,
-        *,
-        required_scopes: list[str],
-        operation: str,
-    ) -> None:
-        if self.token and (
-            self._explicit_token
-            or self._token_file_path
-            or self._auth_dir is not None
-        ):
-            return
-        if self.account and self._auth_dir is None:
-            try:
-                self._resolve_account_token(required_scopes)
-                return
-            except RuntimeError as exc:
-                raise RuntimeError(
-                    f"Disk authentication failed for {operation}: {exc}"
-                ) from exc
-        if self.token:
-            return
-        raise RuntimeError(
-            f"Disk authentication is required for {operation}. "
-            "Set YANDEX_DISK_TOKEN or provide --account/--token-file."
-        )
+    def digest_legacy_disk_token_env(self) -> None:
+        """Import legacy Disk env auth into managed auth when present."""
+
+        digest_legacy_disk_token_env_ctx(self._api_context())
 
     @staticmethod
     def _parse_id_list(values: list[int | str] | None) -> list[str]:
@@ -199,20 +114,7 @@ class YandexDisk:
             return str(org_id).strip() if org_id is not None and str(org_id).strip() else None
         if org_id is not None and str(org_id).strip():
             return str(org_id).strip()
-        token_path = self._token_file_path
-        if token_path is None and self._auth_dir is not None and self.account:
-            token_path = self._auth_dir / f"{self.account}.token"
-        if token_path is None and self.account:
-            token_path = self._data_dir / "auth" / f"{self.account}.token"
-        if token_path is None:
-            raise ValueError("employees access requires org_id or token metadata")
-        if not token_path.exists():
-            raise ValueError("employees access requires org_id")
-        token_data = load_token_file(token_path)
-        token_org_id = token_data.get("org_id")
-        if token_org_id is None or not str(token_org_id).strip():
-            raise ValueError("employees access requires org_id")
-        return str(token_org_id).strip()
+        raise ValueError("employees access requires org_id")
 
     @staticmethod
     def _to_int_if_possible(value: str | None) -> int | str | None:
@@ -334,13 +236,29 @@ class YandexDisk:
 
     def get_resource_meta(self, path: str) -> dict:
         """Get authenticated metadata for a Disk resource path."""
-        self._ensure_disk_token(
-            required_scopes=DISK_WRITE_SCOPES,
-            operation="resource metadata",
-        )
         endpoint = f"{self.api_base}/v1/disk/resources"
-        logger.debug(f"GET {endpoint} auth={'yes' if self.token else 'no'}")
-        return self._request_json("GET", endpoint, params={"path": path})
+        logger.debug(f"GET {endpoint} auth=method-dispatch")
+        if self._is_app_path(path):
+            return self._api_get_resource_app_folder(endpoint, path)
+        return self._api_get_resource_disk(endpoint, path)
+
+    @staticmethod
+    def _is_app_path(path: str) -> bool:
+        """Return True when a Disk path targets the app-folder namespace."""
+
+        return str(path).startswith("app:")
+
+    @yandex_api_method("disk.resources.get.disk", one_of=["cloud_api:disk.read"])
+    def _api_get_resource_disk(self, ctx: YandexApiContext, endpoint: str, path: str) -> dict:
+        """GET /v1/disk/resources for disk:/ paths."""
+
+        return request_json(ctx, "GET", endpoint, params={"path": path})
+
+    @yandex_api_method("disk.resources.get.app_folder", one_of=["cloud_api:disk.app_folder"])
+    def _api_get_resource_app_folder(self, ctx: YandexApiContext, endpoint: str, path: str) -> dict:
+        """GET /v1/disk/resources for app:/ paths."""
+
+        return request_json(ctx, "GET", endpoint, params={"path": path})
 
     def get_share_info(self, path: str) -> dict:
         """Get current share metadata for a Disk resource path."""
@@ -361,10 +279,6 @@ class YandexDisk:
         department_ids: list[int | str] | None = None,
     ) -> dict:
         """Publish a Disk resource and configure share access."""
-        self._ensure_disk_token(
-            required_scopes=DISK_WRITE_SCOPES,
-            operation="share management",
-        )
         endpoint = f"{self.api_base}/v1/disk/resources/publish"
         payload = self._build_share_payload(
             access=access,
@@ -376,14 +290,48 @@ class YandexDisk:
             group_ids=group_ids,
             department_ids=department_ids,
         )
-        logger.debug(f"PUT {endpoint} auth={'yes' if self.token else 'no'}")
-        data = self._request_json(
+        logger.debug(f"PUT {endpoint} auth=method-dispatch")
+        if self._is_app_path(path):
+            data = self._api_publish_app_folder(endpoint, path, payload)
+        else:
+            data = self._api_publish_disk(endpoint, path, payload)
+        return self._finalize_publish_result(path=path, initial_data=data)
+
+    @yandex_api_method("disk.resources.publish.put.disk", one_of=["cloud_api:disk.write"])
+    def _api_publish_disk(
+        self,
+        ctx: YandexApiContext,
+        endpoint: str,
+        path: str,
+        payload: dict,
+    ) -> dict:
+        """PUT /v1/disk/resources/publish for disk:/ paths."""
+
+        return request_json(
+            ctx,
             "PUT",
             endpoint,
             params={"path": path, "allow_address_access": "true"},
             json=payload or None,
         )
-        return self._finalize_publish_result(path=path, initial_data=data)
+
+    @yandex_api_method("disk.resources.publish.put.app_folder", one_of=["cloud_api:disk.app_folder"])
+    def _api_publish_app_folder(
+        self,
+        ctx: YandexApiContext,
+        endpoint: str,
+        path: str,
+        payload: dict,
+    ) -> dict:
+        """PUT /v1/disk/resources/publish for app:/ paths."""
+
+        return request_json(
+            ctx,
+            "PUT",
+            endpoint,
+            params={"path": path, "allow_address_access": "true"},
+            json=payload or None,
+        )
 
     def update_share_settings(
         self,
@@ -399,10 +347,6 @@ class YandexDisk:
         department_ids: list[int | str] | None = None,
     ) -> dict:
         """Update existing share settings for a published resource."""
-        self._ensure_disk_token(
-            required_scopes=DISK_WRITE_SCOPES,
-            operation="share management",
-        )
         current = self.get_share_info(path)
         current_public_settings = current.get("public_settings") or {}
         if not current.get("public_key") and not current_public_settings.get("accesses"):
@@ -418,25 +362,34 @@ class YandexDisk:
             group_ids=group_ids,
             department_ids=department_ids,
         )
-        logger.debug(f"PUT {endpoint} auth={'yes' if self.token else 'no'}")
-        data = self._request_json(
-            "PUT",
-            endpoint,
-            params={"path": path, "allow_address_access": "true"},
-            json=payload or None,
-        )
+        logger.debug(f"PUT {endpoint} auth=method-dispatch")
+        if self._is_app_path(path):
+            data = self._api_publish_app_folder(endpoint, path, payload)
+        else:
+            data = self._api_publish_disk(endpoint, path, payload)
         return self._finalize_publish_result(path=path, initial_data=data)
 
     def unpublish_file(self, path: str) -> dict:
         """Revoke a published share link."""
-        self._ensure_disk_token(
-            required_scopes=DISK_WRITE_SCOPES,
-            operation="share management",
-        )
         endpoint = f"{self.api_base}/v1/disk/resources/unpublish"
-        logger.debug(f"PUT {endpoint} auth={'yes' if self.token else 'no'}")
-        self._request_json("PUT", endpoint, params={"path": path})
+        logger.debug(f"PUT {endpoint} auth=method-dispatch")
+        if self._is_app_path(path):
+            self._api_unpublish_app_folder(endpoint, path)
+        else:
+            self._api_unpublish_disk(endpoint, path)
         return {"path": path, "unpublished": True}
+
+    @yandex_api_method("disk.resources.unpublish.put.disk", one_of=["cloud_api:disk.write"])
+    def _api_unpublish_disk(self, ctx: YandexApiContext, endpoint: str, path: str) -> dict:
+        """PUT /v1/disk/resources/unpublish for disk:/ paths."""
+
+        return request_json(ctx, "PUT", endpoint, params={"path": path})
+
+    @yandex_api_method("disk.resources.unpublish.put.app_folder", one_of=["cloud_api:disk.app_folder"])
+    def _api_unpublish_app_folder(self, ctx: YandexApiContext, endpoint: str, path: str) -> dict:
+        """PUT /v1/disk/resources/unpublish for app:/ paths."""
+
+        return request_json(ctx, "PUT", endpoint, params={"path": path})
 
     @staticmethod
     def _parent_dir_paths(path: str) -> list[str]:
@@ -454,38 +407,79 @@ class YandexDisk:
         return parents
 
     def ensure_dir(self, path: str) -> dict:
-        self._ensure_disk_token(
-            required_scopes=DISK_WRITE_SCOPES,
-            operation="directory creation",
-        )
         endpoint = f"{self.api_base}/v1/disk/resources"
-        logger.debug(f"PUT {endpoint} auth={'yes' if self.token else 'no'}")
-        resp = self.session.request("PUT", endpoint, params={"path": path})
-        if resp.status_code == 409:
-            return {"path": path, "created": False}
-        try:
-            resp.raise_for_status()
-        except requests.HTTPError as err:
-            status = err.response.status_code if err.response is not None else None
-            message = err.response.text if err.response is not None else str(err)
-            if status == 403:
-                raise RuntimeError(
-                    "Disk access denied: token lacks required permissions for directory creation"
-                ) from err
-            raise RuntimeError(f"Disk directory create error {status}: {message}") from err
-        return {"path": path, "created": True}
+        logger.debug(f"PUT {endpoint} auth=method-dispatch")
+        if self._is_app_path(path):
+            return self._api_put_resource_app_folder(endpoint, path)
+        return self._api_put_resource_disk(endpoint, path)
+
+    @yandex_api_method("disk.resources.put.disk", one_of=["cloud_api:disk.write"])
+    def _api_put_resource_disk(self, ctx: YandexApiContext, endpoint: str, path: str) -> dict:
+        """PUT /v1/disk/resources for disk:/ paths."""
+
+        _, status_code = request_json(
+            ctx,
+            "PUT",
+            endpoint,
+            expected_statuses=(200, 201, 204, 409),
+            return_status=True,
+            params={"path": path},
+        )
+        return {"path": path, "created": status_code != 409}
+
+    @yandex_api_method("disk.resources.put.app_folder", one_of=["cloud_api:disk.app_folder"])
+    def _api_put_resource_app_folder(self, ctx: YandexApiContext, endpoint: str, path: str) -> dict:
+        """PUT /v1/disk/resources for app:/ paths."""
+
+        _, status_code = request_json(
+            ctx,
+            "PUT",
+            endpoint,
+            expected_statuses=(200, 201, 204, 409),
+            return_status=True,
+            params={"path": path},
+        )
+        return {"path": path, "created": status_code != 409}
 
     def ensure_parent_dirs(self, path: str) -> list[dict]:
         return [self.ensure_dir(parent_path) for parent_path in self._parent_dir_paths(path)]
 
     def get_upload_link(self, path: str, overwrite: bool = False) -> dict:
-        self._ensure_disk_token(
-            required_scopes=DISK_WRITE_SCOPES,
-            operation="upload",
-        )
         endpoint = f"{self.api_base}/v1/disk/resources/upload"
-        logger.debug(f"GET {endpoint} auth={'yes' if self.token else 'no'}")
-        return self._request_json(
+        logger.debug(f"GET {endpoint} auth=method-dispatch")
+        if self._is_app_path(path):
+            return self._api_get_upload_link_app_folder(endpoint, path, overwrite)
+        return self._api_get_upload_link_disk(endpoint, path, overwrite)
+
+    @yandex_api_method("disk.resources.upload.get.disk", one_of=["cloud_api:disk.write"])
+    def _api_get_upload_link_disk(
+        self,
+        ctx: YandexApiContext,
+        endpoint: str,
+        path: str,
+        overwrite: bool,
+    ) -> dict:
+        """GET /v1/disk/resources/upload for disk:/ paths."""
+
+        return request_json(
+            ctx,
+            "GET",
+            endpoint,
+            params={"path": path, "overwrite": str(bool(overwrite)).lower()},
+        )
+
+    @yandex_api_method("disk.resources.upload.get.app_folder", one_of=["cloud_api:disk.app_folder"])
+    def _api_get_upload_link_app_folder(
+        self,
+        ctx: YandexApiContext,
+        endpoint: str,
+        path: str,
+        overwrite: bool,
+    ) -> dict:
+        """GET /v1/disk/resources/upload for app:/ paths."""
+
+        return request_json(
+            ctx,
             "GET",
             endpoint,
             params={"path": path, "overwrite": str(bool(overwrite)).lower()},
@@ -499,10 +493,6 @@ class YandexDisk:
         overwrite: bool = False,
         create_parents: bool = True,
     ) -> dict:
-        self._ensure_disk_token(
-            required_scopes=DISK_WRITE_SCOPES,
-            operation="upload",
-        )
         local_file = Path(local_path).expanduser().resolve()
         if not local_file.exists() or not local_file.is_file():
             raise ValueError(f"Local file not found: {local_file}")
@@ -592,78 +582,18 @@ class YandexDisk:
         )
         return result
 
-    @staticmethod
-    def _read_token(path: Path) -> str | None:
-        """Read disk token from account token file.
-
-        Token format: {"email": "...", "token.disk": "y0_..."}
-        """
-        if not path.exists():
-            logger.debug(f"Token file not found: {path}")
-            return None
-        try:
-            data = load_token_file(path)
-            if data.get("token.disk"):
-                return data.get("token.disk")
-            return None
-        except (json.JSONDecodeError, KeyError) as e:
-            logger.warning(f"Failed to read token from {path}: {e}")
-            return None
-
-    @staticmethod
-    def _looks_like_yandex_share(public_url: str) -> bool:
-        parsed = urlparse(public_url)
-        host = (parsed.netloc or "").lower()
-        return "yadi.sk" in host or "disk.yandex." in host
-
-    def _raise_with_context(
-        self,
-        err: requests.HTTPError,
-        public_url: str,
-        force_auth: bool = False,
-        anonymous: bool = False,
-    ) -> None:
-        status = err.response.status_code if err.response is not None else None
-        if status == 404 and self._looks_like_yandex_share(public_url):
-            if anonymous:
-                hint = (
-                    "404 from Yandex Disk public API under anonymous access. "
-                    "This can be expected for organization-only shares. "
-                    "Retry with OAuth unless you are explicitly testing anonymous access."
-                )
-            else:
-                hint = (
-                    "404 from Yandex Disk API. Telemost recordings and organization-only "
-                    "shares may require OAuth authentication even for public-looking links. "
-                    "Set YANDEX_DISK_TOKEN or provide --account/--token-file."
-                )
-            if force_auth and not self.token:
-                hint = (
-                    "OAuth is required (--force-auth), but no token is configured. "
-                    "Set YANDEX_DISK_TOKEN or provide --account/--token-file."
-                )
-            raise RuntimeError(hint) from err
-        raise err
-
     def get_public_meta(self, public_url: str, anonymous: bool = False) -> dict:
         """Get metadata for a public file or directory.
 
         GET /v1/disk/public/resources?public_key={url}
 
-        Uses OAuth by default when a token is available. Pass anonymous=True
-        only when you explicitly need to test anonymous reachability.
+        GH41 treats this as a public method, so OAuth is not sent even when a
+        token exists on the client. The ``anonymous`` flag is retained for CLI
+        compatibility and no longer changes token selection.
 
         Returns dict with: name, size, mime_type, created, modified, public_url, etc.
         """
-        session = self._link_access_session(anonymous=anonymous)
-        endpoint = f"{self.api_base}/v1/disk/public/resources"
-        logger.debug(f"GET {endpoint} auth={'yes' if (self.token and not anonymous) else 'no'}")
-        resp = session.get(endpoint, params={"public_key": public_url})
-        try:
-            resp.raise_for_status()
-        except requests.HTTPError as e:
-            self._raise_with_context(e, public_url, anonymous=anonymous)
-        data = resp.json()
+        data = self._api_get_public_meta(public_url)
 
         return {
             "name": data.get("name", ""),
@@ -676,6 +606,30 @@ class YandexDisk:
             "path": data.get("path", ""),
         }
 
+    @yandex_api_method("disk.public.resources.get", public=True)
+    def _api_get_public_meta(self, ctx: YandexApiContext, public_url: str) -> dict:
+        """GET /v1/disk/public/resources without OAuth."""
+
+        endpoint = f"{self.api_base}/v1/disk/public/resources"
+        logger.debug(f"GET {endpoint} auth=no")
+        return request_json(ctx, "GET", endpoint, params={"public_key": public_url})
+
+    @yandex_api_method("disk.public.resources.download.get", public=True)
+    def _api_get_public_download_link(
+        self,
+        ctx: YandexApiContext,
+        public_url: str,
+        path: str = "",
+    ) -> dict:
+        """GET /v1/disk/public/resources/download without OAuth."""
+
+        params = {"public_key": public_url}
+        if path:
+            params["path"] = path
+        endpoint = f"{self.api_base}/v1/disk/public/resources/download"
+        logger.debug(f"GET {endpoint} auth=no")
+        return request_json(ctx, "GET", endpoint, params=params)
+
     def get_download_link(
         self,
         public_url: str,
@@ -687,22 +641,11 @@ class YandexDisk:
         GET /v1/disk/public/resources/download?public_key={url}
 
         For directories, pass path= to specify the file within.
-        Uses OAuth by default when a token is available.
+        GH41 treats this as a public method, so OAuth is not sent.
         Returns the direct download href.
         """
-        params = {"public_key": public_url}
-        if path:
-            params["path"] = path
-
-        session = self._link_access_session(anonymous=anonymous)
-        endpoint = f"{self.api_base}/v1/disk/public/resources/download"
-        logger.debug(f"GET {endpoint} auth={'yes' if (self.token and not anonymous) else 'no'}")
-        resp = session.get(endpoint, params=params)
-        try:
-            resp.raise_for_status()
-        except requests.HTTPError as e:
-            self._raise_with_context(e, public_url, anonymous=anonymous)
-        return resp.json()["href"]
+        data = self._api_get_public_download_link(public_url, path)
+        return data["href"]
 
     def download(
         self,
@@ -719,7 +662,7 @@ class YandexDisk:
             output_dir: directory to save into
             filename: override output filename (default: use original name)
             path: for directories, the file path within
-            anonymous: use anonymous link access instead of OAuth
+            anonymous: compatibility flag; public API calls are already tokenless
 
         Returns:
             Path to the downloaded file.
@@ -795,13 +738,7 @@ def main():
         "--filename", "-f", help="Override output filename"
     )
     parser.add_argument(
-        "--token-file", help="Path to token JSON file ({account}.token)"
-    )
-    parser.add_argument(
         "--account", "-a", help="Account name — resolves to data/auth/{account}.token"
-    )
-    parser.add_argument(
-        "--auth-dir", default=None, help="Auth directory (default: from config)"
     )
     parser.add_argument(
         "--data-dir",
@@ -812,14 +749,9 @@ def main():
         "--meta", action="store_true", help="Print file metadata as JSON"
     )
     parser.add_argument(
-        "--force-auth",
-        action="store_true",
-        help="Require OAuth token and fail if no token is configured",
-    )
-    parser.add_argument(
         "--anonymous",
         action="store_true",
-        help="Use anonymous link access instead of OAuth; intended only for explicit anonymous-access checks",
+        help="Deprecated compatibility flag; public API methods are tokenless",
     )
     parser.add_argument(
         "--verbose", "-v", action="store_true", help="Enable verbose logging"
@@ -833,21 +765,13 @@ def main():
     )
 
     disk = YandexDisk(
-        token_file=args.token_file,
         account=args.account,
-        auth_dir=args.auth_dir,
         data_dir=args.data_dir,
     )
-    if args.force_auth and args.anonymous:
-        print("--force-auth and --anonymous are mutually exclusive.", file=sys.stderr)
-        sys.exit(2)
-    if args.force_auth and not disk.token:
-        print(
-            "OAuth is required (--force-auth), but no token was found. "
-            "Set YANDEX_DISK_TOKEN or provide --account/--token-file.",
-            file=sys.stderr,
-        )
-        sys.exit(2)
+    try:
+        disk.digest_legacy_disk_token_env()
+    except Exception:
+        pass
 
     if args.meta:
         meta = disk.get_public_meta(args.url, anonymous=args.anonymous)

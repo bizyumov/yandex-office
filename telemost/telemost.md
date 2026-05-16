@@ -4,7 +4,7 @@ description: 'Telemost / Телемост — process Yandex Telemost meeting da
 license: MIT
 metadata:
   author: bizyumov
-  version: "2026.04.10"
+  version: "2026.05.16"
 ---
 
 # Yandex Telemost / Телемост
@@ -13,18 +13,40 @@ Process Telemost meeting transcripts and recordings into structured documents, a
 
 ## Quick Start
 
+### Process Telemost Transcripts
+
+Fetch through the predefined Telemost mail filter first; then process the
+received Telemost email directories.
+
+```bash
+python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py \
+  --filter telemost \
+  --account <account> \
+  --num <limit>
+python3 <full-path-to-yandex-office>/telemost/scripts/process_meeting.py \
+  --verbose
+```
+
+With recording downloads:
+
+```bash
+python3 <full-path-to-yandex-office>/telemost/scripts/process_meeting.py \
+  --download-recordings \
+  --verbose
+```
+
 ```bash
 # Create a real conference (defaults: PUBLIC access, PUBLIC waiting room, no cohosts)
-python3 scripts/conference.py create --account mary
+python3 <full-path-to-yandex-office>/telemost/scripts/conference.py create --account mary
 
 # Read conference info
-python3 scripts/conference.py get --account mary --id <conference_id>
+python3 <full-path-to-yandex-office>/telemost/scripts/conference.py get --account mary --id <conference_id>
 
 # Update conference settings
-python3 scripts/conference.py update --account mary --id <conference_id> --waiting-room ADMINS
+python3 <full-path-to-yandex-office>/telemost/scripts/conference.py update --account mary --id <conference_id> --waiting-room ADMINS
 
-# From the agent workspace CWD: reuse an existing conference when creating a calendar event
-python3 calendar/scripts/create_event.py \
+# Reuse an existing conference when creating a calendar event
+python3 <full-path-to-yandex-office>/calendar/scripts/create_event.py \
   --account mary \
   --summary "Проектный созвон" \
   --start "2026-03-12T10:00:00" \
@@ -32,30 +54,33 @@ python3 calendar/scripts/create_event.py \
   --telemost-conference-id <conference_id>
 
 # Read organization defaults applied to new conferences
-python3 scripts/settings.py get --account mary
+python3 <full-path-to-yandex-office>/telemost/scripts/settings.py get --account mary
 
 # Update organization defaults
-python3 scripts/settings.py update --account mary --waiting-room-calendar ORGANIZATION
+python3 <full-path-to-yandex-office>/telemost/scripts/settings.py update --account mary --waiting-room-calendar ORGANIZATION
 
-# Process all unprocessed meetings (uses shared config discovery from the workspace)
-python3 scripts/process_meeting.py
+# Process all unprocessed meetings using CWD runtime discovery
+python3 <full-path-to-yandex-office>/telemost/scripts/process_meeting.py
 
 # Cron-safe wrapper (PID lock, forwards CLI args)
-./scripts/process.sh
+<full-path-to-yandex-office>/telemost/scripts/process.sh
 
 # Or specify paths explicitly
-python3 scripts/process_meeting.py --incoming ./incoming --output ./meetings
+python3 <full-path-to-yandex-office>/telemost/scripts/process_meeting.py --incoming ./incoming --output ./meetings
 
 # Without archiving (keep originals in incoming/)
-python3 scripts/process_meeting.py --no-archive
+python3 <full-path-to-yandex-office>/telemost/scripts/process_meeting.py --no-archive
 
 # Wrapper with forwarded args
-./scripts/process.sh --no-archive --download-recordings
+<full-path-to-yandex-office>/telemost/scripts/process.sh --no-archive --download-recordings
 ```
 
 ## Conference Management
 
-The Telemost API client uses `https://cloud-api.yandex.net/v1/telemost-api` and `token.telemost`.
+The Telemost API client uses `https://cloud-api.yandex.net/v1/telemost-api`.
+Its low-level methods declare auth with `@yandex_api_method(...)`; runtime
+selects eligible managed auth credentials by joining verified `client_id`
+bindings to config-backed Telemost app scopes.
 
 Default conference settings:
 
@@ -70,7 +95,7 @@ Supported operations:
 - update conference settings
 - get organization settings
 - update organization settings
-- bind an existing conference to a new calendar event through `calendar/scripts/create_event.py --telemost-conference-id ...`
+- bind an existing conference to a new calendar event through `python3 <full-path-to-yandex-office>/calendar/scripts/create_event.py --telemost-conference-id ...`
 
 Optional create/update fields:
 
@@ -122,12 +147,8 @@ Role-list values:
 
 When Yandex returns additional settings fields beyond the documented core set, the client preserves them if you round-trip the full JSON payload from `settings.py get` back into `settings.py update --settings-file ...`.
 
-`org_id` resolution order:
-
-1. `--org-id`
-2. `org_id` stored in the account token file
-
-If neither is available, the command fails and you must supply `--org-id` or persist `org_id` into the token file. Reliable API discovery of `org_id` requires an admin token with `directory:read_organization`.
+`org_id` is supplied explicitly with `--org-id`. Auth is handled by the shared
+decorator dispatcher.
 
 ## How It Works
 
@@ -165,10 +186,10 @@ Before processing, `enrich_incoming()` scans the incoming directory and for each
 
 HTML is not used by `telemost` processing.
 
-### Output Structure
+### Meeting Directory Contract
 
 ```
-{data_dir}/meetings/{YYYY-MM}/{YYYY-MM-DD_HH-MM}_{mailbox}_{MEETING_UID}/
+{data_dir}/meetings/{YYYY-MM}/{YYYY-MM-DD_HH-MM}_{account}_{MEETING_UID}/
     transcript.txt        # Single append-only transcript with per-email separators
     summary.txt           # Single append-only summary with per-email separators
     meeting.meta.json     # Non-destructive merged metadata
@@ -181,17 +202,18 @@ Directory naming:
 
 - Month bucket folder: `YYYY-MM` (derived from first-seen meeting timestamp)
 - Meeting folder prefix: `YYYY-MM-DD_HH-MM`
-- Prefix must be followed by mailbox tag (e.g. `alex`, `mary`)
+- Prefix must be followed by account tag (e.g. `alex`, `mary`)
 - Final segment is meeting UID: `_{MEETING_UID}` (or `_unknown`)
 - Example: `2026-02/2026-02-24_18-19_alex_1000349120`
 
 Directory routing rule (same-day wildcard, single-candidate invariant):
 
+- Email events for each `meeting_uid` are processed in natural `imap_uid` order.
 - For each incoming email event, resolver scans month bucket with:
-  `YYYY-MM/YYYY-MM-DD_*-*_{mailbox}_{meeting_uid}`.
+  `YYYY-MM/YYYY-MM-DD_*-*_{account}_{meeting_uid}`.
 - If exactly one candidate directory exists, data is appended there.
 - If no candidate exists, a new directory is created from:
-  `YYYY-MM/YYYY-MM-DD_HH-MM_{mailbox}_{meeting_uid}`.
+  `YYYY-MM/YYYY-MM-DD_HH-MM_{account}_{meeting_uid}`.
 - If more than one candidate exists, processing fails fast for that event (explicit integrity error, no heuristic pick).
 
 ### Migrating Existing Meeting Folders
@@ -200,10 +222,10 @@ Run once to normalize previously generated folders:
 
 ```bash
 # Preview changes
-python3 scripts/migrate_meeting_dirs.py --dry-run
+python3 <full-path-to-yandex-office>/telemost/scripts/migrate_meeting_dirs.py --dry-run
 
 # Apply changes
-python3 scripts/migrate_meeting_dirs.py
+python3 <full-path-to-yandex-office>/telemost/scripts/migrate_meeting_dirs.py
 ```
 
 The migration script scans `{data_dir}/meetings/**/meeting.meta.json`,
@@ -211,7 +233,7 @@ computes the canonical v2 path, and renames each directory in-place.
 
 ## Cron Wrapper (`process.sh`)
 
-Use `scripts/process.sh` for scheduled runs to avoid overlapping executions:
+Use `<full-path-to-yandex-office>/telemost/scripts/process.sh` for scheduled runs to avoid overlapping executions:
 
 - Uses a PID lock file named `telemost-process.pid` in the system temp directory
 - Skips run if previous process is still active
@@ -221,7 +243,7 @@ Use `scripts/process.sh` for scheduled runs to avoid overlapping executions:
 Example:
 
 ```bash
-*/30 * * * * cd telemost && ./scripts/process.sh --download-recordings
+*/30 * * * * <full-path-to-yandex-office>/telemost/scripts/process.sh --download-recordings
 ```
 
 ### Event Processing and Partial Meetings
@@ -238,6 +260,17 @@ Append semantics:
 - `meeting.meta.json.media_links` is append-unique (deduplicated, first-seen order preserved).
 - `meeting.meta.json.source_emails` accumulates all processed source emails for the meeting.
 - `meeting.meta.json` does not use `video_url` or `audio_url`; use `media_links` only.
+
+### Recording Link Auth
+
+Yandex Disk links that look public, such as `yadi.sk/d/...`, may still require
+OAuth for Telemost recordings.
+
+- With managed auth for the selected account alias, the API may return a downloadable link.
+- Without managed auth for that account, the API may return `404` for existing Telemost resources.
+- `HEAD` requests are not a reliable availability probe.
+
+Use `yandex-office` managed auth when handling Telemost media links.
 
 ### Console Output Policy
 
@@ -265,12 +298,12 @@ Append semantics:
 
 ## Files
 
-- `scripts/process_meeting.py` — Main orchestrator (enrich, scan, group, merge, output)
-- `scripts/conference.py` — Create, read, and update real Telemost conferences
-- `scripts/settings.py` — Read and update Telemost organization settings
+- `telemost/scripts/process_meeting.py` — Main orchestrator (enrich, scan, group, merge, output)
+- `telemost/scripts/conference.py` — Create, read, and update real Telemost conferences
+- `telemost/scripts/settings.py` — Read and update Telemost organization settings
 - `lib/client.py` — Telemost API client
-- `scripts/process.sh` — Cron-safe wrapper with PID lock (passes args through)
-- `scripts/process_transcript.py` — Transcript transformation logic
-- `scripts/migrate_meeting_dirs.py` — Rename existing meeting dirs to v2 layout
-- `scripts/test_telemost.py` — Unit and integration tests
+- `telemost/scripts/process.sh` — Cron-safe wrapper with PID lock (passes args through)
+- `telemost/scripts/process_transcript.py` — Transcript transformation logic
+- `telemost/scripts/migrate_meeting_dirs.py` — Rename existing meeting dirs to v2 layout
+- `telemost/scripts/test_telemost.py` — Unit and integration tests
 - `references/telemost-format.md` — Email types and transcript format docs

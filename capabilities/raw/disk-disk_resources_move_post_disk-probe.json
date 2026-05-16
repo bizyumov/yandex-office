@@ -1,0 +1,28 @@
+{
+  "probe": "disk",
+  "timestamp": "2026-04-18T21:37:54.708875+00:00",
+  "fixture": {
+    "id": "disk-method-access-fixture",
+    "variables": "<redacted>"
+  },
+  "rows": [
+    {
+      "timestamp": "2026-04-18T21:37:52.989889+00:00",
+      "method_id": "disk.resources.move.post.disk",
+      "scope_id": "cloud_api:disk.{read,write}",
+      "status": "works",
+      "http": {
+        "status_code": 201,
+        "ok": true,
+        "content_type": "application/json",
+        "json_keys": [
+          "href",
+          "method",
+          "templated"
+        ]
+      },
+      "request_fixture_id": "disk-move-resource"
+    }
+  ],
+  "cleanup_errors": []
+}

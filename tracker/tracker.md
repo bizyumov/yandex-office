@@ -5,7 +5,7 @@ license: MIT
 compatibility: Python 3.10+, network access to api.tracker.yandex.net
 metadata:
   author: bizyumov
-  version: "2026.04.10"
+  version: "2026.05.16"
 ---
 
 # Yandex Tracker / Трекер
@@ -16,22 +16,22 @@ API client for Yandex Tracker to manage tasks, projects, and agile workflows. Wo
 
 ```bash
 # Search issues with query language
-python3 scripts/search_issues.py --query "Queue: PROJ Status: open" --account mary
+python3 <full-path-to-yandex-office>/tracker/scripts/search_issues.py --query "Queue: PROJ Status: open" --account mary
 
 # Create a new issue
-python3 scripts/create_issue.py --queue PROJ --summary "New task title" --account mary
+python3 <full-path-to-yandex-office>/tracker/scripts/create_issue.py --queue PROJ --summary "New task title" --account mary
 
 # Get issue details
-python3 scripts/get_issue.py --issue PROJ-123 --account mary
+python3 <full-path-to-yandex-office>/tracker/scripts/get_issue.py --issue PROJ-123 --account mary
 
 # Add comment to issue
-python3 scripts/add_comment.py --issue PROJ-123 --text "Status update" --account mary
+python3 <full-path-to-yandex-office>/tracker/scripts/add_comment.py --issue PROJ-123 --text "Status update" --account mary
 
 # List my open issues
-python3 scripts/my_issues.py --account mary
+python3 <full-path-to-yandex-office>/tracker/scripts/my_issues.py --account mary
 
 # Get board columns and issues
-python3 scripts/get_board.py --board 123 --account mary
+python3 <full-path-to-yandex-office>/tracker/scripts/get_board.py --board 123 --account mary
 ```
 
 ## What It Does
@@ -46,27 +46,21 @@ python3 scripts/get_board.py --board 123 --account mary
 
 ## Prerequisites
 
-### OAuth Token with Tracker Scope
+### Managed OAuth Token With Tracker App Coverage
 
-You need an OAuth token with `tracker:read` (for reading) or `tracker:write` (for full operations) scope.
+Ensure `yandex-office` has a managed OAuth token whose app covers `tracker:read`
+for reading or `tracker:write` for full operations.
 
-Add to existing token file:
-```json
-{
-  "email": "user@yandex.ru",
-  "token.tracker": "y0__..."
-}
-```
-
-Or generate new token:
+Import or refresh Tracker authorization through managed auth:
 ```bash
 python3 <full-path-to-yandex-office>/scripts/oauth_setup.py \
   --email user@yandex.ru \
   --account mary \
-  --service tracker
+  --app tracker-read
 ```
 
-Recommended: use the default Tracker app from root `config.json` (`oauth_apps.service_defaults.tracker`, currently `tracker-read`) for the default onboarding path. Use `--app tracker-full` for write access, and explicit `--client-id` and `--scope` only when you need a one-off override.
+Recommended: use `--app tracker-read` for read/search. Use
+`--app tracker-full` only when the user explicitly approves write access.
 
 ### Organization ID
 
@@ -75,15 +69,8 @@ Tracker API requires organization identifier:
 - For **Yandex 360** organizations: use `X-Org-ID` header
 - For **Yandex Cloud** organizations: use `X-Cloud-Org-ID` header
 
-Store org ID in token file:
-```json
-{
-  "email": "user@yandex.ru",
-  "token.tracker": "y0__...",
-  "org_id": "123456",
-  "org_type": "360"  # or "cloud"
-}
-```
+Supply the organization ID through the supported command option or runtime
+configuration for the Tracker operation.
 
 To find your org ID: https://tracker.yandex.ru/admin/orgs
 
@@ -94,14 +81,14 @@ To find your org ID: https://tracker.yandex.ru/admin/orgs
 Search issues using Yandex Tracker query language or filters.
 
 ```bash
-python3 scripts/search_issues.py --account ACCOUNT [options]
+python3 <full-path-to-yandex-office>/tracker/scripts/search_issues.py --account ACCOUNT [options]
 ```
 
 **Arguments:**
 
 | Argument | Required | Description |
 |----------|----------|-------------|
-| `--account` | Yes | Account name from config (e.g., `mary`) |
+| `--account` | Yes | Account alias (e.g., `mary`) |
 | `--query` | No* | Search query in Tracker query language |
 | `--filter` | No* | JSON filter object (alternative to query) |
 | `--queue` | No | Filter by queue key |
@@ -115,16 +102,16 @@ python3 scripts/search_issues.py --account ACCOUNT [options]
 **Query Language Examples:**
 ```bash
 # My open tasks
-python3 scripts/search_issues.py --account mary --query "Assignee: me() Status: open"
+python3 <full-path-to-yandex-office>/tracker/scripts/search_issues.py --account mary --query "Assignee: me() Status: open"
 
 # High priority bugs in specific queue
-python3 scripts/search_issues.py --account mary --query 'Queue: PROJ Type: bug Priority: high'
+python3 <full-path-to-yandex-office>/tracker/scripts/search_issues.py --account mary --query 'Queue: PROJ Type: bug Priority: high'
 
 # Overdue tasks
-python3 scripts/search_issues.py --account mary --query "Deadline: < today() Status: !closed"
+python3 <full-path-to-yandex-office>/tracker/scripts/search_issues.py --account mary --query "Deadline: < today() Status: !closed"
 
 # Tasks created this week
-python3 scripts/search_issues.py --account mary --query 'Created: >= "-7d"'
+python3 <full-path-to-yandex-office>/tracker/scripts/search_issues.py --account mary --query 'Created: >= "-7d"'
 ```
 
 **Output:**
@@ -157,7 +144,7 @@ Found 3 issues:
 Create a new issue in specified queue.
 
 ```bash
-python3 scripts/create_issue.py --queue QUEUE --summary SUMMARY --account ACCOUNT [options]
+python3 <full-path-to-yandex-office>/tracker/scripts/create_issue.py --queue QUEUE --summary SUMMARY --account ACCOUNT [options]
 ```
 
 **Arguments:**
@@ -166,7 +153,7 @@ python3 scripts/create_issue.py --queue QUEUE --summary SUMMARY --account ACCOUN
 |----------|----------|-------------|
 | `--queue` | Yes | Queue key (e.g., `PROJ`) |
 | `--summary` | Yes | Issue title |
-| `--account` | Yes | Account name |
+| `--account` | Yes | Account alias |
 | `--description` | No | Issue description (supports YFM markdown) |
 | `--type` | No | Issue type (default: `task`) |
 | `--priority` | No | Priority: `critical`, `high`, `normal`, `low` |
@@ -180,10 +167,10 @@ python3 scripts/create_issue.py --queue QUEUE --summary SUMMARY --account ACCOUN
 **Examples:**
 ```bash
 # Simple task
-python3 scripts/create_issue.py --queue PROJ --summary "Review PR #42" --account mary
+python3 <full-path-to-yandex-office>/tracker/scripts/create_issue.py --queue PROJ --summary "Review PR #42" --account mary
 
 # Task with all metadata
-python3 scripts/create_issue.py \
+python3 <full-path-to-yandex-office>/tracker/scripts/create_issue.py \
   --queue PROJ \
   --summary "Critical bug in production" \
   --description "## Steps to reproduce\n1. Open app\n2. Click button" \
@@ -200,7 +187,7 @@ python3 scripts/create_issue.py \
 Get detailed information about a specific issue.
 
 ```bash
-python3 scripts/get_issue.py --issue ISSUE_KEY --account ACCOUNT [options]
+python3 <full-path-to-yandex-office>/tracker/scripts/get_issue.py --issue ISSUE_KEY --account ACCOUNT [options]
 ```
 
 **Arguments:**
@@ -208,7 +195,7 @@ python3 scripts/get_issue.py --issue ISSUE_KEY --account ACCOUNT [options]
 | Argument | Required | Description |
 |----------|----------|-------------|
 | `--issue` | Yes | Issue key (e.g., `PROJ-123`) |
-| `--account` | Yes | Account name |
+| `--account` | Yes | Account alias |
 | `--with-comments` | No | Include comments in output |
 | `--with-transitions` | No | Include available transitions |
 | `--output` | No | Output file (JSON) |
@@ -218,7 +205,7 @@ python3 scripts/get_issue.py --issue ISSUE_KEY --account ACCOUNT [options]
 Add a comment to an issue.
 
 ```bash
-python3 scripts/add_comment.py --issue ISSUE --text TEXT --account ACCOUNT [options]
+python3 <full-path-to-yandex-office>/tracker/scripts/add_comment.py --issue ISSUE --text TEXT --account ACCOUNT [options]
 ```
 
 **Arguments:**
@@ -227,13 +214,13 @@ python3 scripts/add_comment.py --issue ISSUE --text TEXT --account ACCOUNT [opti
 |----------|----------|-------------|
 | `--issue` | Yes | Issue key |
 | `--text` | Yes | Comment text (supports YFM) |
-| `--account` | Yes | Account name |
+| `--account` | Yes | Account alias |
 | `--summon` | No | Comma-separated logins to mention |
 | `--add-to-followers` | No | Add self to followers (default: true) |
 
 **Example:**
 ```bash
-python3 scripts/add_comment.py \
+python3 <full-path-to-yandex-office>/tracker/scripts/add_comment.py \
   --issue PROJ-123 \
   --text "@petrov @ivanov Please review the updated design" \
   --summon petrov,ivanov \
@@ -245,7 +232,7 @@ python3 scripts/add_comment.py \
 Update issue fields or status.
 
 ```bash
-python3 scripts/update_issue.py --issue ISSUE --account ACCOUNT [options]
+python3 <full-path-to-yandex-office>/tracker/scripts/update_issue.py --issue ISSUE --account ACCOUNT [options]
 ```
 
 **Arguments:**
@@ -253,7 +240,7 @@ python3 scripts/update_issue.py --issue ISSUE --account ACCOUNT [options]
 | Argument | Required | Description |
 |----------|----------|-------------|
 | `--issue` | Yes | Issue key |
-| `--account` | Yes | Account name |
+| `--account` | Yes | Account alias |
 | `--summary` | No | New title |
 | `--description` | No | New description |
 | `--status` | No | New status (key or display name) |
@@ -269,20 +256,20 @@ python3 scripts/update_issue.py --issue ISSUE --account ACCOUNT [options]
 **Examples:**
 ```bash
 # Change assignee
-python3 scripts/update_issue.py --issue PROJ-123 --assignee petrov --account mary
+python3 <full-path-to-yandex-office>/tracker/scripts/update_issue.py --issue PROJ-123 --assignee petrov --account mary
 
 # Close issue with resolution
-python3 scripts/update_issue.py \
+python3 <full-path-to-yandex-office>/tracker/scripts/update_issue.py \
   --issue PROJ-123 \
   --status closed \
   --resolution "fixed" \
   --account mary
 
 # Add tags
-python3 scripts/update_issue.py --issue PROJ-123 --add-tags "frontend,urgent" --account mary
+python3 <full-path-to-yandex-office>/tracker/scripts/update_issue.py --issue PROJ-123 --add-tags "frontend,urgent" --account mary
 
 # Take issue to work
-python3 scripts/update_issue.py \
+python3 <full-path-to-yandex-office>/tracker/scripts/update_issue.py \
   --issue PROJ-123 \
   --assignee me() \
   --status "in_progress" \
@@ -292,17 +279,17 @@ python3 scripts/update_issue.py \
 
 ### my_issues.py
 
-List issues assigned to current user.
+List issues assigned to the selected Yandex account identity.
 
 ```bash
-python3 scripts/my_issues.py --account ACCOUNT [options]
+python3 <full-path-to-yandex-office>/tracker/scripts/my_issues.py --account ACCOUNT [options]
 ```
 
 **Arguments:**
 
 | Argument | Required | Description |
 |----------|----------|-------------|
-| `--account` | Yes | Account name |
+| `--account` | Yes | Account alias |
 | `--status` | No | Filter by status (default: open) |
 | `--queue` | No | Filter by queue |
 | `--priority` | No | Filter by priority |
@@ -314,7 +301,7 @@ python3 scripts/my_issues.py --account ACCOUNT [options]
 Get board columns and issues (Agile board).
 
 ```bash
-python3 scripts/get_board.py --board BOARD_ID --account ACCOUNT [options]
+python3 <full-path-to-yandex-office>/tracker/scripts/get_board.py --board BOARD_ID --account ACCOUNT [options]
 ```
 
 **Arguments:**
@@ -322,22 +309,22 @@ python3 scripts/get_board.py --board BOARD_ID --account ACCOUNT [options]
 | Argument | Required | Description |
 |----------|----------|-------------|
 | `--board` | Yes | Board ID (number) |
-| `--account` | Yes | Account name |
+| `--account` | Yes | Account alias |
 | `--output` | No | Output file (JSON) |
 
 ### get_queues.py
 
-List available queues for the user.
+List queues available to the selected Yandex account.
 
 ```bash
-python3 scripts/get_queues.py --account ACCOUNT [options]
+python3 <full-path-to-yandex-office>/tracker/scripts/get_queues.py --account ACCOUNT [options]
 ```
 
 **Arguments:**
 
 | Argument | Required | Description |
 |----------|----------|-------------|
-| `--account` | Yes | Account name |
+| `--account` | Yes | Account alias |
 | `--output` | No | Output file (JSON) |
 
 ## Output Structure
@@ -358,8 +345,9 @@ python3 scripts/get_queues.py --account ACCOUNT [options]
 Automatically create tracker tasks from important emails:
 
 ```python
-# When mail skill fetches email with specific tag:
-from scripts.create_issue import create_issue
+# Implementation status: unimplemented design contract.
+# Tracking issue: GitHub #47
+from tracker.skill_api import create_issue
 
 issue = create_issue(
     queue="SUPPORT",
@@ -367,7 +355,7 @@ issue = create_issue(
     description=f"From: {sender}\n\n{email_body}",
     assignee="support-team",
     tags="from-email",
-    account="mary"
+    account="mary",
 )
 ```
 
@@ -379,7 +367,9 @@ After Telemost meeting processing, create tasks from action items:
 # Parse transcript.txt for action items:
 # "@ivanov will prepare the report by Friday"
 
-from scripts.create_issue import create_issue
+# Implementation status: unimplemented design contract.
+# Tracking issue: GitHub #47
+from tracker.skill_api import create_issue
 
 issue = create_issue(
     queue="PROJ",
@@ -388,7 +378,7 @@ issue = create_issue(
     assignee="ivanov",
     due_date="2026-03-15",
     tags=f"meeting,{meeting_uid}",
-    account="mary"
+    account="mary",
 )
 ```
 
@@ -398,7 +388,7 @@ Cron job to notify about upcoming deadlines:
 
 ```bash
 # Daily check for tasks due tomorrow
-python3 scripts/search_issues.py \
+python3 <full-path-to-yandex-office>/tracker/scripts/search_issues.py \
   --account mary \
   --query 'Deadline: "+1d" Status: !closed' \
   --output ./due_tomorrow.json
@@ -412,6 +402,10 @@ Process Yandex Forms submissions as tracker tasks:
 
 ```python
 # When forms skill exports responses:
+# Implementation status: unimplemented design contract.
+# Tracking issue: GitHub #47
+from tracker.skill_api import create_issue
+
 for response in form_responses:
     if response["urgent"]:
         create_issue(
@@ -420,7 +414,7 @@ for response in form_responses:
             description=response["details"],
             priority="high",
             assignee="ops-team",
-            account="mary"
+            account="mary",
         )
 ```
 
@@ -430,16 +424,20 @@ Link calendar events with tracker tasks:
 
 ```python
 # Before meeting, check for linked tasks
+# Implementation status: unimplemented design contract.
+# Tracking issue: GitHub #47
+from tracker.skill_api import add_comment, search_issues
+
 tasks = search_issues(
     query=f'Tag: "event-{event_id}"',
-    account="mary"
+    account="mary",
 )
 
 # Add meeting notes as comment after
 add_comment(
     issue=task_key,
     text=f"Meeting notes: {meeting_summary}",
-    account="mary"
+    account="mary",
 )
 ```
 
@@ -448,32 +446,25 @@ add_comment(
 Use Directory API to find right assignee:
 
 ```python
-# Find team lead for department
-from yandex_org import get_department_head
+# Implementation status: unimplemented design contract.
+# Tracking issue: GitHub #47
+from directory.skill_api import get_department_head
+from tracker.skill_api import create_issue
 
 assignee = get_department_head("backend")
 
-# Create task assigned to them
-create_issue(
+issue = create_issue(
     queue="PROJ",
     summary="Technical review needed",
     assignee=assignee,
-    account="mary"
+    account="mary",
 )
 ```
 
-## Token Format
+## Managed Auth
 
-```json
-{
-  "email": "user@yandex.ru",
-  "token.tracker": "y0__...",
-  "org_id": "123456",
-  "org_type": "360"
-}
-```
-
-Stored at `{data_dir}/auth/{account}.token` with 600 permissions.
+Use `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py` for OAuth intake and refresh. Runtime managed auth
+handles credential selection.
 
 ## Error Handling
 
@@ -481,8 +472,8 @@ Common errors and solutions:
 
 | Error | Cause | Solution |
 |-------|-------|----------|
-| `401 Unauthorized` | Invalid/expired token | Refresh OAuth token |
-| `403 Forbidden` | No access to queue/issue | Check permissions in Tracker UI |
+| `401 Unauthorized` | Invalid/expired managed token | Refresh/import through `yandex-office` under user authorization |
+| `403 Forbidden` | Selected Yandex account cannot access queue/issue | Check permissions in Tracker UI for that account |
 | `404 Not Found` | Issue/queue doesn't exist | Verify key exists |
 | `409 Conflict` | Version conflict (concurrent edit) | Refetch and retry |
 | `422 Validation Error` | Invalid field values | Check field types and values |
@@ -516,16 +507,16 @@ Assignee: empty() AND Created: >= "-30d"
 
 ## Files
 
-- `scripts/search_issues.py` — Search issues with query/filter
-- `scripts/create_issue.py` — Create new issues
-- `scripts/get_issue.py` — Get issue details
-- `scripts/update_issue.py` — Update issue fields/status
-- `scripts/add_comment.py` — Add comments with mentions
-- `scripts/my_issues.py` — List current user's issues
-- `scripts/get_board.py` — Get Agile board data
-- `scripts/get_queues.py` — List available queues
-- `scripts/tracker_client.py` — Core API client class
-- `scripts/fetch.sh` — Cron-safe wrapper with PID lock
+- `tracker/scripts/search_issues.py` — Search issues with query/filter
+- `tracker/scripts/create_issue.py` — Create new issues
+- `tracker/scripts/get_issue.py` — Get issue details
+- `tracker/scripts/update_issue.py` — Update issue fields/status
+- `tracker/scripts/add_comment.py` — Add comments with mentions
+- `tracker/scripts/my_issues.py` — List issues for the selected account identity
+- `tracker/scripts/get_board.py` — Get Agile board data
+- `tracker/scripts/get_queues.py` — List available queues
+- `tracker/scripts/tracker_client.py` — Core API client class
+- `tracker/scripts/fetch.sh` — Cron-safe wrapper with PID lock
 
 ## Dependencies
 

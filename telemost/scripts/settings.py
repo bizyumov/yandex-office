@@ -35,11 +35,11 @@ def main() -> int:
 
     get_parser = subparsers.add_parser("get", help="Read organization settings")
     get_parser.add_argument("--account", "-a", required=True, help="Account name")
-    get_parser.add_argument("--org-id", type=int, help="Organization ID; defaults to token file org_id")
+    get_parser.add_argument("--org-id", type=int, required=True, help="Organization ID")
 
     update_parser = subparsers.add_parser("update", help="Update organization settings")
     update_parser.add_argument("--account", "-a", required=True, help="Account name")
-    update_parser.add_argument("--org-id", type=int, help="Organization ID; defaults to token file org_id")
+    update_parser.add_argument("--org-id", type=int, required=True, help="Organization ID")
     update_parser.add_argument("--settings-file", help="Path to JSON file with full OrganizationSettings payload")
     update_parser.add_argument("--waiting-room-adhoc", help="PUBLIC, ORGANIZATION, or ADMINS")
     update_parser.add_argument("--waiting-room-calendar", help="PUBLIC, ORGANIZATION, or ADMINS")

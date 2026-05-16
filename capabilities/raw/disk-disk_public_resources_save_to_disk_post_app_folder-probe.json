@@ -1,0 +1,30 @@
+{
+  "probe": "disk",
+  "timestamp": "2026-04-18T21:45:22.162992+00:00",
+  "fixture": {
+    "id": "disk-method-access-fixture",
+    "variables": "<redacted>"
+  },
+  "rows": [
+    {
+      "timestamp": "2026-04-18T21:45:20.451803+00:00",
+      "method_id": "disk.public.resources.save_to_disk.post.app_folder",
+      "scope_id": "cloud_api:disk.app_folder",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 403,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "description",
+          "error",
+          "message"
+        ],
+        "error": "ForbiddenError",
+        "description": "Forbidden"
+      },
+      "request_fixture_id": "disk-public-save-app-folder"
+    }
+  ],
+  "cleanup_errors": []
+}

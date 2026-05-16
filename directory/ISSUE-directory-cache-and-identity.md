@@ -49,7 +49,7 @@ Add API support to:
 
 Requirements:
 
-- use `token.directory` or legacy `token.org`
+- use managed auth with Directory read permissions
 - require `directory:read_organization`
 - if token is admin-capable, fetch accessible organizations and cache:
   - `org_id`
@@ -208,5 +208,5 @@ Acceptance criteria:
 ## Notes
 
 - This issue updates the skill name from legacy `org` terminology to canonical `directory`.
-- Legacy token alias handling (`token.org -> token.directory`) should remain supported.
+- Legacy Directory auth aliases should remain supported internally.
 - Domain-to-org association should be cached centrally in `directory`, not reimplemented in `disk`.

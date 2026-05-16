@@ -4,7 +4,7 @@
 # Uses PID file to prevent concurrent runs.
 #
 # Crontab example (every 15 min):
-#   */15 * * * * /path/to/mail/scripts/fetch.sh
+#   */15 * * * * <full-path-to-yandex-office>/mail/scripts/fetch.sh
 #
 
 set -e
@@ -27,7 +27,7 @@ trap "rm -f '$PIDFILE'" EXIT
 # Verify agent config exists
 if [ ! -f "$AGENT_CONFIG_PATH" ]; then
     echo "Agent config not found: $AGENT_CONFIG_PATH"
-    echo "Create yandex-data/config.agent.json in the workspace before running."
+    echo "Create yandex-data/config.agent.json in CWD before running."
     exit 1
 fi
 

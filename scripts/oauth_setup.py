@@ -2,13 +2,16 @@
 """
 Yandex OAuth token setup.
 
-Generates per-account service tokens and records scope metadata used by the
-shared Yandex auth resolver.
+Generates per-account OAuth tokens and stores the verified token-value to
+client_id binding used by the shared Yandex auth resolver.
 """
 
 from __future__ import annotations
 
 import argparse
+import getpass
+import json
+import os
 import sys
 from pathlib import Path
 
@@ -16,34 +19,87 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from common.auth import (
-    canonical_token_key,
-    load_token_file,
-    save_token_file,
-    set_token_metadata,
+from common.auth import load_token_file, save_token_file, token_refs
+from common.config import bootstrap_runtime_context, choose_account_alias, find_token_account_by_email
+from common.oauth_apps import (
+    list_service_profiles,
+    oauth_app_for_client_id,
+    plan_oauth_app_setup,
+    plan_oauth_setup,
 )
-from common.config import bootstrap_runtime_context
-from common.oauth_apps import SERVICE_SCOPES, list_service_profiles, plan_oauth_setup
+from common.oauth_token_import import import_managed_oauth_token
+
+
+def _read_access_token(prompt: str) -> str:
+    """Read an OAuth access token without echoing it."""
+    return getpass.getpass(prompt)
+
+
+def _print_warnings(warnings: list[str]) -> None:
+    """Print warning lines to stderr."""
+    if warnings:
+        print("Warnings:", file=sys.stderr)
+        for warning in warnings:
+            print(f"  - {warning}", file=sys.stderr)
+
+
+def _format_custom_app(scopes: list[str]) -> str:
+    """Return the compact label for a non-shipped OAuth app."""
+    return f"custom({', '.join(scopes)})" if scopes else "custom()"
+
+
+def _account_apps(config: dict[str, object], token_data: dict[str, object]) -> list[str]:
+    """Return configured app labels present in an account token file."""
+    apps: set[str] = set()
+    for ref in token_refs(token_data):
+        app = oauth_app_for_client_id(config, ref.client_id)
+        if app is None:
+            apps.add("custom()")
+        elif app.app_id.startswith("custom-") or not app.services:
+            apps.add(_format_custom_app(app.scopes))
+        else:
+            apps.add(app.app_id)
+    return sorted(apps)
+
+
+def _print_account_info(
+    alias: str,
+    token_data: dict[str, object],
+    *,
+    config: dict[str, object],
+) -> None:
+    """Print compact account summary JSON."""
+    info: dict[str, object] = {"alias": alias}
+    email = str(token_data.get("email") or "").strip()
+    if email:
+        info["email"] = email
+    info["apps"] = _account_apps(config, token_data)
+    print(json.dumps(info, ensure_ascii=False, separators=(",", ":")))
 
 
 def main() -> None:
+    """Run the Yandex OAuth setup command-line interface."""
     parser = argparse.ArgumentParser(
-        description="Bootstrap Yandex data dir or set up a per-account, per-service OAuth token",
+        description="Bootstrap Yandex data dir or set up OAuth app managed auth",
     )
     parser.add_argument("--client-id", help="OAuth ClientID")
     parser.add_argument("--email", help="Yandex email address")
     parser.add_argument(
         "--account",
-        help="Account name used as token filename",
+        help="Account alias used as token filename",
+    )
+    parser.add_argument(
+        "--accounts",
+        choices=("list", "delete", "reset"),
+        help="Manage token-file account aliases",
     )
     parser.add_argument(
         "--service",
-        choices=sorted(SERVICE_SCOPES.keys()),
-        help="Service token to authorize",
+        help="Compatibility shortcut: choose the configured default OAuth app for a service",
     )
     parser.add_argument(
         "--app",
-        help="Preconfigured OAuth app id to use instead of the service default",
+        help="Preconfigured OAuth app id to authorize",
     )
     parser.add_argument(
         "--scope",
@@ -54,19 +110,37 @@ def main() -> None:
     )
     parser.add_argument(
         "--data-dir",
-        help="Explicit Yandex data directory override for non-workspace execution",
+        help="Explicit Yandex data directory override for non-CWD execution",
+    )
+    parser.add_argument(
+        "--from-env",
+        metavar="ENV_VAR",
+        help="Import an environment OAuth token into managed auth",
     )
     args = parser.parse_args()
 
-    has_identity_args = any(value is not None for value in (args.email, args.account))
-    if has_identity_args and not all(value is not None for value in (args.email, args.account)):
-        parser.error("--email and --account must be provided together")
-    if args.service is not None and not has_identity_args:
-        parser.error("--service requires --email and --account")
+    if args.from_env:
+        args.from_env = args.from_env.strip()
+        if not args.from_env:
+            parser.error("--from-env requires an environment variable name")
+
+    has_oauth_args = (
+        args.service is not None
+        or args.app is not None
+        or args.client_id is not None
+        or bool(args.scopes)
+        or args.from_env is not None
+    )
+    if args.accounts and (args.email is not None or has_oauth_args):
+        parser.error("--accounts cannot be combined with OAuth setup arguments")
+    if args.accounts == "delete" and args.account is None:
+        parser.error("--accounts delete requires --account <alias>")
+    if args.accounts in {"list", "reset"} and args.account is not None:
+        parser.error(f"--accounts {args.accounts} does not use --account")
 
     runtime = bootstrap_runtime_context(
         __file__,
-        account=args.account,
+        account=None if args.accounts else args.account,
         email=args.email,
         cwd=Path.cwd(),
         data_dir_override=args.data_dir,
@@ -74,120 +148,177 @@ def main() -> None:
     config = runtime.config
     data_dir = runtime.data_dir
 
-    if not has_identity_args:
-        print("=" * 70)
-        print("Yandex bootstrap complete")
-        print("=" * 70)
-        print(f"\nData dir: {data_dir}")
-        print(f"Agent config: {runtime.agent_config_path}")
-        print("\nNext step:")
-        print(
-            "  Re-run this script with --email and --account to add a Yandex account, "
-            "or add --service to issue a service token immediately."
-        )
-        print("=" * 70)
+    if args.accounts:
+        token_paths = sorted((data_dir / "auth").glob("*.token"))
+        if args.accounts == "list":
+            for token_path in token_paths:
+                print(token_path.stem)
+            return
+        if args.accounts == "reset":
+            for token_path in token_paths:
+                token_path.unlink()
+            print(f"reset {len(token_paths)}")
+            return
+        alias = str(args.account or "").strip()
+        if not alias or Path(alias).name != alias:
+            parser.error("--accounts delete requires a plain --account <alias>")
+        token_path = data_dir / "auth" / f"{alias}.token"
+        if not token_path.exists():
+            print(f"missing {alias}", file=sys.stderr)
+            sys.exit(2)
+        token_path.unlink()
+        print(f"deleted {alias}")
         return
 
-    if args.service is None:
-        print("=" * 70)
-        print("Yandex account added")
-        print("=" * 70)
-        print(f"\nData dir: {data_dir}")
-        print(f"Account:  {args.account}")
-        print(f"Email:    {args.email}")
-        print("\nNext step:")
-        print(
-            "  Re-run this script with --email, --account, and --service to issue "
-            "a service token for this account."
-        )
-        print("=" * 70)
+    has_identity_args = any(value is not None for value in (args.email, args.account))
+    if args.app and args.service is None and (args.client_id or args.scopes):
+        parser.error("--app without --service cannot be combined with --client-id or --scope")
+
+    if not has_identity_args and not has_oauth_args:
+        print(data_dir)
         return
 
-    try:
-        plan = plan_oauth_setup(
-            config,
-            service=args.service,
-            app_id=args.app,
-            client_id=args.client_id,
-            extra_scopes=args.scopes,
+    if not has_oauth_args:
+        normalized_email = str(args.email or "").strip()
+        requested_account = str(args.account or "").strip()
+        existing_account = None if requested_account else (
+            find_token_account_by_email(data_dir, normalized_email)
+            if normalized_email
+            else None
         )
-    except ValueError as exc:
-        print(f"Error: {exc}", file=sys.stderr)
-        sys.exit(2)
-
-    print("=" * 70)
-    print(f"Yandex OAuth Token Setup — {args.account}/{args.service}")
-    print("=" * 70)
-    print(f"\nEmail:   {args.email}")
-    print(f"Account: {args.account}")
-    print(f"Service: {args.service}")
-
-    if plan.mode == "configured_app":
-        profiles = list_service_profiles(config, args.service)
-        default_profile = next((item for item in profiles if item.is_default), None)
-        other_profiles = [item for item in profiles if not item.is_default]
-        if default_profile is not None:
-            print("\nDefault profile:")
-            print(f"  - {default_profile.app_id}")
-            print(f"  - {default_profile.access_class}")
-            print(f"  - {default_profile.auth_url}")
-        if other_profiles:
-            print("\nOther profiles:")
-            for profile in other_profiles:
-                print(f"  - {profile.app_id} — {profile.access_class}")
-                print(f"    {profile.auth_url}")
-            print(
-                "\nIf you choose another profile, re-run this script with "
-                f"--app <profile_id> before saving the token."
+        if requested_account:
+            resolved_account = requested_account
+        elif existing_account is not None:
+            resolved_account = existing_account["alias"]
+        elif normalized_email:
+            resolved_account = choose_account_alias(
+                data_dir,
+                normalized_email,
+                preferred_name=requested_account or None,
             )
+        else:
+            resolved_account = requested_account
+        if not resolved_account or Path(resolved_account).name != resolved_account:
+            parser.error("--account must be a plain alias")
 
-    print(f"Mode:    {plan.mode}")
-    if plan.app_id:
-        print(f"App ID:  {plan.app_id}")
-    if plan.app_name:
-        print(f"App:     {plan.app_name}")
-    print(f"Client:  {plan.client_id}")
-    print(f"Scope:   {' '.join(plan.scopes) if plan.scopes else '(none)'}")
-    print("\nInstructions:")
-    print("  1. Open the URL below in your browser")
-    print("  2. Log in with your Yandex account")
-    print("  3. Grant the requested permissions")
-    print("  4. Copy the access_token from the redirect URL")
-    if plan.mode == "configured_app" and not plan.include_scope_in_url:
-        print("  Note: this URL relies on the OAuth app's baked-in scope set")
-    print(f"\nAuthorization URL:\n\n  {plan.auth_url}\n")
-    print("=" * 70)
+        token_path = data_dir / "auth" / f"{resolved_account}.token"
+        try:
+            token_data = load_token_file(token_path)
+        except FileNotFoundError:
+            token_data = {}
+        if normalized_email:
+            token_data["email"] = normalized_email
+        save_token_file(token_path, token_data)
 
-    token = input("\nPaste the access_token here: ").strip()
+        _print_account_info(resolved_account, token_data, config=config)
+        return
+
+    has_oauth_selector = (
+        args.service is not None
+        or args.app is not None
+        or args.client_id is not None
+        or bool(args.scopes)
+    )
+    plan = None
+    if not (args.from_env and not has_oauth_selector):
+        try:
+            if args.app and args.service is None:
+                plan = plan_oauth_app_setup(config, app_id=args.app)
+            else:
+                if args.service is None:
+                    parser.error("--service is required for --client-id/--scope flows")
+                plan = plan_oauth_setup(
+                    config,
+                    service=args.service,
+                    app_id=args.app,
+                    client_id=args.client_id,
+                    extra_scopes=args.scopes,
+                )
+        except ValueError as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            sys.exit(2)
+
+    if not args.from_env:
+        display_account = args.account or "<auto>"
+        display_service = args.service or (plan.service if plan is not None else "<verify from token>")
+        print("=" * 70)
+        print(f"Yandex OAuth Managed Auth Setup — {display_account}/{display_service}")
+        print("=" * 70)
+        print(f"\nAccount: {display_account}")
+        print(f"Service: {display_service}")
+
+        if plan is not None and plan.mode == "configured_app" and args.service is not None:
+            profiles = list_service_profiles(config, args.service)
+            default_profile = next((item for item in profiles if item.is_default), None)
+            other_profiles = [item for item in profiles if not item.is_default]
+            if default_profile is not None:
+                print("\nDefault profile:")
+                print(f"  - {default_profile.app_id}")
+                print(f"  - {default_profile.access_class}")
+                print(f"  - {default_profile.auth_url}")
+            if other_profiles:
+                print("\nOther profiles:")
+                for profile in other_profiles:
+                    print(f"  - {profile.app_id} — {profile.access_class}")
+                    print(f"    {profile.auth_url}")
+                print(
+                    "\nIf you choose another profile, re-run this script with "
+                    f"--app <profile_id> before saving the token."
+                )
+
+        print(f"Mode:    {plan.mode if plan is not None else 'env_import'}")
+        if plan is not None:
+            if plan.app_id:
+                print(f"App ID:  {plan.app_id}")
+            if plan.app_name:
+                print(f"App:     {plan.app_name}")
+            print(f"Client:  {plan.client_id}")
+            print(f"Scope:   {' '.join(plan.scopes) if plan.scopes else '(none)'}")
+        print("\nInstructions:")
+        print("  1. Open the URL below in your browser")
+        print("  2. Log in with your Yandex account")
+        print("  3. Grant the requested permissions")
+        print("  4. Copy the access_token from the redirect URL")
+        if plan is not None and plan.mode == "configured_app" and not plan.include_scope_in_url:
+            print("  Note: this URL relies on the OAuth app's baked-in scope set")
+        if plan is not None:
+            print(f"\nAuthorization URL:\n\n  {plan.auth_url}\n")
+        print("=" * 70)
+
+    if args.from_env:
+        token = os.environ.get(args.from_env, "").strip()
+        if not token:
+            print("Error: Environment variable is empty or unset", file=sys.stderr)
+            sys.exit(1)
+    else:
+        token = _read_access_token("\nPaste the access_token here: ").strip()
     if not token:
         print("Error: Token cannot be empty", file=sys.stderr)
         sys.exit(1)
 
-    token_path = data_dir / "auth" / f"{args.account}.token"
     try:
-        token_data = load_token_file(token_path)
-    except FileNotFoundError:
-        token_data = {"email": args.email}
-    token_key = canonical_token_key(args.service)
+        import_result = import_managed_oauth_token(
+            config=config,
+            data_dir=data_dir,
+            agent_config=runtime.agent_config,
+            agent_config_path=runtime.agent_config_path,
+            token=token,
+            email=args.email,
+            account=args.account,
+            service=args.service,
+            selected_app_id=plan.app_id if plan is not None else None,
+            selected_scopes=plan.scopes if plan is not None else [],
+            permissions_note_provider=lambda: input(
+                "Optional: describe the permissions for this custom token (press Enter to skip): "
+            ).strip() or None,
+        )
+    except RuntimeError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
 
-    token_data["email"] = args.email
-    token_data[token_key] = token
-    set_token_metadata(
-        token_data,
-        token_key,
-        scopes=plan.scopes,
-        client_id=plan.client_id,
-        app_id=plan.app_id,
-    )
-    save_token_file(token_path, token_data)
-
-    services = sorted(
-        key.split(".", 1)[1] for key in token_data if key.startswith("token.")
-    )
-    print(f"\nToken saved to: {token_path} (permissions: 600)")
-    print(f"Services in this file: {', '.join(services)}")
-    print("Token expires after ~1 year. Re-run this script to refresh.")
-    print("=" * 70)
+    warnings = import_result.warnings
+    _print_warnings(warnings)
+    print(import_result.resolved_account)
 
 
 if __name__ == "__main__":

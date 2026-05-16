@@ -17,7 +17,6 @@ if str(ROOT_DIR) not in sys.path:
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-from common.auth import ResolvedToken
 from telemost.lib import client as telemost_client
 import settings as settings_cli
 
@@ -50,37 +49,54 @@ class FakeSession:
 
 
 @pytest.fixture(autouse=True)
-def stub_token(monkeypatch):
+def stub_token(monkeypatch, tmp_path):
+    data_dir = tmp_path / "yandex-data"
+    token_path = data_dir / "auth" / "acct.token"
+    token_path.parent.mkdir(parents=True, exist_ok=True)
+    token_path.write_text(
+        json.dumps(
+            {
+                "email": "user@example.com",
+                "secret": {"client_id": "telemost-client"},
+            }
+        ),
+        encoding="utf-8",
+    )
     monkeypatch.setattr(
         telemost_client,
         "load_runtime_context",
         lambda _path, **_: SimpleNamespace(
-            data_dir=Path("/tmp/workspace/yandex-data"),
-            config={"urls": {}},
-        ),
-    )
-    monkeypatch.setattr(
-        telemost_client,
-        "resolve_token",
-        lambda **_: ResolvedToken(
-            account="acct",
-            skill="telemost",
-            token="secret",
-            token_key="token.telemost",
-            source_key="token.telemost",
-            token_path=Path("/tmp/acct.token"),
-            token_data={"token.telemost": "secret", "org_id": str(TEST_ORG_ID)},
-            email="user@example.com",
+            data_dir=data_dir,
+            config={
+                "urls": {},
+                "oauth_apps": {
+                    "catalog": {
+                        "telemost": {
+                            "client_id": "telemost-client",
+                            "scopes": [
+                                "telemost-api:conferences.read",
+                                "telemost-api:conferences.update",
+                            ],
+                        },
+                    },
+                },
+            },
         ),
     )
 
 
-def test_get_org_settings_uses_token_org_id():
+def test_get_org_settings_requires_explicit_org_id():
+    client = telemost_client.YandexTelemostClient("acct", session=FakeSession([]))
+    with pytest.raises(telemost_client.TelemostError, match="Organization ID is required"):
+        client.get_org_settings()
+
+
+def test_get_org_settings_uses_explicit_org_id():
     session = FakeSession([
         FakeResponse(200, {"waiting_room_level_adhoc": {"value": "PUBLIC"}}),
     ])
     client = telemost_client.YandexTelemostClient("acct", session=session)
-    result = client.get_org_settings()
+    result = client.get_org_settings(org_id=TEST_ORG_ID)
     assert result["org_id"] == TEST_ORG_ID
     assert session.calls[0]["method"] == "GET"
     assert session.calls[0]["url"].endswith(f"/organizations/{TEST_ORG_ID}/settings")
@@ -101,7 +117,7 @@ def test_update_org_settings_normalizes_payload():
         waiting_room_level_adhoc="public",
         cloud_recording_allowed_roles=["owner"],
     )
-    result = client.update_org_settings(payload)
+    result = client.update_org_settings(payload, org_id=TEST_ORG_ID)
     assert result["org_id"] == TEST_ORG_ID
     assert session.calls[0]["method"] == "PUT"
     assert session.calls[0]["json"] == {
@@ -127,7 +143,7 @@ def test_update_org_settings_preserves_unknown_fields_from_file_payload():
             "waiting_room_level_calendar": {"value": "PUBLIC"},
         }
     )
-    client.update_org_settings(payload)
+    client.update_org_settings(payload, org_id=TEST_ORG_ID)
     assert session.calls[0]["json"] == {
         "is_incoming_phone_calls_turned_on": True,
         "waiting_room_level_calendar": {"value": "PUBLIC"},
@@ -149,7 +165,11 @@ def test_settings_cli_get(monkeypatch, capsys):
             return {"org_id": org_id or TEST_ORG_ID, "waiting_room_level_adhoc": {"value": "PUBLIC"}}
 
     monkeypatch.setattr(settings_cli, "YandexTelemostClient", StubClient)
-    monkeypatch.setattr(sys, "argv", ["settings.py", "get", "--account", "acct"])
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["settings.py", "get", "--account", "acct", "--org-id", str(TEST_ORG_ID)],
+    )
     code = settings_cli.main()
     out = json.loads(capsys.readouterr().out)
     assert code == 0
@@ -181,6 +201,8 @@ def test_settings_cli_update_from_flags(monkeypatch, capsys):
             "update",
             "--account",
             "acct",
+            "--org-id",
+            str(TEST_ORG_ID),
             "--waiting-room-calendar",
             "ADMINS",
         ],
@@ -189,4 +211,5 @@ def test_settings_cli_update_from_flags(monkeypatch, capsys):
     out = json.loads(capsys.readouterr().out)
     assert code == 0
     assert captured["payload"] == {"waiting_room_level_calendar": {"value": "ADMINS"}}
+    assert captured["org_id"] == TEST_ORG_ID
     assert out["waiting_room_level_calendar"]["value"] == "ADMINS"

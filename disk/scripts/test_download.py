@@ -10,18 +10,59 @@ from unittest.mock import MagicMock, patch
 
 import requests
 
+import download
 from download import YandexDisk, API_BASE
 import share
 import upload
+
+
+def disk_with_account(
+    tmp_path: Path,
+    *,
+    account: str = "acct",
+    token: str = "write-token",
+    client_id: str = "disk-client",
+    scopes: list[str] | None = None,
+) -> tuple[YandexDisk, Path]:
+    """Create a Disk client backed by a real token-file entry."""
+
+    token_path = tmp_path / "auth" / f"{account}.token"
+    token_path.parent.mkdir(parents=True, exist_ok=True)
+    token_path.write_text(
+        json.dumps(
+            {
+                "email": f"{account}@example.com",
+                token: {"client_id": client_id},
+            }
+        ),
+        encoding="utf-8",
+    )
+    disk = YandexDisk(account=account, data_dir=str(tmp_path))
+    disk._config["oauth_apps"] = {
+        "catalog": {
+            "disk": {
+                "client_id": client_id,
+                "scopes": scopes
+                or [
+                    "cloud_api:disk.read",
+                    "cloud_api:disk.write",
+                    "cloud_api:disk.app_folder",
+                ],
+            }
+        }
+    }
+    return disk, token_path
 
 
 # ── Unit tests (mocked HTTP) ────────────────────────────────────────
 
 def test_get_public_meta_mocked():
     """get_public_meta builds correct request and parses response."""
-    disk = YandexDisk(token="test_token")
+    disk = YandexDisk()
 
     mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.content = b'{"name":"video.mp4"}'
     mock_resp.json.return_value = {
         "name": "video.mp4",
         "size": 1234567,
@@ -34,11 +75,13 @@ def test_get_public_meta_mocked():
     }
     mock_resp.raise_for_status = MagicMock()
 
-    with patch.object(disk.session, "get", return_value=mock_resp) as mock_get:
+    with patch.object(disk.session, "request", return_value=mock_resp) as mock_request:
         meta = disk.get_public_meta("https://yadi.sk/d/abc123")
 
-        mock_get.assert_called_once_with(
+        mock_request.assert_called_once_with(
+            "GET",
             f"{API_BASE}/v1/disk/public/resources",
+            headers={},
             params={"public_key": "https://yadi.sk/d/abc123"},
         )
         assert meta["name"] == "video.mp4"
@@ -47,36 +90,38 @@ def test_get_public_meta_mocked():
         print("  PASS: get_public_meta → correct request + parsing")
 
 
-def test_get_public_meta_defaults_to_authenticated_session():
-    """Public-link metadata uses OAuth by default when a token exists."""
-    disk = YandexDisk(token="test_token")
+def test_get_public_meta_bypasses_token_resolution(tmp_path):
+    """Public-link metadata bypasses token-file resolution."""
+    disk, _ = disk_with_account(tmp_path)
 
     mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.content = b'{"name":"video.mp4"}'
     mock_resp.json.return_value = {"name": "video.mp4"}
     mock_resp.raise_for_status = MagicMock()
 
-    with patch.object(disk.session, "get", return_value=mock_resp) as mock_get:
+    with patch.object(disk.session, "request", return_value=mock_resp) as mock_request:
         disk.get_public_meta("https://yadi.sk/d/abc123")
-        mock_get.assert_called_once()
+        assert mock_request.call_args.kwargs["headers"] == {}
 
 
-def test_get_public_meta_anonymous_uses_fresh_session():
-    """Anonymous mode bypasses the authenticated session explicitly."""
-    disk = YandexDisk(token="test_token")
+def test_get_public_meta_anonymous_is_still_tokenless():
+    """The legacy anonymous flag remains a tokenless public call."""
+    disk = YandexDisk()
 
     mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.content = b'{"name":"video.mp4"}'
     mock_resp.json.return_value = {"name": "video.mp4"}
     mock_resp.raise_for_status = MagicMock()
 
-    with patch("download.requests.Session") as mock_session_cls:
-        temp_session = MagicMock()
-        temp_session.get.return_value = mock_resp
-        mock_session_cls.return_value = temp_session
-
+    with patch.object(disk.session, "request", return_value=mock_resp) as mock_request:
         disk.get_public_meta("https://yadi.sk/d/abc123", anonymous=True)
 
-        temp_session.get.assert_called_once_with(
+        mock_request.assert_called_once_with(
+            "GET",
             f"{API_BASE}/v1/disk/public/resources",
+            headers={},
             params={"public_key": "https://yadi.sk/d/abc123"},
         )
 
@@ -86,22 +131,24 @@ def test_get_download_link_mocked():
     disk = YandexDisk()
 
     mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.content = b'{"href":"https://downloader.disk.yandex.ru/direct/xxx"}'
     mock_resp.json.return_value = {"href": "https://downloader.disk.yandex.ru/direct/xxx"}
     mock_resp.raise_for_status = MagicMock()
 
-    with patch.object(disk.session, "get", return_value=mock_resp) as mock_get:
+    with patch.object(disk.session, "request", return_value=mock_resp):
         href = disk.get_download_link("https://yadi.sk/d/abc123")
         assert href == "https://downloader.disk.yandex.ru/direct/xxx"
         print("  PASS: get_download_link → returns href")
 
 
-def test_cli_rejects_force_auth_with_anonymous(capsys):
-    """CLI rejects contradictory auth flags."""
+def test_cli_rejects_token_file_option(capsys):
+    """Disk CLI no longer accepts direct token-file auth."""
     argv = [
         "download.py",
         "https://yadi.sk/d/abc123",
-        "--force-auth",
-        "--anonymous",
+        "--token-file",
+        "/tmp/acct.token",
     ]
     with patch("sys.argv", argv):
         try:
@@ -111,7 +158,7 @@ def test_cli_rejects_force_auth_with_anonymous(capsys):
         except SystemExit as exc:
             assert exc.code == 2
     captured = capsys.readouterr()
-    assert "mutually exclusive" in captured.err
+    assert "--token-file" in captured.err
 
 
 def test_download_mocked():
@@ -172,30 +219,38 @@ def test_live_api_reachable():
             print(f"  WARN: unexpected error: {e}")
 
 
-def test_auth_header():
-    """Token is set in Authorization header."""
-    disk = YandexDisk(token="my_test_token")
-    assert disk.session.headers["Authorization"] == "OAuth my_test_token"
-    print("  PASS: Authorization header set correctly")
-
-
-def test_no_token():
-    """Without token, no Authorization header — works for public resources."""
-    import os
-    old = os.environ.pop("YANDEX_DISK_TOKEN", None)
+def test_constructor_does_not_accept_raw_token():
+    """Raw Disk tokens are not a supported constructor auth path."""
     try:
-        disk = YandexDisk()
-        assert "Authorization" not in disk.session.headers
-        print("  PASS: no token → no Authorization header")
-    finally:
-        if old is not None:
-            os.environ["YANDEX_DISK_TOKEN"] = old
+        YandexDisk(token="my_test_token")
+    except TypeError:
+        pass
+    else:
+        raise AssertionError("Expected raw token constructor argument to be rejected")
 
 
-def test_get_resource_meta_mocked():
+def test_env_token_is_ignored(monkeypatch):
+    """Legacy env auth is not attached as a raw Disk fallback."""
+    monkeypatch.setenv("YANDEX_DISK_TOKEN", "raw-token")
+    disk = YandexDisk()
+    assert "Authorization" not in disk.session.headers
+    print("  PASS: env token ignored")
+
+
+def test_digest_legacy_disk_token_env_delegates_to_common_method():
+    """Disk client exposes the common managed-auth compatibility import."""
+    disk = YandexDisk(account="acct")
+    with patch.object(download, "digest_legacy_disk_token_env_ctx") as mock_digest:
+        disk.digest_legacy_disk_token_env()
+    mock_digest.assert_called_once()
+    assert mock_digest.call_args.args[0].account == "acct"
+
+
+def test_get_resource_meta_mocked(tmp_path):
     """get_resource_meta uses authenticated metadata endpoint."""
-    disk = YandexDisk(token="write_token")
+    disk, _ = disk_with_account(tmp_path)
     mock_resp = MagicMock()
+    mock_resp.status_code = 200
     mock_resp.content = b'{"path":"disk:/team/report.txt"}'
     mock_resp.json.return_value = {"path": "disk:/team/report.txt"}
     mock_resp.raise_for_status = MagicMock()
@@ -205,15 +260,60 @@ def test_get_resource_meta_mocked():
         mock_request.assert_called_once_with(
             "GET",
             f"{API_BASE}/v1/disk/resources",
+            headers={"Authorization": "OAuth write-token"},
             params={"path": "disk:/team/report.txt"},
         )
         assert meta["path"] == "disk:/team/report.txt"
 
 
-def test_publish_file_mocked():
-    """publish_file builds payload and normalizes response."""
-    disk = YandexDisk(token="write_token")
+def test_get_resource_meta_uses_account_token_dispatch(tmp_path):
+    """Account-backed Disk calls use decorator scopes and persist token health."""
+    token_path = tmp_path / "auth" / "acct.token"
+    token_path.parent.mkdir(parents=True)
+    token_path.write_text(
+        json.dumps(
+            {
+                "email": "acct@example.com",
+                "read-token": {"client_id": "disk-read-client"},
+            }
+        ),
+        encoding="utf-8",
+    )
+    disk = YandexDisk(account="acct", data_dir=str(tmp_path))
+    disk._config["oauth_apps"] = {
+        "catalog": {
+            "disk-read": {
+                "client_id": "disk-read-client",
+                "scopes": ["cloud_api:disk.read"],
+            }
+        }
+    }
+
     mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.content = b'{"path":"disk:/team/report.txt"}'
+    mock_resp.json.return_value = {"path": "disk:/team/report.txt"}
+
+    with patch.object(disk.session, "request", return_value=mock_resp) as mock_request:
+        meta = disk.get_resource_meta("disk:/team/report.txt")
+
+    mock_request.assert_called_once_with(
+        "GET",
+        f"{API_BASE}/v1/disk/resources",
+        headers={"Authorization": "OAuth read-token"},
+        params={"path": "disk:/team/report.txt"},
+    )
+    saved = json.loads(token_path.read_text(encoding="utf-8"))
+    assert meta["path"] == "disk:/team/report.txt"
+    assert saved["read-token"]["good_at"]
+    assert "bad_at" not in saved["read-token"]
+
+
+def test_publish_file_mocked(tmp_path):
+    """publish_file builds payload and normalizes response."""
+    disk, _ = disk_with_account(tmp_path)
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
     mock_resp.content = b'{"public_key":"pk","public_url":"https://disk.yandex.ru/d/abc","public_settings":{"accesses":[]}}'
     mock_resp.json.return_value = {
         "public_key": "pk",
@@ -234,6 +334,7 @@ def test_publish_file_mocked():
         mock_request.assert_called_once_with(
             "PUT",
             f"{API_BASE}/v1/disk/resources/publish",
+            headers={"Authorization": "OAuth write-token"},
             params={"path": "disk:/team/report.txt", "allow_address_access": "true"},
             json={
                 "public_settings": {
@@ -249,10 +350,11 @@ def test_publish_file_mocked():
         assert result["path"] == "disk:/team/report.txt"
 
 
-def test_publish_file_refreshes_metadata_when_api_returns_href_only():
+def test_publish_file_refreshes_metadata_when_api_returns_href_only(tmp_path):
     """publish_file follows the href-style response with a metadata refresh."""
-    disk = YandexDisk(token="write_token")
+    disk, _ = disk_with_account(tmp_path)
     mock_resp = MagicMock()
+    mock_resp.status_code = 200
     mock_resp.content = b'{"method":"GET","href":"https://cloud-api.yandex.net/v1/disk/resources?...","templated":false}'
     mock_resp.json.return_value = {
         "method": "GET",
@@ -280,7 +382,7 @@ def test_publish_file_refreshes_metadata_when_api_returns_href_only():
 
 def test_build_share_payload_matches_documented_public_settings_shape():
     """employees/org payload matches the documented public_settings schema."""
-    disk = YandexDisk(token="write_token")
+    disk = YandexDisk()
     with patch("download.time.time", return_value=1_700_000_000):
         payload = disk._build_share_payload(
             access="employees",
@@ -306,21 +408,21 @@ def test_build_share_payload_matches_documented_public_settings_shape():
 
 def test_normalize_available_until_converts_ttl_seconds():
     """TTL seconds are converted to a future Unix timestamp."""
-    disk = YandexDisk(token="write_token")
+    disk = YandexDisk()
     with patch("download.time.time", return_value=1_700_000_000):
         assert disk._normalize_available_until(3600) == 1_700_003_600
 
 
 def test_normalize_available_until_keeps_future_timestamp():
     """Future Unix timestamps remain unchanged for compatibility."""
-    disk = YandexDisk(token="write_token")
+    disk = YandexDisk()
     with patch("download.time.time", return_value=1_700_000_000):
         assert disk._normalize_available_until(1_700_100_000) == 1_700_100_000
 
 
-def test_update_share_settings_uses_publish_endpoint():
+def test_update_share_settings_uses_publish_endpoint(tmp_path):
     """update_share_settings reuses publish endpoint for updates."""
-    disk = YandexDisk(token="write_token")
+    disk, _ = disk_with_account(tmp_path)
     info = {
         "path": "disk:/team/report.txt",
         "public_key": "pk",
@@ -328,6 +430,7 @@ def test_update_share_settings_uses_publish_endpoint():
         "public_settings": {"accesses": [{"access": "all"}]},
     }
     mock_resp = MagicMock()
+    mock_resp.status_code = 200
     mock_resp.content = b'{"public_key":"pk","public_url":"https://disk.yandex.ru/d/abc","public_settings":{"accesses":[{"macros":["employees"],"org_id":123456,"rights":["write"]}]}}'
     mock_resp.json.return_value = {
         "public_key": "pk",
@@ -348,10 +451,11 @@ def test_update_share_settings_uses_publish_endpoint():
         assert result["public_settings"]["accesses"][0]["macros"] == ["employees"]
 
 
-def test_unpublish_file_mocked():
+def test_unpublish_file_mocked(tmp_path):
     """unpublish_file issues unpublish request and returns success payload."""
-    disk = YandexDisk(token="write_token")
+    disk, _ = disk_with_account(tmp_path)
     mock_resp = MagicMock()
+    mock_resp.status_code = 200
     mock_resp.content = b""
     mock_resp.raise_for_status = MagicMock()
 
@@ -360,6 +464,7 @@ def test_unpublish_file_mocked():
         mock_request.assert_called_once_with(
             "PUT",
             f"{API_BASE}/v1/disk/resources/unpublish",
+            headers={"Authorization": "OAuth write-token"},
             params={"path": "disk:/team/report.txt"},
         )
         assert result == {"path": "disk:/team/report.txt", "unpublished": True}
@@ -367,7 +472,7 @@ def test_unpublish_file_mocked():
 
 def test_get_share_info_parses_meta():
     """get_share_info returns normalized share metadata."""
-    disk = YandexDisk(token="write_token")
+    disk = YandexDisk()
     with patch.object(disk, "get_resource_meta", return_value={
         "path": "disk:/team/report.txt",
         "public_key": "pk",
@@ -381,7 +486,7 @@ def test_get_share_info_parses_meta():
 
 def test_get_share_info_does_not_invent_accesses():
     """get_share_info leaves ACLs absent when metadata does not echo them back."""
-    disk = YandexDisk(token="write_token")
+    disk = YandexDisk()
     with patch.object(disk, "get_resource_meta", return_value={
         "path": "disk:/team/report.txt",
         "public_key": "pk",
@@ -394,8 +499,8 @@ def test_get_share_info_does_not_invent_accesses():
 
 
 def test_employees_access_requires_org_id():
-    """employees access requires org_id from args or token metadata."""
-    disk = YandexDisk(token="write_token")
+    """employees access requires an explicit org_id."""
+    disk = YandexDisk()
     try:
         disk.publish_file(path="disk:/team/report.txt", access="employees", rights="read")
     except ValueError as exc:
@@ -404,21 +509,67 @@ def test_employees_access_requires_org_id():
         raise AssertionError("Expected ValueError for missing org_id")
 
 
-def test_employees_access_uses_org_id_from_explicit_token_file(tmp_path):
-    """employees access resolves org_id from the explicit token file when provided."""
-    token_path = tmp_path / "corp.token"
+def test_employees_access_does_not_read_org_id_from_token_file(tmp_path):
+    """Disk share payloads do not read token files for org_id fallback."""
+    token_path = tmp_path / "auth" / "corp.token"
+    token_path.parent.mkdir(parents=True, exist_ok=True)
     token_path.write_text(
-        json.dumps({"email": "user@example.com", "token.disk": "write_token", "org_id": "123456"}),
+        json.dumps(
+            {
+                "email": "user@example.com",
+                "write-token": {"client_id": "disk-write-client"},
+                "org_id": "123456",
+            }
+        ),
         encoding="utf-8",
     )
-    disk = YandexDisk(token_file=str(token_path), account="corp")
-    payload = disk._build_share_payload(access="employees", rights="read")
-    assert payload["public_settings"]["accesses"][0]["org_id"] == 123456
+    disk = YandexDisk(account="corp", data_dir=str(tmp_path))
+    try:
+        disk._build_share_payload(access="employees", rights="read")
+    except ValueError as exc:
+        assert "org_id" in str(exc)
+    else:
+        raise AssertionError("Expected explicit org_id to be required")
+
+
+def test_single_account_dispatch_deletes_token_meta(tmp_path):
+    """Central dispatch infers the single token file and deletes token_meta."""
+    token_path = tmp_path / "auth" / "corp.token"
+    token_path.parent.mkdir(parents=True, exist_ok=True)
+    token_path.write_text(
+        json.dumps(
+            {
+                "email": "user@example.com",
+                "write-token": {"client_id": "disk-write-client"},
+                "token_meta": {"write-token": {"client_id": "old"}},
+            }
+        ),
+        encoding="utf-8",
+    )
+    disk = YandexDisk(data_dir=str(tmp_path))
+    disk._config["oauth_apps"] = {
+        "catalog": {
+            "disk-write": {
+                "client_id": "disk-write-client",
+                "scopes": ["cloud_api:disk.read"],
+            }
+        }
+    }
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.content = b'{"path":"disk:/team/report.txt"}'
+    mock_resp.json.return_value = {"path": "disk:/team/report.txt"}
+
+    with patch.object(disk.session, "request", return_value=mock_resp):
+        disk.get_resource_meta("disk:/team/report.txt")
+
+    saved = json.loads(token_path.read_text(encoding="utf-8"))
+    assert "token_meta" not in saved
 
 
 def test_password_requires_password_rights():
     """password cannot be used with plain read/write rights."""
-    disk = YandexDisk(token="write_token")
+    disk = YandexDisk()
     try:
         disk.publish_file(
             path="disk:/team/report.txt",
@@ -434,11 +585,11 @@ def test_password_requires_password_rights():
 
 def test_share_requires_token():
     """share-management methods fail fast without OAuth token."""
-    disk = YandexDisk(token=None)
+    disk = YandexDisk()
     try:
         disk.get_share_info("disk:/team/report.txt")
     except RuntimeError as exc:
-        assert "Disk authentication is required" in str(exc)
+        assert "Account is required" in str(exc)
     else:
         raise AssertionError("Expected RuntimeError when token is missing")
 
@@ -464,6 +615,7 @@ def test_share_cli_parses_and_prints_json():
              patch("sys.argv", ["share.py", "publish", "--account", "alex", "--path", "disk:/team/report.txt", "--access", "all", "--rights", "read", "--user-ids", "1,2"]):
             code = share.main()
         assert code == 0
+        mock_disk.digest_legacy_disk_token_env.assert_called_once_with()
         mock_disk.publish_file.assert_called_once_with(
             path="disk:/team/report.txt",
             access="all",
@@ -490,12 +642,13 @@ def test_share_cli_returns_nonzero_on_validation_error():
         mock_disk.get_share_info.side_effect = RuntimeError("boom")
         code = share.main()
         assert code == 1
+        mock_disk.digest_legacy_disk_token_env.assert_called_once_with()
         assert '"error": "boom"' in fake_stderr.getvalue()
 
 
-def test_ensure_dir_is_idempotent():
+def test_ensure_dir_is_idempotent(tmp_path):
     """ensure_dir treats 409 as already exists."""
-    disk = YandexDisk(token="write_token")
+    disk, _ = disk_with_account(tmp_path)
     mock_resp = MagicMock()
     mock_resp.status_code = 409
     mock_resp.raise_for_status = MagicMock()
@@ -505,15 +658,17 @@ def test_ensure_dir_is_idempotent():
         mock_request.assert_called_once_with(
             "PUT",
             f"{API_BASE}/v1/disk/resources",
+            headers={"Authorization": "OAuth write-token"},
             params={"path": "disk:/Проекты"},
         )
         assert result == {"path": "disk:/Проекты", "created": False}
 
 
-def test_get_upload_link_mocked():
+def test_get_upload_link_mocked(tmp_path):
     """get_upload_link requests upload target with overwrite flag."""
-    disk = YandexDisk(token="write_token")
+    disk, _ = disk_with_account(tmp_path)
     mock_resp = MagicMock()
+    mock_resp.status_code = 200
     mock_resp.content = b'{"href":"https://uploader.disk.yandex.net/abc"}'
     mock_resp.json.return_value = {"href": "https://uploader.disk.yandex.net/abc"}
     mock_resp.raise_for_status = MagicMock()
@@ -523,16 +678,18 @@ def test_get_upload_link_mocked():
         mock_request.assert_called_once_with(
             "GET",
             f"{API_BASE}/v1/disk/resources/upload",
+            headers={"Authorization": "OAuth write-token"},
             params={"path": "disk:/Проекты/photo.jpg", "overwrite": "true"},
         )
         assert result["href"] == "https://uploader.disk.yandex.net/abc"
 
 
-def test_upload_file_creates_parents_and_fetches_meta():
+def test_upload_file_creates_parents_and_fetches_meta(tmp_path):
     """upload_file creates parents, uploads bytes, and returns normalized metadata."""
-    disk = YandexDisk(token="write_token")
+    disk, _ = disk_with_account(tmp_path)
 
     upload_link_resp = MagicMock()
+    upload_link_resp.status_code = 200
     upload_link_resp.content = b'{"href":"https://uploader.disk.yandex.net/abc"}'
     upload_link_resp.json.return_value = {"href": "https://uploader.disk.yandex.net/abc"}
     upload_link_resp.raise_for_status = MagicMock()
@@ -563,7 +720,7 @@ def test_upload_file_creates_parents_and_fetches_meta():
 
 def test_upload_and_publish_combines_results():
     """upload_and_publish merges upload metadata with share response."""
-    disk = YandexDisk(token="write_token")
+    disk = YandexDisk()
     with patch.object(disk, "upload_file", return_value={"remote_path": "disk:/Docs/report.pdf", "uploaded": True}), \
          patch.object(disk, "publish_file", return_value={"public_key": "pk", "public_url": "url", "public_settings": {"accesses": []}}):
         result = disk.upload_and_publish(
@@ -579,7 +736,7 @@ def test_upload_and_publish_combines_results():
 
 def test_upload_requires_local_file():
     """upload_file fails fast when local file is missing."""
-    disk = YandexDisk(token="write_token")
+    disk = YandexDisk()
     try:
         disk.upload_file("/tmp/definitely-missing-file.txt", "disk:/Docs/missing.txt")
     except ValueError as exc:
@@ -611,6 +768,7 @@ def test_upload_cli_parses_publish_and_prints_json():
         mock_disk.upload_and_publish.return_value = {"remote_path": "disk:/Проекты/photo.jpg", "public_url": "url"}
         code = upload.main()
         assert code == 0
+        mock_disk.digest_legacy_disk_token_env.assert_called_once_with()
         mock_disk.upload_and_publish.assert_called_once_with(
             "./photo.jpg",
             "disk:/Проекты/photo.jpg",
@@ -647,21 +805,20 @@ def test_upload_cli_returns_nonzero_on_error():
         mock_disk.upload_file.side_effect = RuntimeError("boom")
         code = upload.main()
         assert code == 1
+        mock_disk.digest_legacy_disk_token_env.assert_called_once_with()
         assert '"error": "boom"' in fake_stderr.getvalue()
 
 
 def test_live_restricted_publish_requires_auth_when_enabled():
     """Optional live test: employees-only publish must reject anonymous public-resource access."""
-    token_file = os.getenv("YANDEX_DISK_LIVE_TOKEN_FILE")
+    account = os.getenv("YANDEX_DISK_LIVE_ACCOUNT")
+    data_dir = os.getenv("YANDEX_DISK_LIVE_DATA_DIR")
     org_id = os.getenv("YANDEX_DISK_LIVE_ORG_ID")
     base_path = os.getenv("YANDEX_DISK_LIVE_BASE_PATH")
-    if not token_file or not org_id or not base_path:
+    if not account or not org_id or not base_path:
         return
 
-    disk = YandexDisk(
-        token_file=token_file,
-        required_scopes=["cloud_api:disk.read", "cloud_api:disk.write", "cloud_api:disk.app_folder"],
-    )
+    disk = YandexDisk(account=account, data_dir=data_dir)
     with tempfile.TemporaryDirectory() as tmpdir:
         local_file = Path(tmpdir) / "live-restricted.txt"
         local_file.write_text("live restricted\n", encoding="utf-8")
@@ -687,15 +844,13 @@ def test_live_restricted_publish_requires_auth_when_enabled():
 
 def test_live_public_publish_verified_when_enabled():
     """Optional live test: public publish returns a public URL reachable via public metadata API."""
-    token_file = os.getenv("YANDEX_DISK_LIVE_TOKEN_FILE")
+    account = os.getenv("YANDEX_DISK_LIVE_ACCOUNT")
+    data_dir = os.getenv("YANDEX_DISK_LIVE_DATA_DIR")
     base_path = os.getenv("YANDEX_DISK_LIVE_BASE_PATH")
-    if not token_file or not base_path:
+    if not account or not base_path:
         return
 
-    disk = YandexDisk(
-        token_file=token_file,
-        required_scopes=["cloud_api:disk.read", "cloud_api:disk.write", "cloud_api:disk.app_folder"],
-    )
+    disk = YandexDisk(account=account, data_dir=data_dir)
     with tempfile.TemporaryDirectory() as tmpdir:
         local_file = Path(tmpdir) / "live-public.txt"
         local_file.write_text("live public\n", encoding="utf-8")
@@ -717,55 +872,8 @@ def test_live_public_publish_verified_when_enabled():
         disk.unpublish_file(remote)
 
 
-# ── Runner ───────────────────────────────────────────────────────────
-
-def run_all():
-    tests = [
-        ("D7a", test_auth_header),
-        ("D7b", test_no_token),
-        ("D7c", test_get_public_meta_mocked),
-        ("D7d", test_get_download_link_mocked),
-        ("D7e", test_download_mocked),
-        ("D7f", test_download_with_meta_mocked),
-        ("D7g", test_live_api_reachable),
-        ("D7h", test_get_resource_meta_mocked),
-        ("D7i", test_publish_file_mocked),
-        ("D7j", test_publish_file_refreshes_metadata_when_api_returns_href_only),
-        ("D7k", test_restricted_publish_revokes_public_link_when_verification_fails),
-        ("D7l", test_update_share_settings_uses_publish_endpoint),
-        ("D7m", test_unpublish_file_mocked),
-        ("D7n", test_get_share_info_parses_meta),
-        ("D7o", test_employees_access_requires_org_id),
-        ("D7p", test_password_requires_password_rights),
-        ("D7q", test_share_requires_token),
-        ("D7r", test_share_cli_parses_and_prints_json),
-        ("D7s", test_share_cli_returns_nonzero_on_validation_error),
-        ("D7t", test_ensure_dir_is_idempotent),
-        ("D7u", test_get_upload_link_mocked),
-        ("D7v", test_upload_file_creates_parents_and_fetches_meta),
-        ("D7w", test_upload_and_publish_combines_results),
-        ("D7x", test_upload_requires_local_file),
-        ("D7y", test_upload_cli_parses_publish_and_prints_json),
-        ("D7z", test_upload_cli_returns_nonzero_on_error),
-    ]
-
-    passed = 0
-    failed = 0
-    for label, fn in tests:
-        print(f"\n[{label}] {fn.__doc__}")
-        try:
-            fn()
-            passed += 1
-        except Exception as e:
-            print(f"  FAIL: {e}")
-            failed += 1
-
-    print(f"\n{'='*60}")
-    print(f"Results: {passed} passed, {failed} failed, {passed + failed} total")
-    return failed == 0
-
-
 if __name__ == "__main__":
+    import pytest
     import sys
-    ok = run_all()
-    sys.exit(0 if ok else 1)
+
+    raise SystemExit(pytest.main([__file__]))

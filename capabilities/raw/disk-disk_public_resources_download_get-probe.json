@@ -1,0 +1,28 @@
+{
+  "probe": "disk",
+  "timestamp": "2026-04-18T21:58:15.052436+00:00",
+  "fixture": {
+    "id": "disk-method-access-fixture",
+    "variables": "<redacted>"
+  },
+  "rows": [
+    {
+      "timestamp": "2026-04-18T21:58:13.142239+00:00",
+      "method_id": "disk.public.resources.download.get",
+      "scope_id": "public",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json",
+        "json_keys": [
+          "href",
+          "method",
+          "templated"
+        ]
+      },
+      "request_fixture_id": "disk-public-download"
+    }
+  ],
+  "cleanup_errors": []
+}

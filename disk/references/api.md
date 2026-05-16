@@ -152,7 +152,7 @@ Admin-capable path:
 
 ```
 GET https://api360.yandex.net/directory/v1/org
-Authorization: OAuth {token.directory}
+Authorization: handled by managed auth in the runtime client
 ```
 
 Requirements:
@@ -163,7 +163,8 @@ Requirements:
 Operational rule:
 
 - discover `organizations[].id`
-- store it as `org_id` in the account token file for reuse by Disk publishing
+- pass it as `org_id` for Disk publishing when organization-restricted access
+  is required
 - associate that `org_id` with observed corporate email domains from Directory users
 
 ## Authentication

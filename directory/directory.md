@@ -12,8 +12,10 @@ https://api360.yandex.net/directory/v1
 ```
 
 ### Authentication
-- OAuth 2.0 token with `directory:read_users`, `directory:read_departments`, `directory:read_groups` scopes
-- Token field: `{account}.token` → `token.directory`
+- Managed OAuth token linked to an app covering `directory:read_users`, `directory:read_departments`, `directory:read_groups`
+- Use managed auth authorized through
+  `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py`, normally with
+  `--app directory-read`
 
 ### Required Scopes
 ```
@@ -39,10 +41,12 @@ GET /org/{orgId}/users
 - `departmentId` — Filter by department (optional)
 - `groupId` — Filter by group (optional)
 
-**Example:**
+**Planned managed-auth CLI shape:**
 ```bash
-curl "https://api360.yandex.net/directory/v1/org/123456/users?page=1&perPage=1000" \
-  -H "Authorization: OAuth $TOKEN"
+python3 <full-path-to-yandex-office>/directory/scripts/list.py \
+  --account mary \
+  --org-id 123456 \
+  --per-page 1000
 ```
 
 **Response Fields:**
@@ -66,7 +70,7 @@ GET /org/{orgId}/users/{userId}
 GET /org
 ```
 
-Returns list of organizations accessible to the token.
+Returns organizations accessible through managed auth for the selected account alias.
 
 ---
 
@@ -102,21 +106,25 @@ Returns list of organizations accessible to the token.
 3. If total > 1000: paginate through pages
 4. Search locally in returned data
 
-**CLI:**
+**Implementation status:** unimplemented design contract. Do not run until
+`directory/scripts/search.py` exists. Tracking issue:
+`directory/ISSUE-directory-cache-and-identity.md`.
+
+**Planned CLI Interface:**
 ```bash
-python3 directory/scripts/search.py \
+python3 <full-path-to-yandex-office>/directory/scripts/search.py \
   --account mary \
   --query "Лебедев"
 ```
 
 **Implementation:**
 ```python
-def search_user(token, org_id, query):
+def search_user(account, org_id, query):
     all_users = []
     page = 1
     
     while True:
-        resp = get_users(token, org_id, page=page, perPage=1000)
+        resp = get_users(account, org_id, page=page, perPage=1000)
         users = resp.get('users', [])
         all_users.extend(users)
         
@@ -131,7 +139,7 @@ def search_user(token, org_id, query):
 
 ### 2. Find Common Free Time for Meeting
 
-**Prerequisites:** Calendar API access for free/busy queries
+**Prerequisites:** managed Calendar auth for free/busy queries
 
 **Workflow:**
 1. Resolve organizer email → user ID (via directory)
@@ -140,9 +148,13 @@ def search_user(token, org_id, query):
 4. Find intersection of free slots
 5. Suggest best time
 
-**CLI:**
+**Implementation status:** unimplemented design contract. Do not run until
+`directory/scripts/find_slot.py` exists. Tracking issue:
+`directory/ISSUE-directory-cache-and-identity.md`.
+
+**Planned CLI Interface:**
 ```bash
-python3 directory/scripts/find_slot.py \
+python3 <full-path-to-yandex-office>/directory/scripts/find_slot.py \
   --account mary \
   --attendee "user@example.com" \
   --date 2026-03-04 \
@@ -182,17 +194,12 @@ python3 directory/scripts/find_slot.py \
 ```
 directory/
 ├── directory.md              # This file
-├── scripts/
-│   ├── search.py            # Search users by name/email
-│   ├── list.py              # List all users
-│   ├── find_slot.py         # Find common free time
-│   └── sync_cache.py        # Sync to local cache
-├── lib/
-│   ├── __init__.py
-│   ├── client.py            # API client
-│   ├── cache.py             # Cache management
-│   └── search.py            # Fuzzy search logic
-└── tests/
+├── ISSUE-directory-cache-and-identity.md
+└── scripts/                  # Planned; not present yet
+    ├── search.py
+    ├── list.py
+    ├── find_slot.py
+    └── sync_cache.py
 ```
 
 ---
@@ -201,7 +208,7 @@ directory/
 
 ### Calendar Skill
 ```python
-# calendar/scripts/create_event.py uses:
+# Calendar create_event integration uses:
 from directory.skill_api import resolve_user, find_common_slot
 
 # Resolve "Лебедев" → email + ID
@@ -228,11 +235,11 @@ for u in users:
 ### Common Errors
 
 **403 Forbidden**
-- Cause: Token lacks `directory:read_users` scope
-- Fix: Regenerate token with required scopes
+- Cause: The selected account alias has no authorized app covering `directory:read_users`, or provider policy blocks access
+- Fix: Refresh/import Directory-capable managed auth through `yandex-office` under user authorization
 
 **404 Not Found**
-- Cause: User not in this organization
+- Cause: Directory user/principal not in this organization
 - Fix: Check email or search across all orgs
 
 **Pagination Issues**
@@ -243,7 +250,7 @@ for u in users:
 
 ## Configuration
 
-Add shared defaults to root `config.json` and directory-specific overrides to `yandex-data/config.agent.json`:
+Add shared defaults to root `config.skill.json` and directory-specific local settings to `yandex-data/config.agent.json`:
 ```json
 {
   "directory": {

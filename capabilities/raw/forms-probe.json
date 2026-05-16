@@ -1,0 +1,935 @@
+{
+  "probe": "forms",
+  "timestamp": "2026-04-20T12:16:39.164374+00:00",
+  "fixture": {
+    "id": "forms-live-safe-auth-gate",
+    "variables": "<redacted>"
+  },
+  "rows": [
+    {
+      "timestamp": "2026-04-20T12:16:23.726407+00:00",
+      "method_id": "forms.answers.v1_answers_get_answer",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "detail"
+        ]
+      },
+      "request_fixture_id": "forms-answers-v1_answers_get_answer"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:23.989487+00:00",
+      "method_id": "forms.answers.v1_answers_get_answer",
+      "scope_id": "forms:read",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "detail"
+        ]
+      },
+      "request_fixture_id": "forms-answers-v1_answers_get_answer"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:24.243880+00:00",
+      "method_id": "forms.answers.v1_answers_export_answers",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "ChunkedEncodingError",
+        "description": "peer closed connection without sending complete message body (incomplete chunked read)"
+      },
+      "request_fixture_id": "forms-answers-v1_answers_export_answers"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:24.765316+00:00",
+      "method_id": "forms.answers.v1_answers_export_answers",
+      "scope_id": "forms:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-answers-v1_answers_export_answers"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:24.975661+00:00",
+      "method_id": "forms.answers.v1_answers_export_answers_results",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "detail"
+        ]
+      },
+      "request_fixture_id": "forms-answers-v1_answers_export_answers_results"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:25.192235+00:00",
+      "method_id": "forms.answers.v1_answers_export_answers_results",
+      "scope_id": "forms:read",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-answers-v1_answers_export_answers_results"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:25.425910+00:00",
+      "method_id": "forms.answers.v1_answers_get_answers",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "detail"
+        ]
+      },
+      "request_fixture_id": "forms-answers-v1_answers_get_answers"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:25.644143+00:00",
+      "method_id": "forms.answers.v1_answers_get_answers",
+      "scope_id": "forms:read",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-answers-v1_answers_get_answers"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:25.886502+00:00",
+      "method_id": "forms.files.v1_files_get_file",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "detail"
+        ]
+      },
+      "request_fixture_id": "forms-files-v1_files_get_file"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:26.095384+00:00",
+      "method_id": "forms.files.v1_files_get_file",
+      "scope_id": "forms:read",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "detail"
+        ]
+      },
+      "request_fixture_id": "forms-files-v1_files_get_file"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:26.288086+00:00",
+      "method_id": "forms.files.v1_files_delete_file",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-files-v1_files_delete_file"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:26.496093+00:00",
+      "method_id": "forms.files.v1_files_delete_file",
+      "scope_id": "forms:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-files-v1_files_delete_file"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:26.723435+00:00",
+      "method_id": "forms.files.v1_files_save_survey_file",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-files-v1_files_save_survey_file"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:26.915702+00:00",
+      "method_id": "forms.files.v1_files_save_survey_file",
+      "scope_id": "forms:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-files-v1_files_save_survey_file"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:27.115972+00:00",
+      "method_id": "forms.files.v1_files_verify_file",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-files-v1_files_verify_file"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:27.326240+00:00",
+      "method_id": "forms.files.v1_files_verify_file",
+      "scope_id": "forms:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-files-v1_files_verify_file"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:27.535128+00:00",
+      "method_id": "forms.surveys.b2b_v1_surveys_get_surveys",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "detail"
+        ]
+      },
+      "request_fixture_id": "forms-surveys-b2b_v1_surveys_get_surveys"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:27.796948+00:00",
+      "method_id": "forms.surveys.b2b_v1_surveys_get_surveys",
+      "scope_id": "forms:read",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json",
+        "json_keys": [
+          "links",
+          "result"
+        ]
+      },
+      "request_fixture_id": "forms-surveys-b2b_v1_surveys_get_surveys"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:27.990540+00:00",
+      "method_id": "forms.surveys.b2b_v1_surveys_create_survey",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "detail"
+        ]
+      },
+      "request_fixture_id": "forms-surveys-b2b_v1_surveys_create_survey"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:28.266024+00:00",
+      "method_id": "forms.surveys.b2b_v1_surveys_create_survey",
+      "scope_id": "forms:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-surveys-b2b_v1_surveys_create_survey"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:28.491832+00:00",
+      "method_id": "forms.surveys.b2b_v1_surveys_get_survey",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "detail"
+        ]
+      },
+      "request_fixture_id": "forms-surveys-b2b_v1_surveys_get_survey"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:28.726767+00:00",
+      "method_id": "forms.surveys.b2b_v1_surveys_get_survey",
+      "scope_id": "forms:read",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-surveys-b2b_v1_surveys_get_survey"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:28.978552+00:00",
+      "method_id": "forms.surveys.b2b_v1_surveys_delete_survey",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "detail"
+        ]
+      },
+      "request_fixture_id": "forms-surveys-b2b_v1_surveys_delete_survey"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:29.262870+00:00",
+      "method_id": "forms.surveys.b2b_v1_surveys_delete_survey",
+      "scope_id": "forms:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-surveys-b2b_v1_surveys_delete_survey"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:29.479716+00:00",
+      "method_id": "forms.surveys.b2b_v1_surveys_modify_survey",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "ChunkedEncodingError",
+        "description": "peer closed connection without sending complete message body (incomplete chunked read)"
+      },
+      "request_fixture_id": "forms-surveys-b2b_v1_surveys_modify_survey"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:29.775551+00:00",
+      "method_id": "forms.surveys.b2b_v1_surveys_modify_survey",
+      "scope_id": "forms:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-surveys-b2b_v1_surveys_modify_survey"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:30.007623+00:00",
+      "method_id": "forms.surveys.v1_surveys_publish_survey",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "detail"
+        ]
+      },
+      "request_fixture_id": "forms-surveys-v1_surveys_publish_survey"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:30.226470+00:00",
+      "method_id": "forms.surveys.v1_surveys_publish_survey",
+      "scope_id": "forms:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-surveys-v1_surveys_publish_survey"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:30.483617+00:00",
+      "method_id": "forms.surveys.v1_surveys_unpublish_survey",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "detail"
+        ]
+      },
+      "request_fixture_id": "forms-surveys-v1_surveys_unpublish_survey"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:30.683830+00:00",
+      "method_id": "forms.surveys.v1_surveys_unpublish_survey",
+      "scope_id": "forms:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-surveys-v1_surveys_unpublish_survey"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:30.891527+00:00",
+      "method_id": "forms.filling.v1_frontend_get_form",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "detail"
+        ],
+        "code": "not_found"
+      },
+      "request_fixture_id": "forms-filling-v1_frontend_get_form"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:31.095201+00:00",
+      "method_id": "forms.filling.v1_frontend_get_form",
+      "scope_id": "forms:read",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "code",
+          "detail"
+        ],
+        "code": "not_found"
+      },
+      "request_fixture_id": "forms-filling-v1_frontend_get_form"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:31.284611+00:00",
+      "method_id": "forms.filling.v1_frontend_submit_form",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-filling-v1_frontend_submit_form"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:31.490168+00:00",
+      "method_id": "forms.filling.v1_frontend_submit_form",
+      "scope_id": "forms:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-filling-v1_frontend_submit_form"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:31.739485+00:00",
+      "method_id": "forms.filling.v1_frontend_get_suggest",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "detail"
+        ]
+      },
+      "request_fixture_id": "forms-filling-v1_frontend_get_suggest"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:31.967687+00:00",
+      "method_id": "forms.filling.v1_frontend_get_suggest",
+      "scope_id": "forms:read",
+      "status": "works",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "detail"
+        ]
+      },
+      "request_fixture_id": "forms-filling-v1_frontend_get_suggest"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:32.214566+00:00",
+      "method_id": "forms.images.v1_images_create_image",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "detail"
+        ]
+      },
+      "request_fixture_id": "forms-images-v1_images_create_image"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:32.512058+00:00",
+      "method_id": "forms.images.v1_images_create_image",
+      "scope_id": "forms:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-images-v1_images_create_image"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:32.741773+00:00",
+      "method_id": "forms.questions.v1_questions_get_questions",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "detail"
+        ]
+      },
+      "request_fixture_id": "forms-questions-v1_questions_get_questions"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:32.951612+00:00",
+      "method_id": "forms.questions.v1_questions_get_questions",
+      "scope_id": "forms:read",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-questions-v1_questions_get_questions"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:33.198737+00:00",
+      "method_id": "forms.questions.v1_questions_create_question",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "ChunkedEncodingError",
+        "description": "peer closed connection without sending complete message body (incomplete chunked read)"
+      },
+      "request_fixture_id": "forms-questions-v1_questions_create_question"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:33.418214+00:00",
+      "method_id": "forms.questions.v1_questions_create_question",
+      "scope_id": "forms:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-questions-v1_questions_create_question"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:33.634013+00:00",
+      "method_id": "forms.questions.v1_questions_get_question",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "detail"
+        ]
+      },
+      "request_fixture_id": "forms-questions-v1_questions_get_question"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:33.846514+00:00",
+      "method_id": "forms.questions.v1_questions_get_question",
+      "scope_id": "forms:read",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-questions-v1_questions_get_question"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:34.124393+00:00",
+      "method_id": "forms.questions.v1_questions_delete_question",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "detail"
+        ]
+      },
+      "request_fixture_id": "forms-questions-v1_questions_delete_question"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:34.344078+00:00",
+      "method_id": "forms.questions.v1_questions_delete_question",
+      "scope_id": "forms:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-questions-v1_questions_delete_question"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:34.536265+00:00",
+      "method_id": "forms.questions.v1_questions_modify_question",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "ChunkedEncodingError",
+        "description": "peer closed connection without sending complete message body (incomplete chunked read)"
+      },
+      "request_fixture_id": "forms-questions-v1_questions_modify_question"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:34.754140+00:00",
+      "method_id": "forms.questions.v1_questions_modify_question",
+      "scope_id": "forms:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-questions-v1_questions_modify_question"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:34.998271+00:00",
+      "method_id": "forms.questions.v1_questions_move_question",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "detail"
+        ]
+      },
+      "request_fixture_id": "forms-questions-v1_questions_move_question"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:35.200589+00:00",
+      "method_id": "forms.questions.v1_questions_move_question",
+      "scope_id": "forms:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-questions-v1_questions_move_question"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:35.473634+00:00",
+      "method_id": "forms.keysets.v1_keysets_download_keyset",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "detail"
+        ]
+      },
+      "request_fixture_id": "forms-keysets-v1_keysets_download_keyset"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:35.696934+00:00",
+      "method_id": "forms.keysets.v1_keysets_download_keyset",
+      "scope_id": "forms:read",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-keysets-v1_keysets_download_keyset"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:35.896634+00:00",
+      "method_id": "forms.keysets.v1_keysets_get_keyset",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "detail"
+        ]
+      },
+      "request_fixture_id": "forms-keysets-v1_keysets_get_keyset"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:36.123812+00:00",
+      "method_id": "forms.keysets.v1_keysets_get_keyset",
+      "scope_id": "forms:read",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-keysets-v1_keysets_get_keyset"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:36.451749+00:00",
+      "method_id": "forms.keysets.v1_keysets_delete_keyset",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "detail"
+        ]
+      },
+      "request_fixture_id": "forms-keysets-v1_keysets_delete_keyset"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:36.701829+00:00",
+      "method_id": "forms.keysets.v1_keysets_delete_keyset",
+      "scope_id": "forms:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-keysets-v1_keysets_delete_keyset"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:36.924738+00:00",
+      "method_id": "forms.keysets.v1_keysets_modify_keyset",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "detail"
+        ]
+      },
+      "request_fixture_id": "forms-keysets-v1_keysets_modify_keyset"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:37.161727+00:00",
+      "method_id": "forms.keysets.v1_keysets_modify_keyset",
+      "scope_id": "forms:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-keysets-v1_keysets_modify_keyset"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:37.379943+00:00",
+      "method_id": "forms.keysets.v1_keysets_get_keysets",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "detail"
+        ]
+      },
+      "request_fixture_id": "forms-keysets-v1_keysets_get_keysets"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:37.644535+00:00",
+      "method_id": "forms.keysets.v1_keysets_get_keysets",
+      "scope_id": "forms:read",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-keysets-v1_keysets_get_keysets"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:37.869382+00:00",
+      "method_id": "forms.keysets.v1_keysets_create_keyset",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 0,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "description",
+          "error"
+        ],
+        "error": "ChunkedEncodingError",
+        "description": "peer closed connection without sending complete message body (incomplete chunked read)"
+      },
+      "request_fixture_id": "forms-keysets-v1_keysets_create_keyset"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:38.087830+00:00",
+      "method_id": "forms.keysets.v1_keysets_create_keyset",
+      "scope_id": "forms:write",
+      "status": "works",
+      "http": {
+        "status_code": 400,
+        "ok": false,
+        "content_type": "application/json"
+      },
+      "request_fixture_id": "forms-keysets-v1_keysets_create_keyset"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:38.338722+00:00",
+      "method_id": "forms.operations.v1_operations_get_operation",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "detail"
+        ]
+      },
+      "request_fixture_id": "forms-operations-v1_operations_get_operation"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:38.666800+00:00",
+      "method_id": "forms.operations.v1_operations_get_operation",
+      "scope_id": "forms:read",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json",
+        "json_keys": [
+          "id",
+          "status"
+        ]
+      },
+      "request_fixture_id": "forms-operations-v1_operations_get_operation"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:38.882229+00:00",
+      "method_id": "forms.users.v1_users_get_user",
+      "scope_id": "public",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 401,
+        "ok": false,
+        "content_type": "application/json",
+        "json_keys": [
+          "detail"
+        ]
+      },
+      "request_fixture_id": "forms-users-v1_users_get_user"
+    },
+    {
+      "timestamp": "2026-04-20T12:16:39.164335+00:00",
+      "method_id": "forms.users.v1_users_get_user",
+      "scope_id": "forms:read",
+      "status": "works",
+      "http": {
+        "status_code": 200,
+        "ok": true,
+        "content_type": "application/json",
+        "json_keys": [
+          "cloud_uid",
+          "email",
+          "id",
+          "uid"
+        ]
+      },
+      "request_fixture_id": "forms-users-v1_users_get_user"
+    }
+  ],
+  "cleanup_errors": []
+}
