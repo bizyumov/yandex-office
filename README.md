@@ -284,34 +284,35 @@ runtime clients
   -> choose eligible tokens by decorator auth shape and token-level good_at
 ```
 
-### Default Service Scopes
+### OAuth App Selector
 
-| Service | Default scopes | Typical use |
-|---------|----------------|-------------|
-| `mail` | `mail:imap_ro` | Read-only IMAP fetch |
-| `disk` | `cloud_api:disk.read` | Download/read-only links |
-| `telemost` | `telemost-api:conferences.create`, `telemost-api:conferences.delete`, `telemost-api:conferences.read`, `telemost-api:conferences.update` | Conference lifecycle |
-| `tracker` | `tracker:read` | Read/search issues |
-| `forms` | `forms:read` | Export/discover forms |
-| `directory` | `directory:read_users`, `directory:read_departments`, `directory:read_groups`, `directory:read_domains`, `directory:read_external_contacts`, `directory:read_organization` | Org graph reads |
-| `calendar` | `calendar:all` | Selected account calendar access |
-| `contacts` | `addressbook:all` | Contacts read/write |
+Use `--app <app_id>` to request a configured OAuth application by catalog key.
+Do not make raw scopes the primary choice in agent-facing docs or workflows.
+Choose the account, sub-skill, and business task first; managed auth resolves
+tokens and scope coverage internally.
 
-### Recommended Preconfigured App Set
+Default/read apps:
 
-Use one preconfigured app per capability family instead of one universal app:
+- `mail-readonly`: Mail fetch/read.
+- `disk-read`: Disk read/download.
+- `calendar-user`: selected-account Calendar access.
+- `contacts-default`: Contacts access.
+- `telemost-default`: Telemost meeting access.
+- `tracker-read`: Tracker search/read.
+- `forms-read`: Forms export/read.
+- `directory-read`: Directory lookup/read.
 
-| App scenario | Service key | Recommended scopes | Why |
-|-------------|-------------|--------------------|-----|
-| Mail read-only | `mail` | `mail:imap_ro` | Safest default for fetchers |
-| Disk read-only | `disk` | `cloud_api:disk.read` | Covers downloads and Telemost media reads |
-| Telemost conference admin | `telemost` | `telemost-api:conferences.create`, `telemost-api:conferences.delete`, `telemost-api:conferences.read`, `telemost-api:conferences.update` | Full meeting lifecycle |
-| Tracker read-only | `tracker` | `tracker:read` | Search and inspect issues |
-| Forms export | `forms` | `forms:read` | Form discovery and export |
-| Directory read-only | `directory` | `directory:read_users`, `directory:read_departments`, `directory:read_groups`, `directory:read_domains`, `directory:read_external_contacts`, `directory:read_organization` | Org lookups without broader admin write access |
-| Calendar user access | `calendar` | `calendar:all` | Selected account calendar operations |
+Write-capable variants stay separate: `mail-readwrite`, `disk-full`,
+`tracker-full`, `forms-full`, and `directory-full`.
 
-If you want write-capable variants later, keep them as separate app scenarios instead of broadening the default read-only app.
+Whole-package OAuth uses `office-core`: Mail read, Disk full, Calendar, and
+Telemost. It does not cover Contacts, Tracker, Forms, or Directory.
+
+To inspect stored coverage for an account, run
+`python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account <alias>`
+and read `apps`. This creates or updates the local account handle, so use it
+only after `--accounts list` proves the alias exists or when account setup is
+intended.
 
 ### Managed Auth
 
