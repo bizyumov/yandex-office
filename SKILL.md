@@ -134,7 +134,7 @@ For Calendar plus Telemost, acceptable coverage includes `office-core`, or both
 
 The user authorizes OAuth tokens. `yandex-office` verifies and stores them.
 Never put an access token in visible command arguments, final text, logs, or
-artifacts. In OpenClaw non-interactive tool execution, use `--from-env`.
+artifacts. In non-interactive tool execution, use `--from-env`.
 Warnings print to stderr; stdout is the resolved alias as one line.
 
 ```bash

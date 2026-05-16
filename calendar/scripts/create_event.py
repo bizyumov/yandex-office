@@ -27,7 +27,7 @@ from download import YandexDisk
 from telemost.lib.client import TelemostError, YandexTelemostClient
 
 
-DEFAULT_ATTACHMENT_DIR = "disk:/OpenClaw Calendar Attachments"
+DEFAULT_ATTACHMENT_DIR = "disk:/yandex-office Calendar Attachments"
 
 
 def _escape_ical_text(value: str) -> str:
