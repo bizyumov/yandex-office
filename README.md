@@ -8,7 +8,8 @@ Current release:
 - version file: `VERSION`
 - cumulative release notes: `CHANGELOG.md`
 
-2026.05.16 completes PR 42 account/Mail/auth work:
+2026.05.16 completes PR 42 account/Mail/auth work and integrates the retained
+PR #32 consultation provisioning fixes from Sergey Pimenov:
 
 - account discovery is via `scripts/oauth_setup.py --accounts list`, which
   prints managed account aliases only
@@ -20,6 +21,14 @@ Current release:
   stores by verified Yandex identity
 - Mail supports `--account`, one-message `--uid`, dry-run `--extract-links`,
   and non-persistent ad-hoc sender/subject/date searches
+- Calendar Telemost event creation requires explicit `--timezone` or
+  `--utc-offset`, supports event UID and Telemost link reuse, and can update an
+  existing Telemost conference before writing the Calendar event
+- Telemost create/update writes no longer perform implicit post-write reads;
+  `get_conference()` is the explicit read path
+- Telemost processing handles Mail filter output under
+  `incoming/<filter>/<email-dir>/meta.json` and uses the processing runtime
+  data directory for recording downloads
 
 ## Versioning
 
@@ -219,8 +228,9 @@ Telemost recording OAuth caveat:
 
 Telemost calendar note:
 
-- `python3 <full-path-to-yandex-office>/calendar/scripts/create_event.py` can create a new Telemost conference or bind an existing one with `--telemost-conference-id`
-- existing-conference binding is strict and cannot be combined with new-conference flags
+- `python3 <full-path-to-yandex-office>/calendar/scripts/create_event.py` can create a new Telemost conference, bind an existing one with `--telemost-conference-id`, or reuse an already known join URL with `--telemost-link`.
+- Every create-event call must pass exactly one of `--timezone <IANA>` or `--utc-offset <Z|+HH:MM|-HH:MM>`.
+- Existing-conference binding can apply `--telemost-access-level`, `--telemost-waiting-room`, and `--telemost-cohosts` before the Calendar event is written.
 
 Each skill is self-contained and can be used independently.
 

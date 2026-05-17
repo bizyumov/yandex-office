@@ -9,8 +9,10 @@ T16: Unit test — enrich_incoming() classifies and extracts metadata
 
 import json
 import shutil
+import sys
 import tempfile
 from pathlib import Path
+from types import SimpleNamespace
 
 from process_transcript import (
     format_utc,
@@ -22,6 +24,7 @@ from process_meeting import (
     build_meeting_output_path,
     classify_email,
     default_incoming_dir,
+    download_recordings,
     enrich_incoming,
     extract_media_links,
     extract_meeting_title,
@@ -487,6 +490,88 @@ def test_enrich_incoming():
         print("  PASS: enrich_incoming -> classified, extracted, idempotent")
 
 
+def test_nested_incoming_filter_dirs():
+    """enrich_incoming() and scan_incoming() handle Mail filter buckets."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp = Path(tmpdir)
+        incoming = tmp / "incoming"
+
+        raw_dir = incoming / "telemost" / "2026-02-08_test_uid2550"
+        raw_dir.mkdir(parents=True)
+        raw_meta = {
+            "imap_uid": 2550,
+            "account": "test",
+            "subject": "Конспект встречи от 08.02.2026",
+            "sender": "Хранитель встреч Телемоста <keeper@telemost.yandex.ru>",
+            "timestamp": "2026-02-08T16:27:00Z",
+            "attachments": [],
+            "dir_name": "2026-02-08_test_uid2550",
+            "dir_relpath": "incoming/telemost/2026-02-08_test_uid2550",
+        }
+        (raw_dir / "meta.json").write_text(
+            json.dumps(raw_meta, ensure_ascii=False), encoding="utf-8"
+        )
+        (raw_dir / "email_body.txt").write_text(
+            "Ссылка: https://telemost.yandex.ru/j/5981404294",
+            encoding="utf-8",
+        )
+
+        decoy_dir = incoming / "telemost" / "not-an-email-dir"
+        decoy_dir.mkdir(parents=True)
+        (decoy_dir / "meta.json").write_text("{}", encoding="utf-8")
+
+        assert enrich_incoming(incoming) == 1
+        emails = scan_incoming(incoming)
+        assert len(emails) == 1
+        assert emails[0]["dir_path"] == str(raw_dir)
+        assert emails[0]["meeting_uid"] == "5981404294"
+
+        print("  PASS: nested incoming filter dirs are enriched and scanned")
+
+
+def test_download_recordings_uses_runtime_data_dir():
+    """download_recordings() passes source account and runtime data_dir to Disk."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp = Path(tmpdir)
+        data_dir = tmp / "data"
+        meeting_dir = tmp / "custom-output" / "meeting"
+        captured = {}
+
+        class StubDisk:
+            def __init__(self, account=None, data_dir=None):
+                captured["account"] = account
+                captured["data_dir"] = data_dir
+
+            def download_with_meta(self, link, output_dir):
+                captured["link"] = link
+                captured["output_dir"] = output_dir
+                return {"name": "recording.mp4", "size": 10}
+
+        old_download = sys.modules.get("download")
+        sys.modules["download"] = SimpleNamespace(YandexDisk=StubDisk)
+        try:
+            results = download_recordings(
+                {
+                    "media_links": ["https://yadi.sk/d/abc123_video"],
+                    "source_emails": [{"account": "test"}],
+                },
+                meeting_dir,
+                data_dir=data_dir,
+            )
+        finally:
+            if old_download is None:
+                sys.modules.pop("download", None)
+            else:
+                sys.modules["download"] = old_download
+
+        assert len(results) == 1
+        assert captured["account"] == "test"
+        assert captured["data_dir"] == str(data_dir)
+        assert captured["output_dir"] == str(meeting_dir / "recordings")
+
+        print("  PASS: recording downloads use runtime data_dir")
+
+
 def test_classify_email():
     """classify_email returns English names, not transliterations."""
     assert classify_email("Конспект встречи от 08.02.2026") == "summary"
@@ -535,6 +620,8 @@ def run_all():
         ("T15c", test_existing_meta_non_destructive_merge),
         ("T15b", test_standalone_no_uid),
         ("T16a", test_enrich_incoming),
+        ("T16a2", test_nested_incoming_filter_dirs),
+        ("T16a3", test_download_recordings_uses_runtime_data_dir),
         ("T16b", test_classify_email),
         ("T16c", test_build_meeting_output_path),
         ("T16d", test_default_incoming_dir_prefers_named_telemost_filter),

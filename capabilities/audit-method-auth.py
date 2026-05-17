@@ -84,13 +84,23 @@ def _shape_from_call(call: ast.Call) -> tuple[str, dict[str, Any]]:
     return method_id, shape
 
 
-def decorated_methods() -> dict[str, list[dict[str, Any]]]:
-    found: dict[str, list[dict[str, Any]]] = {}
+def production_python_paths() -> list[Path]:
     script_path = Path(__file__).resolve()
+    paths: list[Path] = []
     for path in sorted(ROOT.rglob("*.py")):
         rel = path.relative_to(ROOT)
         if "tests" in rel.parts or path.resolve() == script_path:
             continue
+        if rel.parts and rel.parts[0] in {".agent", ".claude", ".codex"}:
+            continue
+        paths.append(path)
+    return paths
+
+
+def decorated_methods() -> dict[str, list[dict[str, Any]]]:
+    found: dict[str, list[dict[str, Any]]] = {}
+    for path in production_python_paths():
+        rel = path.relative_to(ROOT)
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for node in ast.walk(tree):
             if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
@@ -108,6 +118,87 @@ def decorated_methods() -> dict[str, list[dict[str, Any]]]:
                     }
                 )
     return found
+
+
+def _call_target_name(node: ast.Call) -> str | None:
+    target = node.func
+    if isinstance(target, ast.Name):
+        return target.id
+    if isinstance(target, ast.Attribute):
+        return target.attr
+    return None
+
+
+def _assert_no_call_api(paths: list[Path]) -> None:
+    offenders: list[str] = []
+    for path in paths:
+        rel = path.relative_to(ROOT)
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == "_call_api":
+                offenders.append(f"{rel}:{node.lineno} defines _call_api")
+            if isinstance(node, ast.Call) and _call_target_name(node) == "_call_api":
+                offenders.append(f"{rel}:{node.lineno} calls _call_api")
+    if offenders:
+        details = "\n  - ".join(offenders)
+        raise RuntimeError(f"production code contains forbidden _call_api usage:\n  - {details}")
+
+
+def decorated_layer_warnings(paths: list[Path]) -> list[str]:
+    warnings: list[str] = []
+    for path in paths:
+        rel = path.relative_to(ROOT)
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        decorated_names: set[str] = set()
+        calls_by_func: dict[str, set[str]] = {}
+
+        for node in ast.walk(tree):
+            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            if any(_decorator_call(decorator) is not None for decorator in node.decorator_list):
+                decorated_names.add(node.name)
+            calls_by_func[node.name] = {
+                name
+                for call in ast.walk(node)
+                if isinstance(call, ast.Call)
+                for name in [_call_target_name(call)]
+                if name
+            }
+
+        distance_to_decorated: dict[str, int] = {}
+
+        def distance(name: str, visiting: set[str] | None = None) -> int | None:
+            if name in decorated_names:
+                return 0
+            if name in distance_to_decorated:
+                return distance_to_decorated[name]
+            visiting = set(visiting or set())
+            if name in visiting:
+                return None
+            visiting.add(name)
+            best: int | None = None
+            for callee in calls_by_func.get(name, set()):
+                if callee not in calls_by_func and callee not in decorated_names:
+                    continue
+                callee_distance = distance(callee, visiting)
+                if callee_distance is None:
+                    continue
+                candidate = callee_distance + 1
+                best = candidate if best is None else min(best, candidate)
+            if best is not None:
+                distance_to_decorated[name] = best
+            return best
+
+        for name in sorted(calls_by_func):
+            if name in decorated_names:
+                continue
+            layer_distance = distance(name)
+            if layer_distance is not None and layer_distance >= 3:
+                warnings.append(
+                    f"{rel}:{name} reaches a decorated API method through "
+                    f"{layer_distance - 1} non-decorated call layers"
+                )
+    return warnings
 
 
 def _assert_matrix_policy_source() -> None:
@@ -128,7 +219,9 @@ def _assert_matrix_policy_source() -> None:
 def main() -> int:
     expected = expected_methods()
     decorated = decorated_methods()
+    production_paths = production_python_paths()
     errors: list[str] = []
+    warnings = decorated_layer_warnings(production_paths)
 
     for method_id, expected_shape in sorted(expected.items()):
         declarations = decorated.get(method_id, [])
@@ -151,12 +244,21 @@ def main() -> int:
     except RuntimeError as exc:
         errors.append(str(exc))
 
+    try:
+        _assert_no_call_api(production_paths)
+    except RuntimeError as exc:
+        errors.append(str(exc))
+
     if errors:
         print("method auth audit failed")
         for error in errors:
             print(f"- {error}")
         return 1
 
+    if warnings:
+        print("method auth audit warnings")
+        for warning in warnings:
+            print(f"- {warning}")
     print(f"method auth audit ok: {len(expected)} declarations")
     return 0
 

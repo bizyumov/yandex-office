@@ -111,12 +111,17 @@ python3 <full-path-to-yandex-office>/calendar/scripts/list_events.py --account m
 #### Create a New Telemost Meeting in Calendar
 
 Use this when the user wants a calendar event with a new Telemost join link.
+Every create call must include exactly one explicit user time context:
+`--timezone <IANA>` or `--utc-offset <Z|+HH:MM|-HH:MM>`. Naive `--start`
+values are treated as local wall time in that context; aware `--start` values
+are converted into it.
 
 ```bash
 python3 <full-path-to-yandex-office>/calendar/scripts/create_event.py \
   --account <account> \
   --summary "<title>" \
   --start "YYYY-MM-DDTHH:MM:SS" \
+  --timezone Europe/Moscow \
   --duration <minutes> \
   --attendees "<email1>,<email2>" \
   --json
@@ -131,10 +136,29 @@ python3 <full-path-to-yandex-office>/calendar/scripts/create_event.py \
   --account <account> \
   --summary "<title>" \
   --start "YYYY-MM-DDTHH:MM:SS" \
+  --timezone Europe/Moscow \
   --duration <minutes> \
   --telemost-conference-id <conference_id> \
   --json
 ```
+
+Existing conference settings can be changed in the same provisioning run:
+
+```bash
+python3 <full-path-to-yandex-office>/calendar/scripts/create_event.py \
+  --account <account> \
+  --summary "<title>" \
+  --start "YYYY-MM-DDTHH:MM:SS" \
+  --timezone Europe/Moscow \
+  --duration <minutes> \
+  --telemost-conference-id <conference_id> \
+  --telemost-waiting-room ADMINS \
+  --json
+```
+
+For repeat provisioning, pass `--event-uid <uid>` to overwrite the same
+Calendar object and `--telemost-link <join_url>` when the Telemost link is
+already known.
 
 Attach a local file while creating the event:
 
@@ -143,6 +167,7 @@ python3 <full-path-to-yandex-office>/calendar/scripts/create_event.py \
   --account <account> \
   --summary "<title>" \
   --start "YYYY-MM-DDTHH:MM:SS" \
+  --timezone Europe/Moscow \
   --duration <minutes> \
   --attendees "<email1>,<email2>" \
   --attachment "<local-file>" \
@@ -336,11 +361,12 @@ python3 <full-path-to-yandex-office>/calendar/scripts/find_slots.py \
   - Update event when Telemost details change
   - Add the real Telemost `join_url` to event location/description
   - Cancel event when Telemost meeting is deleted
-- Existing Telemost conference binding is supported via `--telemost-conference-id`
-- `--telemost-conference-id` is mutually exclusive with:
-  - `--telemost-access-level`
-  - `--telemost-waiting-room`
-  - `--telemost-cohosts`
+- Existing Telemost conference binding is supported via `--telemost-conference-id`.
+- Existing conference settings can be updated in the same run with
+  `--telemost-access-level`, `--telemost-waiting-room`, and
+  `--telemost-cohosts`.
+- If only `--telemost-link` is supplied, the script reuses that URL and does
+  not read or write Telemost.
 
 **Integration Contract:**
 ```python
@@ -368,6 +394,8 @@ def update_telemost_link(
 - Event description may include Telemost dial-in info
 - `python3 <full-path-to-yandex-office>/calendar/scripts/create_event.py` now creates the Telemost conference first, then writes the returned `join_url` into the event
 - if `--telemost-conference-id` is provided, the script fetches the existing conference and writes that conference's `join_url` into the event instead of creating a new conference
+- if `--telemost-conference-id` is provided with Telemost settings, the script
+  updates that conference before writing the Calendar event
 
 ---
 

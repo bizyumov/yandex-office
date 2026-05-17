@@ -6,6 +6,18 @@ All public `yandex-office` skill releases use the `YYYY.MM.DD` version format.
 
 ### Fixed
 
+- Integrated the still-valid PR #32 consultation provisioning fixes from Sergey
+  Pimenov on top of current managed-auth architecture.
+- Made Calendar Telemost event creation require explicit user time context via
+  `--timezone` or `--utc-offset`, with UID reuse and Telemost link reuse for
+  repeat provisioning runs.
+- Preserved existing Calendar attachment upload behavior while allowing
+  existing Telemost conferences to be updated before writing the Calendar event.
+- Stopped Telemost conference create/update writes from doing implicit
+  post-write reads; explicit `get_conference()` remains the read/hydration path.
+- Taught Telemost processing to read Mail filter output under
+  `incoming/<filter>/<email-dir>/meta.json` and to pass the processing runtime
+  data directory into recording downloads.
 - Completed PR 42 account/Mail/auth scope for #31, #40, and #48.
 - Made `oauth_setup.py --accounts list` the agent-facing account discovery
   helper. It prints managed account aliases only, one per line.
@@ -29,6 +41,8 @@ All public `yandex-office` skill releases use the `YYYY.MM.DD` version format.
 
 ### Changed
 
+- Extended the method-auth audit to fail on production `_call_api` usage and to
+  print warnings when decorated API calls are hidden behind deep local wrappers.
 - Updated root and sub-skill agent-facing docs to use account-first routing,
   app-aware account summaries, and full
   `python3 <full-path-to-yandex-office>/...` command paths.

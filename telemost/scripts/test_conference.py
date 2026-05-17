@@ -97,16 +97,6 @@ def test_create_conference_defaults():
     session = FakeSession(
         [
             FakeResponse(201, {"id": "conf-1", "join_url": "https://telemost.yandex.ru/j/1"}),
-            FakeResponse(
-                200,
-                {
-                    "id": "conf-1",
-                    "join_url": "https://telemost.yandex.ru/j/1",
-                    "access_level": "PUBLIC",
-                    "waiting_room_level": "PUBLIC",
-                },
-            ),
-            FakeResponse(200, {"cohosts": []}),
         ]
     )
     client = telemost_client.YandexTelemostClient("acct", session=session)
@@ -122,25 +112,13 @@ def test_create_conference_defaults():
         "waiting_room_level": "PUBLIC",
         "cohosts": [],
     }
+    assert len(session.calls) == 1
 
 
 def test_create_conference_with_overrides():
     session = FakeSession(
         [
             FakeResponse(201, {"id": "conf-2", "join_url": "https://telemost.yandex.ru/j/2"}),
-            FakeResponse(
-                200,
-                {
-                    "id": "conf-2",
-                    "join_url": "https://telemost.yandex.ru/j/2",
-                    "access_level": "ORGANIZATION",
-                    "waiting_room_level": "ADMINS",
-                    "live_stream": {
-                        "watch_url": "https://telemost.yandex.ru/watch/2",
-                    },
-                },
-            ),
-            FakeResponse(200, {"cohosts": [{"email": "contact@example.com"}]}),
         ]
     )
     client = telemost_client.YandexTelemostClient("acct", session=session)
@@ -151,7 +129,9 @@ def test_create_conference_with_overrides():
         live_stream={"access_level": "PUBLIC", "title": "Broadcast"},
     )
 
-    assert result["live_stream"]["watch_url"] == "https://telemost.yandex.ru/watch/2"
+    assert result["access_level"] == "ORGANIZATION"
+    assert result["waiting_room_level"] == "ADMINS"
+    assert result["live_stream"] == {"access_level": "PUBLIC", "title": "Broadcast"}
     assert result["cohosts"] == ["contact@example.com"]
     assert session.calls[0]["json"] == {
         "access_level": "ORGANIZATION",
@@ -159,6 +139,7 @@ def test_create_conference_with_overrides():
         "live_stream": {"access_level": "PUBLIC", "title": "Broadcast"},
         "cohosts": [{"email": "contact@example.com"}],
     }
+    assert len(session.calls) == 1
 
 
 def test_update_conference_with_patch_and_cohosts():
@@ -166,16 +147,6 @@ def test_update_conference_with_patch_and_cohosts():
         [
             FakeResponse(200, {"id": "conf-3", "join_url": "https://telemost.yandex.ru/j/3"}),
             FakeResponse(204, None),
-            FakeResponse(
-                200,
-                {
-                    "id": "conf-3",
-                    "join_url": "https://telemost.yandex.ru/j/3",
-                    "access_level": "PUBLIC",
-                    "waiting_room_level": "ORGANIZATION",
-                },
-            ),
-            FakeResponse(200, {"cohosts": [{"email": "contact@example.com"}]}),
         ]
     )
     client = telemost_client.YandexTelemostClient("acct", session=session)
@@ -191,6 +162,7 @@ def test_update_conference_with_patch_and_cohosts():
     assert session.calls[0]["json"] == {"waiting_room_level": "ORGANIZATION"}
     assert session.calls[1]["method"] == "PUT"
     assert session.calls[1]["json"] == {"cohosts": [{"email": "contact@example.com"}]}
+    assert len(session.calls) == 2
 
 
 def test_get_conference_maps_404():

@@ -50,6 +50,7 @@ python3 <full-path-to-yandex-office>/calendar/scripts/create_event.py \
   --account mary \
   --summary "Проектный созвон" \
   --start "2026-03-12T10:00:00" \
+  --timezone Europe/Moscow \
   --duration 45 \
   --telemost-conference-id <conference_id>
 
@@ -96,6 +97,10 @@ Supported operations:
 - get organization settings
 - update organization settings
 - bind an existing conference to a new calendar event through `python3 <full-path-to-yandex-office>/calendar/scripts/create_event.py --telemost-conference-id ...`
+
+Conference create/update calls are write operations. They return the normalized
+conference JSON available from the write response and request context; use
+`get` when an explicit read/hydration step is needed.
 
 Optional create/update fields:
 
@@ -270,7 +275,9 @@ OAuth for Telemost recordings.
 - Without managed auth for that account, the API may return `404` for existing Telemost resources.
 - `HEAD` requests are not a reliable availability probe.
 
-Use `yandex-office` managed auth when handling Telemost media links.
+Use `yandex-office` managed auth when handling Telemost media links. Recording
+downloads use the source email account and the same runtime data directory used
+by `process_meeting.py`.
 
 ### Console Output Policy
 

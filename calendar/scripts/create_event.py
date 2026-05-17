@@ -6,9 +6,11 @@ from __future__ import annotations
 import argparse
 import json
 import mimetypes
+import re
 import sys
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, tzinfo
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -28,6 +30,7 @@ from telemost.lib.client import TelemostError, YandexTelemostClient
 
 
 DEFAULT_ATTACHMENT_DIR = "disk:/yandex-office Calendar Attachments"
+UTC_OFFSET_RE = re.compile(r"^([+-])(\d{2}):(\d{2})$")
 
 
 def _escape_ical_text(value: str) -> str:
@@ -105,6 +108,56 @@ def _build_attachment_lines(attachments: list[dict[str, object]]) -> list[str]:
     return lines
 
 
+def _parse_utc_offset(value: str) -> tuple[timezone, str]:
+    """Parse a CLI UTC offset into a fixed-offset tzinfo and normalized label."""
+
+    raw = value.strip()
+    if raw == "Z":
+        return timezone.utc, "Z"
+    match = UTC_OFFSET_RE.match(raw)
+    if not match:
+        raise ValueError("--utc-offset must be Z, +HH:MM, or -HH:MM")
+    sign, hours_raw, minutes_raw = match.groups()
+    hours = int(hours_raw)
+    minutes = int(minutes_raw)
+    if hours > 23 or minutes > 59:
+        raise ValueError("--utc-offset must be Z, +HH:MM, or -HH:MM")
+    delta = timedelta(hours=hours, minutes=minutes)
+    if sign == "-":
+        delta = -delta
+    return timezone(delta), raw
+
+
+def _resolve_scheduling_context(
+    timezone_name: str | None,
+    utc_offset: str | None,
+) -> tuple[tzinfo, str | None, str | None]:
+    """Resolve the explicit user time context required for event creation."""
+
+    if bool(timezone_name) == bool(utc_offset):
+        raise ValueError("Provide exactly one of --timezone or --utc-offset")
+    if timezone_name:
+        try:
+            return ZoneInfo(timezone_name), timezone_name, None
+        except ZoneInfoNotFoundError as exc:
+            raise ValueError(f"Unknown timezone: {timezone_name}") from exc
+    offset_tz, normalized_offset = _parse_utc_offset(utc_offset or "")
+    return offset_tz, None, normalized_offset
+
+
+def _localize_start(start_str: str, context_tz: tzinfo) -> datetime:
+    start = datetime.fromisoformat(start_str)
+    if start.tzinfo is None:
+        return start.replace(tzinfo=context_tz)
+    return start.astimezone(context_tz)
+
+
+def _ical_datetime_line(name: str, value: datetime, timezone_name: str | None) -> str:
+    if timezone_name:
+        return f"{name};TZID={timezone_name}:{value.strftime('%Y%m%dT%H%M%S')}"
+    return f"{name}:{value.astimezone(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}"
+
+
 def create_telemost_event(
     account: str,
     summary: str,
@@ -112,10 +165,16 @@ def create_telemost_event(
     duration_minutes: int,
     attendees: list[str],
     data_dir: str | None = None,
+    timezone_name: str | None = None,
+    utc_offset: str | None = None,
+    event_uid: str | None = None,
+    telemost_link: str | None = None,
     telemost_conference_id: str | None = None,
-    telemost_access_level: str | None = "PUBLIC",
-    telemost_waiting_room: str | None = "PUBLIC",
+    telemost_access_level: str | None = None,
+    telemost_waiting_room: str | None = None,
     telemost_cohosts: list[str] | None = None,
+    telemost_settings_supplied: bool = False,
+    telemost_cohosts_supplied: bool = False,
     attachments: list[str] | None = None,
     attachment_remote_dir: str = DEFAULT_ATTACHMENT_DIR,
 ) -> dict[str, object]:
@@ -126,21 +185,60 @@ def create_telemost_event(
     Yandex web Calendar's internal attachment API described in issue #28.
     """
 
+    context_tz, selected_timezone, selected_utc_offset = _resolve_scheduling_context(
+        timezone_name,
+        utc_offset,
+    )
+    settings_requested = (
+        telemost_settings_supplied
+        or telemost_access_level not in (None, "PUBLIC")
+        or telemost_waiting_room not in (None, "PUBLIC")
+        or bool(telemost_cohosts)
+        or telemost_cohosts_supplied
+    )
+    if telemost_link and not telemost_conference_id and settings_requested:
+        raise ValueError("Telemost settings require a conference id to update or a new conference to create")
+
     calendar_client = YandexCalendarClient(
         account,
         data_dir=data_dir,
     )
     calendar_client.connect()
 
-    telemost_client = YandexTelemostClient(account, data_dir=data_dir)
+    conference: dict[str, object] | None = None
     if telemost_conference_id:
-        conference = telemost_client.get_conference(telemost_conference_id)
+        telemost_client = YandexTelemostClient(account, data_dir=data_dir)
+        updated: dict[str, object] | None = None
+        if settings_requested:
+            update_kwargs: dict[str, object] = {}
+            if telemost_access_level is not None:
+                update_kwargs["access_level"] = telemost_access_level
+            if telemost_waiting_room is not None:
+                update_kwargs["waiting_room_level"] = telemost_waiting_room
+            if telemost_cohosts_supplied or telemost_cohosts:
+                update_kwargs["cohosts"] = telemost_cohosts or []
+            if update_kwargs:
+                updated = telemost_client.update_conference(telemost_conference_id, **update_kwargs)
+        if telemost_link:
+            conference = {"id": telemost_conference_id, "join_url": telemost_link}
+            if updated:
+                conference.update({key: value for key, value in updated.items() if value is not None})
+            conference["join_url"] = telemost_link
+        else:
+            conference = telemost_client.get_conference(telemost_conference_id)
+            if updated:
+                conference.update({key: value for key, value in updated.items() if value is not None})
+    elif telemost_link:
+        conference = {"id": None, "join_url": telemost_link}
     else:
+        telemost_client = YandexTelemostClient(account, data_dir=data_dir)
         conference = telemost_client.create_conference(
-            access_level=telemost_access_level,
-            waiting_room_level=telemost_waiting_room,
+            access_level=telemost_access_level or "PUBLIC",
+            waiting_room_level=telemost_waiting_room or "PUBLIC",
             cohosts=telemost_cohosts or [],
         )
+    if not conference or not conference.get("join_url"):
+        raise ValueError("Telemost link is missing")
     telemost_link = conference["join_url"]
     uploaded_attachments = [
         _upload_attachment(
@@ -152,14 +250,14 @@ def create_telemost_event(
         for attachment in attachments or []
     ]
 
-    start = datetime.fromisoformat(start_str)
-    end = start + timedelta(minutes=duration_minutes)
+    start_local = _localize_start(start_str, context_tz)
+    end_local = start_local + timedelta(minutes=duration_minutes)
     calendar = calendar_client.find_calendar()
 
-    uid = str(uuid.uuid4())
+    uid = event_uid or str(uuid.uuid4())
     dtstamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    dtstart = start.strftime("%Y%m%dT%H%M%S")
-    dtend = end.strftime("%Y%m%dT%H%M%S")
+    dtstart_line = _ical_datetime_line("DTSTART", start_local, selected_timezone)
+    dtend_line = _ical_datetime_line("DTEND", end_local, selected_timezone)
     attendee_lines = _build_attendee_lines(attendees)
     method = "REQUEST" if attendees else "PUBLISH"
     organizer_line = (
@@ -183,8 +281,8 @@ METHOD:{method}
 BEGIN:VEVENT
 UID:{uid}
 DTSTAMP:{dtstamp}
-DTSTART;TZID=Europe/Moscow:{dtstart}
-DTEND;TZID=Europe/Moscow:{dtend}
+{dtstart_line}
+{dtend_line}
 SUMMARY:{_escape_ical_text(summary)}
 LOCATION:{telemost_link}
 DESCRIPTION:{description}
@@ -214,18 +312,23 @@ END:VCALENDAR"""
             "telemost": conference,
         }
 
-    return {
+    result = {
         "success": True,
         "uid": uid,
         "event_url": event_url,
         "summary": summary,
-        "start": start.isoformat(),
-        "end": end.isoformat(),
+        "start": start_local.isoformat(),
+        "end": end_local.isoformat(),
         "telemost_link": telemost_link,
         "telemost": conference,
         "attendees": attendees,
         "attachments": uploaded_attachments,
     }
+    if selected_timezone:
+        result["timezone"] = selected_timezone
+    else:
+        result["utc_offset"] = selected_utc_offset
+    return result
 
 
 def main() -> int:
@@ -236,6 +339,10 @@ def main() -> int:
     parser.add_argument("--duration", "-d", type=int, default=60, help="Duration in minutes")
     parser.add_argument("--attendees", help="Comma-separated email addresses")
     parser.add_argument("--data-dir", help="Path to data directory")
+    parser.add_argument("--timezone", help="IANA timezone for the user-provided start time")
+    parser.add_argument("--utc-offset", help="UTC offset for the user-provided start time: Z, +HH:MM, or -HH:MM")
+    parser.add_argument("--event-uid", help="Reuse an existing calendar event UID instead of creating a new one")
+    parser.add_argument("--telemost-link", help="Reuse an existing Telemost join URL instead of fetching/creating a conference")
     parser.add_argument("--telemost-conference-id", help="Use an existing Telemost conference instead of creating a new one")
     parser.add_argument(
         "--attachment",
@@ -267,32 +374,18 @@ def main() -> int:
     args = parser.parse_args()
 
     attendees = [email.strip() for email in (args.attendees or "").split(",") if email.strip()]
-    telemost_access_level = getattr(args, "telemost_access_level", "PUBLIC")
-    telemost_waiting_room = getattr(args, "telemost_waiting_room", "PUBLIC")
-    telemost_cohosts_raw = getattr(args, "telemost_cohosts", None)
-    telemost_cohosts = [email.strip() for email in (telemost_cohosts_raw or "").split(",") if email.strip()]
-
-    if args.telemost_conference_id:
-        conflicting = []
-        if hasattr(args, "telemost_access_level"):
-            conflicting.append("--telemost-access-level")
-        if hasattr(args, "telemost_waiting_room"):
-            conflicting.append("--telemost-waiting-room")
-        if hasattr(args, "telemost_cohosts"):
-            conflicting.append("--telemost-cohosts")
-        if conflicting:
-            print(
-                json.dumps(
-                    {
-                        "error": "--telemost-conference-id cannot be combined with "
-                        + ", ".join(conflicting)
-                    },
-                    ensure_ascii=False,
-                    indent=2,
-                ),
-                file=sys.stderr,
-            )
-            return 1
+    telemost_access_level = getattr(args, "telemost_access_level", None)
+    telemost_waiting_room = getattr(args, "telemost_waiting_room", None)
+    telemost_cohosts_supplied = hasattr(args, "telemost_cohosts")
+    telemost_cohosts_raw = getattr(args, "telemost_cohosts", "")
+    telemost_cohosts = [email.strip() for email in telemost_cohosts_raw.split(",") if email.strip()]
+    telemost_settings_supplied = any(
+        [
+            hasattr(args, "telemost_access_level"),
+            hasattr(args, "telemost_waiting_room"),
+            telemost_cohosts_supplied,
+        ]
+    )
 
     try:
         result = create_telemost_event(
@@ -302,10 +395,16 @@ def main() -> int:
             args.duration,
             attendees,
             data_dir=args.data_dir,
+            timezone_name=args.timezone,
+            utc_offset=args.utc_offset,
+            event_uid=args.event_uid,
+            telemost_link=args.telemost_link,
             telemost_conference_id=args.telemost_conference_id,
             telemost_access_level=telemost_access_level,
             telemost_waiting_room=telemost_waiting_room,
             telemost_cohosts=telemost_cohosts,
+            telemost_settings_supplied=telemost_settings_supplied,
+            telemost_cohosts_supplied=telemost_cohosts_supplied,
             attachments=args.attachment,
             attachment_remote_dir=args.attachment_remote_dir,
         )
