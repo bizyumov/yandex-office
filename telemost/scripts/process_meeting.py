@@ -8,12 +8,12 @@ with meeting-specific metadata, groups them by meeting UID, merges "summary"
 meeting documents.
 
 Data flow:
-    {data_dir}/incoming/{date}_{mailbox}_uid{N}/meta.json
+    {data_dir}/incoming/{filter}/{date}_{account}_uid{N}/meta.json
     → enrich: classify, extract meeting_uid/title/links
     → group by meeting_uid
     → merge metadata from both email types
     → transform transcript (UTC diarization)
-    → output to {data_dir}/meetings/{YYYY-MM}/{YYYY-MM-DD_HH-MM}_{mailbox}_{MEETING_UID}/
+    → output to {data_dir}/meetings/{YYYY-MM}/{YYYY-MM-DD_HH-MM}_{account}_{MEETING_UID}/
     → archive processed dirs
 """
 
@@ -52,6 +52,15 @@ TELEMOST_SENDER = "keeper@telemost.yandex.ru"
 MSK = timezone(timedelta(hours=3))
 
 MEETING_START_RE = re.compile(r"(\d{2})\.(\d{2})\.(\d{4})\s+в\s+(\d{1,2}):(\d{2})")
+
+
+def default_incoming_dir(data_dir: Path) -> Path:
+    """Return the Telemost incoming directory for named-filter mail fetches."""
+
+    filter_dir = data_dir / "incoming" / "telemost"
+    if filter_dir.exists():
+        return filter_dir
+    return data_dir / "incoming"
 
 
 def extract_meeting_start_local(body_text: str) -> str | None:
@@ -122,19 +131,19 @@ def _parse_iso_timestamp(raw_value: str | None) -> datetime | None:
 
 
 def _normalize_tag(raw_value: str | None) -> str:
-    """Normalize mailbox tag for filesystem-safe directory naming."""
+    """Normalize account tag for filesystem-safe directory naming."""
     if not raw_value:
         return "unknown"
     cleaned = re.sub(r"[^a-z0-9_-]+", "-", str(raw_value).lower()).strip("-")
     return cleaned or "unknown"
 
 
-def infer_mailbox_tag(meeting_data: dict) -> str:
-    """Infer mailbox tag from source email metadata."""
+def infer_account_tag(meeting_data: dict) -> str:
+    """Infer account tag from source email metadata."""
     for src in meeting_data.get("source_emails", []):
-        mailbox = src.get("mailbox")
-        if mailbox:
-            return _normalize_tag(mailbox)
+        account = src.get("account")
+        if account:
+            return _normalize_tag(account)
 
         dir_name = src.get("dir_name")
         if not dir_name:
@@ -186,9 +195,9 @@ def resolve_meeting_datetime(meeting_data: dict) -> datetime:
 
 
 def build_meeting_output_path(meeting_data: dict, output_base: Path) -> Path:
-    """Build output path: YYYY-MM/YYYY-MM-DD_HH-MM_{mailbox}_{meeting_uid}."""
+    """Build output path: YYYY-MM/YYYY-MM-DD_HH-MM_{account}_{meeting_uid}."""
     dt = resolve_meeting_datetime(meeting_data)
-    tag = infer_mailbox_tag(meeting_data)
+    tag = infer_account_tag(meeting_data)
     meeting_uid = meeting_data.get("meeting_uid") or "unknown"
 
     month_bucket = dt.strftime("%Y-%m")
@@ -201,13 +210,13 @@ def build_meeting_output_path(meeting_data: dict, output_base: Path) -> Path:
 def resolve_same_day_output_dir(meeting_data: dict, output_base: Path) -> Path:
     """Resolve output dir by same-day wildcard with single-candidate invariant.
 
-    Pattern: YYYY-MM/YYYY-MM-DD_*-*_{mailbox}_{meeting_uid}
+    Pattern: YYYY-MM/YYYY-MM-DD_*-*_{account}_{meeting_uid}
     - 0 candidates: create a new standard path from incoming event time
     - 1 candidate: append to that existing path
     - >1 candidates: fail fast (data integrity error)
     """
     dt = resolve_meeting_datetime(meeting_data)
-    tag = infer_mailbox_tag(meeting_data)
+    tag = infer_account_tag(meeting_data)
     meeting_uid = meeting_data.get("meeting_uid") or "unknown"
 
     month_bucket = dt.strftime("%Y-%m")
@@ -228,34 +237,38 @@ def resolve_same_day_output_dir(meeting_data: dict, output_base: Path) -> Path:
     candidate_list = ", ".join(str(p) for p in candidates)
     raise RuntimeError(
         f"Multiple same-day meeting directories found for meeting_uid={meeting_uid} "
-        f"mailbox={tag} date={date_part}: {candidate_list}"
+        f"account={tag} date={date_part}: {candidate_list}"
     )
 
 
 # ── Enrichment phase ──────────────────────────────────────────────────────────
 
 def _iter_incoming_email_dirs(incoming_dir: Path) -> list[Path]:
-    """Return nested incoming email directories that contain meta.json.
-
-    Incoming mail is stored as `incoming/<filter>/<YYYY-MM-DD_mailbox_uidN>/meta.json`,
-    so a flat first-level scan misses real email dirs and only sees filter buckets.
-    """
+    """Return flat or one-filter-deep Mail fetcher email directories."""
     if not incoming_dir.exists():
         return []
 
-    dirs = []
-    for meta_path in sorted(incoming_dir.rglob("meta.json")):
-        email_dir = meta_path.parent
-        if email_dir == incoming_dir:
+    def has_meta(path: Path) -> bool:
+        return path.is_dir() and (path / "meta.json").exists()
+
+    def is_mail_fetcher_email_dir(path: Path) -> bool:
+        return has_meta(path) and INCOMING_DIR_RE.match(path.name) is not None
+
+    dirs: list[Path] = []
+    for entry in sorted(incoming_dir.iterdir()):
+        if has_meta(entry):
+            dirs.append(entry)
             continue
-        dirs.append(email_dir)
+        if not entry.is_dir():
+            continue
+        dirs.extend(child for child in sorted(entry.iterdir()) if is_mail_fetcher_email_dir(child))
     return dirs
 
 
 def enrich_incoming(incoming_dir: Path, sender_filter: str = TELEMOST_SENDER) -> int:
     """Scan incoming/ and enrich Telemost emails with meeting-specific metadata.
 
-    For each nested email directory with meta.json:
+    For each Mail fetcher email directory with meta.json:
     1. Check if sender matches (only Telemost emails)
     2. Classify subject -> 'summary' or 'recording'
     3. Extract meeting_uid from plain text body
@@ -331,7 +344,7 @@ def enrich_incoming(incoming_dir: Path, sender_filter: str = TELEMOST_SENDER) ->
 def scan_incoming(incoming_dir: Path) -> list[dict]:
     """Find enriched Telemost email directories in incoming/.
 
-    Only returns nested email dirs that have been enriched (have email_type field).
+    Only returns Mail fetcher email dirs that have been enriched (have email_type field).
     Each dir must contain a meta.json to be considered valid.
     Returns list of metadata dicts (with 'dir_path' added).
     """
@@ -396,7 +409,7 @@ def merge_meeting_data(emails: list[dict]) -> dict:
             "imap_uid": em.get("imap_uid"),
             "email_type": email_type,
             "subject": em.get("subject"),
-            "mailbox": em.get("mailbox"),
+            "account": em.get("account"),
             "timestamp": em.get("timestamp"),
             "meeting_start_local": em.get("meeting_start_local"),
             "dir_name": em.get("dir_name"),
@@ -618,11 +631,15 @@ def archive_dirs(email_dirs: list[str], archive_base: Path):
             logger.info(f"Archived: {src.name}")
 
 
-def download_recordings(meeting_data: dict, meeting_dir: Path) -> list[dict]:
+def download_recordings(
+    meeting_data: dict,
+    meeting_dir: Path,
+    data_dir: Path | str | None = None,
+) -> list[dict]:
     """Download yadi.sk recordings via disk skill (optional integration).
 
-    Uses the mailbox/account name from meeting metadata to resolve the
-    correct token file (data/auth/{account}.token).
+    Uses the account name from meeting metadata and the processing runtime
+    data_dir to resolve managed Disk auth.
 
     Requires disk skill to be available (sys.path or installed).
     Returns list of download result dicts, or empty list on failure.
@@ -644,17 +661,12 @@ def download_recordings(meeting_data: dict, meeting_dir: Path) -> list[dict]:
         logger.warning("disk skill not available — skipping recording downloads")
         return []
 
-    account = next(
-        (src.get("mailbox") for src in meeting_data.get("source_emails", []) if src.get("mailbox")),
-        None,
-    )
+    sources = meeting_data.get("source_emails", [])
+    account = next((src.get("account") for src in sources if src.get("account")), None)
 
-    data_dir = meeting_dir.parents[2] if len(meeting_dir.parents) >= 3 else None
-    token_file = (data_dir / "auth" / f"{account}.token") if data_dir and account else None
     disk = YandexDisk(
         account=account,
         data_dir=str(data_dir) if data_dir else None,
-        token_file=str(token_file) if token_file and token_file.exists() else None,
     )
     recordings_dir = meeting_dir / "recordings"
     results = []
@@ -724,6 +736,7 @@ def report_result(
 
 
 def main():
+    """Run the Telemost meeting processor command-line interface."""
     parser = argparse.ArgumentParser(
         description="Process Telemost meetings from incoming/ directory"
     )
@@ -770,7 +783,7 @@ def main():
     )
     data_dir = runtime.data_dir
 
-    incoming_dir = Path(args.incoming) if args.incoming else data_dir / "incoming"
+    incoming_dir = Path(args.incoming) if args.incoming else default_incoming_dir(data_dir)
     output_base = Path(args.output) if args.output else data_dir / "meetings"
     archive_base = Path(args.archive) if args.archive else data_dir / "archive"
 
@@ -813,7 +826,7 @@ def main():
                 # Optionally download recordings for this email event.
                 if args.download_recordings and meeting_data.get("media_links"):
                     meeting_dir = Path(result["meeting_dir"])
-                    dl_results = download_recordings(meeting_data, meeting_dir)
+                    dl_results = download_recordings(meeting_data, meeting_dir, data_dir=data_dir)
                     if dl_results:
                         result["downloaded_recordings"] = len(dl_results)
 

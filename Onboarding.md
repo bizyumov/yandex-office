@@ -22,9 +22,9 @@ Do not duplicate the onboarding contract here.
 
 ## Troubleshooting
 
-- `AUTHENTICATE failed`: wrong token, wrong mailbox, or IMAP/OAuth is disabled in mailbox settings.
+- `AUTHENTICATE failed`: selected account alias lacks valid managed auth, or IMAP/OAuth is disabled in mailbox settings.
 - No fetched mail: sender filter is too strict, or there is no matching mail yet.
-- Wrong data path: onboarding was not run from the agent workspace CWD.
+- Wrong data path: onboarding did not use the expected CWD data directory.
 
 ## Maintainer Note
 

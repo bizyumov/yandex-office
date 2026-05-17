@@ -2,7 +2,7 @@
 
 ## Authentication Flow
 
-1. Obtain OAuth token via Yandex OAuth (run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py ...` from the agent workspace CWD)
+1. Obtain OAuth token via Yandex OAuth (run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py ...`)
 2. Connect to `imap.yandex.com:993` over TLS
 3. Authenticate with XOAUTH2 SASL mechanism:
 
@@ -22,8 +22,8 @@ The auth string is base64-encoded by `imaplib.IMAP4_SSL.authenticate()`.
 ## Token Lifecycle
 
 - Tokens are valid for ~1 year
-- No refresh token mechanism — re-run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py ...` from the agent workspace CWD to get a new token
-- Token file format: `{"email": "user@yandex.ru", "token.mail": "y0_..."}`
+- No refresh token mechanism — re-run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py ...` to get a new token
+- Runtime managed auth handles credential selection.
 
 ## Yandex IMAP Specifics
 

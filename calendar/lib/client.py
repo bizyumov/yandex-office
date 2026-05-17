@@ -8,12 +8,13 @@ import sys
 
 import caldav
 from icalendar import Calendar as iCalendar
+import requests
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from common.auth import resolve_token
+from common.api import YandexApiContext, handle_response, yandex_api_method
 from common.config import load_runtime_context
 
 
@@ -26,7 +27,6 @@ class YandexCalendarClient:
         self,
         account: str,
         data_dir: str | None = None,
-        required_scopes: list[str] | None = None,
     ):
         self.account = account
         self.runtime = load_runtime_context(
@@ -36,33 +36,47 @@ class YandexCalendarClient:
             require_external_data_dir=True,
         )
         self.data_dir = Path(data_dir).resolve() if data_dir else self.runtime.data_dir
-        self.required_scopes = required_scopes or ["calendar:all"]
-        self.email, self.token = self._load_credentials()
+        self.email: str | None = None
+        self.token: str | None = None
         self.client = None
         self.principal = None
 
-    def _load_credentials(self) -> tuple[str | None, str]:
-        token_info = resolve_token(
+    def _api_context(self) -> YandexApiContext:
+        """Build the shared GH41 API context for Calendar calls."""
+
+        return YandexApiContext(
             account=self.account,
-            skill="calendar",
             data_dir=self.data_dir,
             config=self.runtime.config,
-            required_scopes=self.required_scopes,
+            session=requests.Session(),
         )
-        return token_info.email, token_info.token
 
-    def connect(self):
+    def _bind_credentials(self, ctx: YandexApiContext) -> tuple[str, str]:
+        if ctx.token_ref is None:
+            raise RuntimeError("Calendar API context is not token-bound")
+        # Calendar uses Basic auth for CalDAV, but the token still must come
+        # from the shared dispatch loop so success updates token health.
+        email = str((ctx.token_data or {}).get("email") or "").strip()
+        self.email = email
+        self.token = ctx.token_ref.token
+        return email, ctx.token_ref.token
+
+    @yandex_api_method("calendar.caldav.principal", one_of=["calendar:all"])
+    def connect(self, ctx: YandexApiContext):
         """Establish CalDAV connection."""
+        email, token = self._bind_credentials(ctx)
         self.client = caldav.DAVClient(
             url=self.CALDAV_URL,
-            username=self.email,
-            password=self.token,
+            username=email,
+            password=token,
         )
         self.principal = self.client.principal()
         return self
 
-    def get_calendars(self):
+    @yandex_api_method("calendar.caldav.calendars", one_of=["calendar:all"])
+    def get_calendars(self, ctx: YandexApiContext):
         """Get list of available calendars."""
+        self._bind_credentials(ctx)
         if not self.principal:
             self.connect()
         return self.principal.calendars()
@@ -78,13 +92,36 @@ class YandexCalendarClient:
                 return cal
         return None
 
+    @yandex_api_method("calendar.caldav.event.put", one_of=["calendar:all"])
+    def put_event(
+        self,
+        ctx: YandexApiContext,
+        *,
+        event_url: str,
+        ical_data: str,
+    ) -> requests.Response:
+        """PUT a VEVENT resource through CalDAV."""
+
+        email, token = self._bind_credentials(ctx)
+        response = requests.put(
+            event_url,
+            auth=(email, token),
+            data=ical_data,
+            headers={"Content-Type": "text/calendar; charset=utf-8"},
+            timeout=30,
+        )
+        return handle_response(response, expected_statuses=(201, 204))
+
+    @yandex_api_method("calendar.caldav.report.date_search", one_of=["calendar:all"])
     def list_events(
         self,
+        ctx: YandexApiContext,
         calendar_name: str | None = None,
         start: datetime | None = None,
         end: datetime | None = None,
     ):
         """List events in a date range."""
+        self._bind_credentials(ctx)
         if not self.principal:
             self.connect()
 

@@ -2,8 +2,11 @@
 
 ## Overview
 
-A CalDAV-based Calendar / Календарь skill for managing Yandex Calendar events, integrated with the Yandex skill ecosystem. Provides read/write access to calendars, meeting scheduling, and multi-user availability queries.
+A CalDAV-based Calendar / Календарь skill for managing Yandex Calendar events, integrated with the Yandex office skill pack. Provides read/write access to calendars, meeting scheduling, and multi-user availability queries.
 
+---
+
+Auth: `--accounts list` discovers token-file aliases; absent aliases are imported by the agent through `yandex-office` under user authorization. Use `--app calendar-user`; avoid raw bearer tokens, scope-first choices, and config-backed account inventory.
 ---
 
 ## API Discovery
@@ -11,20 +14,15 @@ A CalDAV-based Calendar / Календарь skill for managing Yandex Calendar 
 ### Endpoint
 - **CalDAV URL**: `https://caldav.yandex.ru`
 - **Protocol**: CalDAV (RFC 4791)
-- **Authentication**: OAuth 2.0 token with `calendar` scope
+- **Authentication**: managed OAuth token linked to an app that declares `calendar:all`
 
 ### Authentication
-```json
-{
-  "email": "user@yandex.ru",
-  "token.calendar": "y0_..."
-}
-```
-
-Token stored per-account at: `{data_dir}/auth/{account}.token`
+Use a Calendar OAuth app token authorized through `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py`, normally
+with `--app calendar-user`. Runtime joins managed auth to the config-backed
+OAuth app catalog and the decorated Calendar method auth shape.
 
 ### Account Structure
-- Each user has a principal with multiple calendars
+- Each selected Yandex account identity has a principal with multiple calendars
 - Default calendars: "Мои события", "Не забыть"
 - Calendar discovery via `principal.calendars()`
 
@@ -75,8 +73,8 @@ Token stored per-account at: `{data_dir}/auth/{account}.token`
 
 **CLI Interface:**
 ```bash
-python3 calendar/scripts/list_events.py --account mary --date tomorrow
-python3 calendar/scripts/list_events.py --account mary --date 2026-03-03 --calendar "Мои события"
+python3 <full-path-to-yandex-office>/calendar/scripts/list_events.py --account mary --date tomorrow
+python3 <full-path-to-yandex-office>/calendar/scripts/list_events.py --account mary --date 2026-03-03 --calendar "Мои события"
 ```
 
 ---
@@ -109,27 +107,80 @@ python3 calendar/scripts/list_events.py --account mary --date 2026-03-03 --calen
 - Send calendar invites via Yandex (if API supports)
 
 **CLI Interface:**
+
+#### Create a New Telemost Meeting in Calendar
+
+Use this when the user wants a calendar event with a new Telemost join link.
+Every create call must include exactly one explicit user time context:
+`--timezone <IANA>` or `--utc-offset <Z|+HH:MM|-HH:MM>`. Naive `--start`
+values are treated as local wall time in that context; aware `--start` values
+are converted into it.
+
 ```bash
-python3 calendar/scripts/create_event.py \
-  --account mary \
-  --summary "Team Sync" \
-  --start "2026-03-03T15:00:00" \
-  --duration 60 \
-  --calendar "Мои события" \
-  --attendees "user@yandex.ru,colleague@yandex.ru" \
-  --description "Weekly team synchronization"
+python3 <full-path-to-yandex-office>/calendar/scripts/create_event.py \
+  --account <account> \
+  --summary "<title>" \
+  --start "YYYY-MM-DDTHH:MM:SS" \
+  --timezone Europe/Moscow \
+  --duration <minutes> \
+  --attendees "<email1>,<email2>" \
+  --json
 ```
+
+#### Bind an Existing Telemost Conference
 
 Bind an existing Telemost conference instead of creating a new one:
 
 ```bash
-python3 calendar/scripts/create_event.py \
-  --account mary \
-  --summary "Team Sync" \
-  --start "2026-03-12T10:00:00" \
-  --duration 60 \
-  --telemost-conference-id 1234567890
+python3 <full-path-to-yandex-office>/calendar/scripts/create_event.py \
+  --account <account> \
+  --summary "<title>" \
+  --start "YYYY-MM-DDTHH:MM:SS" \
+  --timezone Europe/Moscow \
+  --duration <minutes> \
+  --telemost-conference-id <conference_id> \
+  --json
 ```
+
+Existing conference settings can be changed in the same provisioning run:
+
+```bash
+python3 <full-path-to-yandex-office>/calendar/scripts/create_event.py \
+  --account <account> \
+  --summary "<title>" \
+  --start "YYYY-MM-DDTHH:MM:SS" \
+  --timezone Europe/Moscow \
+  --duration <minutes> \
+  --telemost-conference-id <conference_id> \
+  --telemost-waiting-room ADMINS \
+  --json
+```
+
+For repeat provisioning, pass `--event-uid <uid>` to overwrite the same
+Calendar object and `--telemost-link <join_url>` when the Telemost link is
+already known.
+
+Attach a local file while creating the event:
+
+```bash
+python3 <full-path-to-yandex-office>/calendar/scripts/create_event.py \
+  --account <account> \
+  --summary "<title>" \
+  --start "YYYY-MM-DDTHH:MM:SS" \
+  --timezone Europe/Moscow \
+  --duration <minutes> \
+  --attendees "<email1>,<email2>" \
+  --attachment "<local-file>" \
+  --json
+```
+
+Attachment implementation note:
+
+- Yandex does not expose CalDAV managed attachments for this skill.
+- The script uploads the file to Yandex Disk, publishes a share URL, and writes
+  an `ATTACH;VALUE=URI` property into the VEVENT.
+- GitHub issue #28 tracks the separate Yandex web Calendar attachment API
+  research for native Calendar UI attachment management.
 
 ---
 
@@ -158,15 +209,20 @@ python3 calendar/scripts/create_event.py \
 - Warn user about conflicts
 - Option to proceed anyway
 
-**CLI Interface:**
+**Planned CLI Interface:**
+
+**Implementation status:** unimplemented design contract. Do not run until
+`calendar/scripts/reschedule.py` exists. Tracking issue:
+GitHub #45.
+
 ```bash
-python3 calendar/scripts/reschedule.py \
+python3 <full-path-to-yandex-office>/calendar/scripts/reschedule.py \
   --account mary \
   --search "Сбер ЦФА" \
   --date "2026-03-03" \
   --new-start "2026-03-03T16:00:00"
 
-python3 calendar/scripts/reschedule.py \
+python3 <full-path-to-yandex-office>/calendar/scripts/reschedule.py \
   --account mary \
   --event-uid "uuid-here" \
   --postpone 30  # minutes
@@ -193,14 +249,19 @@ python3 calendar/scripts/reschedule.py \
 - Confirmation prompt for multi-attendee events
 - Require --force flag for non-interactive deletion
 
-**CLI Interface:**
+**Planned CLI Interface:**
+
+**Implementation status:** unimplemented design contract. Do not run until
+`calendar/scripts/cancel.py` exists. Tracking issue:
+GitHub #45.
+
 ```bash
-python3 calendar/scripts/cancel.py \
+python3 <full-path-to-yandex-office>/calendar/scripts/cancel.py \
   --account mary \
   --search "Team Sync" \
   --date "2026-03-03"
 
-python3 calendar/scripts/cancel.py \
+python3 <full-path-to-yandex-office>/calendar/scripts/cancel.py \
   --account mary \
   --event-uid "uuid-here" \
   --cancel-series
@@ -216,7 +277,7 @@ python3 calendar/scripts/cancel.py \
 - "Suggest meeting times for 1 hour next week with these attendees"
 
 **Requirements:**
-- Accept multiple account identifiers (from agent config accounts)
+- Accept multiple account aliases
 - Query across multiple calendars per person
 - Constraints:
   - Duration (required)
@@ -267,16 +328,21 @@ python3 calendar/scripts/cancel.py \
 }
 ```
 
-**CLI Interface:**
+**Planned CLI Interface:**
+
+**Implementation status:** unimplemented design contract. Do not run until
+`calendar/scripts/find_slots.py` exists. Tracking issue:
+GitHub #45.
+
 ```bash
-python3 calendar/scripts/find_slots.py \
+python3 <full-path-to-yandex-office>/calendar/scripts/find_slots.py \
   --duration 120 \
   --attendees "alex,mary,colleague@yandex.ru" \
   --from "tomorrow" \
   --to "friday" \
   --time-window "9:00-18:00"
 
-python3 calendar/scripts/find_slots.py \
+python3 <full-path-to-yandex-office>/calendar/scripts/find_slots.py \
   --duration 60 \
   --attendees "alex,mary" \
   --next-available
@@ -295,11 +361,12 @@ python3 calendar/scripts/find_slots.py \
   - Update event when Telemost details change
   - Add the real Telemost `join_url` to event location/description
   - Cancel event when Telemost meeting is deleted
-- Existing Telemost conference binding is supported via `--telemost-conference-id`
-- `--telemost-conference-id` is mutually exclusive with:
-  - `--telemost-access-level`
-  - `--telemost-waiting-room`
-  - `--telemost-cohosts`
+- Existing Telemost conference binding is supported via `--telemost-conference-id`.
+- Existing conference settings can be updated in the same run with
+  `--telemost-access-level`, `--telemost-waiting-room`, and
+  `--telemost-cohosts`.
+- If only `--telemost-link` is supplied, the script reuses that URL and does
+  not read or write Telemost.
 
 **Integration Contract:**
 ```python
@@ -325,8 +392,10 @@ def update_telemost_link(
 **Data Contract:**
 - Telemost link stored in `LOCATION`
 - Event description may include Telemost dial-in info
-- `calendar/scripts/create_event.py` now creates the Telemost conference first, then writes the returned `join_url` into the event
+- `python3 <full-path-to-yandex-office>/calendar/scripts/create_event.py` now creates the Telemost conference first, then writes the returned `join_url` into the event
 - if `--telemost-conference-id` is provided, the script fetches the existing conference and writes that conference's `join_url` into the event instead of creating a new conference
+- if `--telemost-conference-id` is provided with Telemost settings, the script
+  updates that conference before writing the Calendar event
 
 ---
 
@@ -339,9 +408,10 @@ calendar/
 ├── scripts/
 │   ├── list_events.py
 │   ├── create_event.py
-│   ├── reschedule.py
-│   ├── cancel.py
-│   └── find_slots.py
+│   ├── reschedule.py       # planned; unimplemented
+│   ├── cancel.py           # planned; unimplemented
+│   ├── find_slots.py       # planned; unimplemented
+│   └── test_create_event.py
 ├── lib/
 │   ├── __init__.py
 │   ├── client.py            # CalDAV client wrapper
@@ -359,7 +429,8 @@ python-dateutil>=2.8.0
 ```
 
 ### Configuration Extension
-Add shared defaults to root `config.json` and per-agent overrides to `yandex-data/config.agent.json`:
+Add shared defaults to root `config.skill.json` and local overrides to
+`yandex-data/config.agent.json`:
 ```json
 {
   "calendar": {
@@ -373,7 +444,6 @@ Add shared defaults to root `config.json` and per-agent overrides to `yandex-dat
 ### State Files
 ```
 {data_dir}/
-├── auth/{account}.token     # Existing OAuth tokens
 └── calendar/
     └── freebusy_cache.json  # Optional: cache for availability queries
 ```
@@ -383,7 +453,7 @@ Add shared defaults to root `config.json` and per-agent overrides to `yandex-dat
 ## Error Handling
 
 ### Common Error Cases
-1. **Token expired** → Prompt for re-auth via `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <name> --service calendar` from the agent workspace CWD
+1. **Managed auth expired** → Refresh through `yandex-office` under user authorization: `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account <alias> --app calendar-user`
 2. **Calendar not found** → List available calendars
 3. **Event not found** → Suggest similar titles, show events for that date
 4. **Conflict detected** → Show conflicting events, ask for confirmation
@@ -402,7 +472,7 @@ Add shared defaults to root `config.json` and per-agent overrides to `yandex-dat
 
 ## Security Considerations
 
-1. **Token storage**: Reuse existing `{data_dir}/auth/{account}.token` pattern
+1. **Managed auth**: Use `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py` for OAuth intake and refresh
 2. **No token logging**: Never log OAuth tokens
 3. **Calendar permissions**: Respect Yandex ACLs (read-only vs read-write)
 4. **Attendee privacy**: Don't expose other users' full event details in availability queries

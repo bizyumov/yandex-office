@@ -6,7 +6,6 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 
@@ -99,9 +98,9 @@ def build_fetcher(
         ],
     }
     fetcher.data_dir = Path("/tmp/yandex-data")
-    fetcher.state = state or {"filters": {"telemost": {"mailboxes": {"alex": {"last_uid": 10}}}}}
+    fetcher.state = state or {"filters": {"telemost": {"accounts": {"alex": {"last_uid": 10}}}}}
     fetcher.downloaded = []
-    fetcher.mailbox_counts = {}
+    fetcher.account_counts = {}
     fetcher.filter_counts = {}
     fetcher.run_options = {
         "filter": None,
@@ -109,9 +108,11 @@ def build_fetcher(
         "subject": None,
         "since_date": None,
         "before_date": None,
-        "mailbox": None,
+        "account": None,
         "from_uid": None,
+        "uid": None,
         "no_persist": False,
+        "extract_links": False,
     }
     if run_options:
         fetcher.run_options.update(run_options)
@@ -127,18 +128,11 @@ def test_to_imap_date_normalizes_iso_date() -> None:
     assert mail_fetch.EmailFetcher._to_imap_date("bad-date") is None
 
 
-def test_legacy_state_normalizes_to_telemost_filter() -> None:
+def test_default_state_normalizes_to_telemost_filter() -> None:
     fetcher = build_fetcher()
-    normalized = fetcher._normalize_state({"mailboxes": {"alex": {"last_uid": 9}}})
+    normalized = fetcher._normalize_state({"filters": {"default": {"accounts": {"alex": {"last_uid": 9}}}}})
 
-    assert normalized == {"filters": {"telemost": {"mailboxes": {"alex": {"last_uid": 9}}}}}
-
-
-def test_bad_intermediate_default_state_normalizes_to_telemost_filter() -> None:
-    fetcher = build_fetcher()
-    normalized = fetcher._normalize_state({"filters": {"default": {"mailboxes": {"alex": {"last_uid": 9}}}}})
-
-    assert normalized == {"filters": {"telemost": {"mailboxes": {"alex": {"last_uid": 9}}}}}
+    assert normalized == {"filters": {"telemost": {"accounts": {"alex": {"last_uid": 9}}}}}
 
 
 def test_named_filter_resolution_uses_selected_filter() -> None:
@@ -238,7 +232,7 @@ def test_cli_overrides_without_filter_ignore_stored_cursor() -> None:
             "telemost": {"sender": "keeper@telemost.yandex.ru"},
         },
         run_options={"subject": "Discussion"},
-        state={"filters": {"telemost": {"mailboxes": {"alex": {"last_uid": 777}}}}},
+        state={"filters": {"telemost": {"accounts": {"alex": {"last_uid": 777}}}}},
     )
 
     assert fetcher._effective_last_uid("alex", "default") == 1
@@ -250,7 +244,7 @@ def test_cli_overrides_with_explicit_filter_keep_filter_cursor() -> None:
             "telemost": {"sender": "keeper@telemost.yandex.ru"},
         },
         run_options={"filter": "telemost", "subject": "Discussion"},
-        state={"filters": {"telemost": {"mailboxes": {"alex": {"last_uid": 777}}}}},
+        state={"filters": {"telemost": {"accounts": {"alex": {"last_uid": 777}}}}},
     )
 
     assert fetcher._effective_last_uid("alex", "telemost") == 777
@@ -313,24 +307,25 @@ def test_search_emails_handles_yandex_bytes_only_uid_fetch() -> None:
     assert result == [(929, b"929"), (5296, b"5296")]
 
 
-def test_fetch_mailbox_dry_run_collects_headers(monkeypatch) -> None:
+def test_fetch_account_dry_run_collects_headers(monkeypatch) -> None:
     header_message = (
         "Subject: =?utf-8?B?0KLQtdGB0YI=?=\r\n"
         "From: news@example.com\r\n"
-        "Date: Thu, 12 Mar 2026 10:00:00 +0000\r\n\r\n"
+        "Date: Thu, 12 Mar 2026 10:00:00 +0000\r\n"
+        "Content-Type: text/html; charset=utf-8\r\n\r\n"
+        '<a href="https://disk.yandex.ru/i/abc">file</a> '
+        "https://forms.yandex.ru/u/123/"
     )
     conn = HeaderConn(header_message)
-    fetcher = build_fetcher()
+    fetcher = build_fetcher(run_options={"extract_links": True})
 
-    monkeypatch.setattr(
-        mail_fetch,
-        "resolve_token",
-        lambda **_: SimpleNamespace(token="y0_mail"),
-    )
     fetcher._connect_imap = lambda *_: conn
     fetcher._search_emails = lambda *_args, **_kwargs: [(11, b"11")]
+    fetcher._fetch_message_data = (
+        lambda conn_arg, uid_bytes, query, **_kwargs: conn_arg.uid("FETCH", uid_bytes, query)
+    )
 
-    count = fetcher.fetch_mailbox(
+    count = fetcher.fetch_account(
         {"name": "alex", "email": "user@example.com"},
         fetcher.run_filters[0],
         dry_run=True,
@@ -342,17 +337,21 @@ def test_fetch_mailbox_dry_run_collects_headers(monkeypatch) -> None:
     assert fetcher.downloaded == [
         {
             "imap_uid": 11,
-            "mailbox": "alex",
+            "account": "alex",
             "subject": "Тест",
             "sender": "news@example.com",
             "timestamp": "2026-03-12T10:00:00Z",
             "dry_run": True,
             "filter": "telemost",
+            "links": [
+                "https://disk.yandex.ru/i/abc",
+                "https://forms.yandex.ru/u/123/",
+            ],
         }
     ]
 
 
-def test_fetch_mailbox_dry_run_does_not_sleep(monkeypatch) -> None:
+def test_fetch_account_dry_run_does_not_sleep(monkeypatch) -> None:
     conn = HeaderConn(
         "Subject: Test\r\nFrom: news@example.com\r\nDate: Thu, 12 Mar 2026 10:00:00 +0000\r\n\r\n"
     )
@@ -360,19 +359,17 @@ def test_fetch_mailbox_dry_run_does_not_sleep(monkeypatch) -> None:
     fetcher.config["mail"]["fetch"] = {"sleep_seconds": 99}
 
     monkeypatch.setattr(
-        mail_fetch,
-        "resolve_token",
-        lambda **_: SimpleNamespace(token="y0_mail"),
-    )
-    monkeypatch.setattr(
         mail_fetch.time,
         "sleep",
         lambda *_args, **_kwargs: pytest.fail("dry-run must not sleep"),
     )
     fetcher._connect_imap = lambda *_: conn
     fetcher._search_emails = lambda *_args, **_kwargs: [(11, b"11"), (12, b"12")]
+    fetcher._fetch_message_data = (
+        lambda conn_arg, uid_bytes, query, **_kwargs: conn_arg.uid("FETCH", uid_bytes, query)
+    )
 
-    count = fetcher.fetch_mailbox(
+    count = fetcher.fetch_account(
         {"name": "alex", "email": "user@example.com"},
         fetcher.run_filters[0],
         dry_run=True,
@@ -419,21 +416,16 @@ def test_extract_message_bytes_accepts_direct_bytes_payload() -> None:
     assert extracted == raw_header
 
 
-def test_fetch_mailbox_from_uid_is_non_persistent(monkeypatch) -> None:
+def test_fetch_account_from_uid_is_non_persistent(monkeypatch) -> None:
     fetcher = build_fetcher(run_options={"from_uid": 5000})
     conn = LogoutConn()
     save_calls = []
 
-    monkeypatch.setattr(
-        mail_fetch,
-        "resolve_token",
-        lambda **_: SimpleNamespace(token="y0_mail"),
-    )
     fetcher._connect_imap = lambda *_: conn
     fetcher._search_emails = lambda *_args, **_kwargs: [(5001, b"5001")]
     fetcher._process_email = lambda *_args, **_kwargs: {
         "imap_uid": 5001,
-        "mailbox": "alex",
+        "account": "alex",
         "subject": "Backfill",
         "sender": "user@example.com",
         "timestamp": "2026-03-12T10:00:00Z",
@@ -442,11 +434,34 @@ def test_fetch_mailbox_from_uid_is_non_persistent(monkeypatch) -> None:
     }
     fetcher._save_state = lambda: save_calls.append("saved")
 
-    fetched = fetcher.fetch_mailbox({"name": "alex", "email": "user@example.com"}, fetcher.run_filters[0])
+    fetched = fetcher.fetch_account({"name": "alex", "email": "user@example.com"}, fetcher.run_filters[0])
 
     assert fetched == 1
     assert fetcher._get_last_uid("alex", "telemost") == 10
     assert save_calls == []
+    assert conn.logged_out is True
+
+
+def test_fetch_account_uid_fetches_exact_message_without_search() -> None:
+    fetcher = build_fetcher(
+        accounts=[{"name": "alex", "email": "user@example.com"}],
+        run_options={"uid": 5000},
+    )
+    conn = LogoutConn()
+    processed = []
+
+    fetcher._connect_imap = lambda *_: conn
+    fetcher._search_emails = lambda *_args, **_kwargs: pytest.fail("--uid must skip search")
+    fetcher._process_email = lambda _conn, uid_bytes, uid, account, filter_, **_kw: (
+        processed.append((uid_bytes, uid, account, filter_))
+        or {"imap_uid": uid, "subject": "Exact", "attachments": []}
+    )
+    fetcher._save_state = lambda: pytest.fail("--uid must not persist")
+
+    fetched = fetcher.fetch_account({"name": "alex", "email": "user@example.com"}, fetcher.run_filters[0])
+
+    assert fetched == 1
+    assert processed == [(b"5000", 5000, "alex", "default")]
     assert conn.logged_out is True
 
 
@@ -455,26 +470,26 @@ def test_fetch_all_respects_global_cap() -> None:
 
     calls = []
 
-    def fake_fetch_mailbox(mailbox_config, run_filter, max_messages=None, dry_run=False):
-        calls.append((mailbox_config["name"], run_filter["name"], max_messages, dry_run))
-        fetcher.downloaded.append({"mailbox": mailbox_config["name"], "filter": run_filter["name"]})
+    def fake_fetch_account(account_config, run_filter, max_messages=None, dry_run=False):
+        calls.append((account_config["name"], run_filter["name"], max_messages, dry_run))
+        fetcher.downloaded.append({"account": account_config["name"], "filter": run_filter["name"]})
         return 1
 
-    fetcher.fetch_mailbox = fake_fetch_mailbox
+    fetcher.fetch_account = fake_fetch_account
 
     downloaded = fetcher.fetch_all(num_messages=1, dry_run=False)
 
     assert calls == [("alex", "telemost", 1, False)]
-    assert fetcher.mailbox_counts == {"alex": 1, "work": 0}
+    assert fetcher.account_counts == {"alex": 1, "work": 0}
     assert fetcher.filter_counts == {"telemost": 1}
-    assert downloaded == [{"mailbox": "alex", "filter": "telemost"}]
+    assert downloaded == [{"account": "alex", "filter": "telemost"}]
 
 
-def test_fetch_all_restricts_mailbox_selection() -> None:
-    fetcher = build_fetcher(run_options={"mailbox": "work"})
+def test_fetch_all_restricts_account_selection() -> None:
+    fetcher = build_fetcher(run_options={"account": "work"})
     calls = []
-    fetcher.fetch_mailbox = (
-        lambda mailbox_config, run_filter, **kwargs: calls.append((mailbox_config["name"], run_filter["name"])) or 0
+    fetcher.fetch_account = (
+        lambda account_config, run_filter, **kwargs: calls.append((account_config["name"], run_filter["name"])) or 0
     )
 
     fetcher.fetch_all()
@@ -482,10 +497,17 @@ def test_fetch_all_restricts_mailbox_selection() -> None:
     assert calls == [("work", "telemost")]
 
 
-def test_fetch_all_rejects_unknown_mailbox() -> None:
-    fetcher = build_fetcher(run_options={"mailbox": "missing"})
+def test_fetch_all_rejects_unknown_account() -> None:
+    fetcher = build_fetcher(run_options={"account": "missing"})
 
-    with pytest.raises(ValueError, match='Unknown mailbox "missing"'):
+    with pytest.raises(ValueError, match='Unknown account alias "missing"'):
+        fetcher.fetch_all()
+
+
+def test_fetch_all_rejects_uid_without_unambiguous_account() -> None:
+    fetcher = build_fetcher(run_options={"uid": 42})
+
+    with pytest.raises(ValueError, match="--uid requires --account"):
         fetcher.fetch_all()
 
 
@@ -494,7 +516,7 @@ def test_main_spills_heavy_pending_output_to_file(monkeypatch, tmp_path, capsys)
         def __init__(self, **_kwargs):
             self.active_filter = {"name": "telemost"}
             self.run_filters = [{"name": "telemost"}]
-            self.mailbox_counts = {"work": 3}
+            self.account_counts = {"work": 3}
             self.filter_counts = {"telemost": 2}
             self.data_dir = tmp_path
             self.config = {"mail": {"output": {"max_inline_symbols": 10}}}
@@ -505,7 +527,7 @@ def test_main_spills_heavy_pending_output_to_file(monkeypatch, tmp_path, capsys)
             return [
                 {
                     "imap_uid": 1,
-                    "mailbox": "work",
+                    "account": "work",
                     "sender": "alice@example.com",
                     "subject": "Long enough subject 1",
                     "timestamp": "2026-03-12T10:00:00Z",
@@ -513,7 +535,7 @@ def test_main_spills_heavy_pending_output_to_file(monkeypatch, tmp_path, capsys)
                 },
                 {
                     "imap_uid": 2,
-                    "mailbox": "work",
+                    "account": "work",
                     "sender": "bob@example.com",
                     "subject": "Long enough subject 2",
                     "timestamp": "2026-03-13T10:00:00Z",

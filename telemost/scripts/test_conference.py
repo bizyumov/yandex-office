@@ -17,7 +17,6 @@ if str(ROOT_DIR) not in sys.path:
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-from common.auth import ResolvedToken
 from telemost.lib import client as telemost_client
 import conference as conference_cli
 
@@ -57,27 +56,39 @@ class FakeSession:
 
 
 @pytest.fixture(autouse=True)
-def stub_token(monkeypatch):
+def stub_token(monkeypatch, tmp_path):
+    data_dir = tmp_path / "yandex-data"
+    token_path = data_dir / "auth" / "acct.token"
+    token_path.parent.mkdir(parents=True, exist_ok=True)
+    token_path.write_text(
+        json.dumps(
+            {
+                "email": "user@example.com",
+                "secret": {"client_id": "telemost-client"},
+            }
+        ),
+        encoding="utf-8",
+    )
     monkeypatch.setattr(
         telemost_client,
         "load_runtime_context",
         lambda _path, **_: SimpleNamespace(
-            data_dir=Path("/tmp/workspace/yandex-data"),
-            config={"urls": {}},
-        ),
-    )
-    monkeypatch.setattr(
-        telemost_client,
-        "resolve_token",
-        lambda **_: ResolvedToken(
-            account="acct",
-            skill="telemost",
-            token="secret",
-            token_key="token.telemost",
-            source_key="token.telemost",
-            token_path=Path("/tmp/acct.token"),
-            token_data={"token.telemost": "secret"},
-            email="user@example.com",
+            data_dir=data_dir,
+            config={
+                "urls": {},
+                "oauth_apps": {
+                    "catalog": {
+                        "telemost": {
+                            "client_id": "telemost-client",
+                            "scopes": [
+                                "telemost-api:conferences.create",
+                                "telemost-api:conferences.read",
+                                "telemost-api:conferences.update",
+                            ],
+                        },
+                    },
+                },
+            },
         ),
     )
 
@@ -86,16 +97,6 @@ def test_create_conference_defaults():
     session = FakeSession(
         [
             FakeResponse(201, {"id": "conf-1", "join_url": "https://telemost.yandex.ru/j/1"}),
-            FakeResponse(
-                200,
-                {
-                    "id": "conf-1",
-                    "join_url": "https://telemost.yandex.ru/j/1",
-                    "access_level": "PUBLIC",
-                    "waiting_room_level": "PUBLIC",
-                },
-            ),
-            FakeResponse(200, {"cohosts": []}),
         ]
     )
     client = telemost_client.YandexTelemostClient("acct", session=session)
@@ -111,25 +112,13 @@ def test_create_conference_defaults():
         "waiting_room_level": "PUBLIC",
         "cohosts": [],
     }
+    assert len(session.calls) == 1
 
 
 def test_create_conference_with_overrides():
     session = FakeSession(
         [
             FakeResponse(201, {"id": "conf-2", "join_url": "https://telemost.yandex.ru/j/2"}),
-            FakeResponse(
-                200,
-                {
-                    "id": "conf-2",
-                    "join_url": "https://telemost.yandex.ru/j/2",
-                    "access_level": "ORGANIZATION",
-                    "waiting_room_level": "ADMINS",
-                    "live_stream": {
-                        "watch_url": "https://telemost.yandex.ru/watch/2",
-                    },
-                },
-            ),
-            FakeResponse(200, {"cohosts": [{"email": "contact@example.com"}]}),
         ]
     )
     client = telemost_client.YandexTelemostClient("acct", session=session)
@@ -140,7 +129,9 @@ def test_create_conference_with_overrides():
         live_stream={"access_level": "PUBLIC", "title": "Broadcast"},
     )
 
-    assert result["live_stream"]["watch_url"] == "https://telemost.yandex.ru/watch/2"
+    assert result["access_level"] == "ORGANIZATION"
+    assert result["waiting_room_level"] == "ADMINS"
+    assert result["live_stream"] == {"access_level": "PUBLIC", "title": "Broadcast"}
     assert result["cohosts"] == ["contact@example.com"]
     assert session.calls[0]["json"] == {
         "access_level": "ORGANIZATION",
@@ -148,6 +139,7 @@ def test_create_conference_with_overrides():
         "live_stream": {"access_level": "PUBLIC", "title": "Broadcast"},
         "cohosts": [{"email": "contact@example.com"}],
     }
+    assert len(session.calls) == 1
 
 
 def test_update_conference_with_patch_and_cohosts():
@@ -155,16 +147,6 @@ def test_update_conference_with_patch_and_cohosts():
         [
             FakeResponse(200, {"id": "conf-3", "join_url": "https://telemost.yandex.ru/j/3"}),
             FakeResponse(204, None),
-            FakeResponse(
-                200,
-                {
-                    "id": "conf-3",
-                    "join_url": "https://telemost.yandex.ru/j/3",
-                    "access_level": "PUBLIC",
-                    "waiting_room_level": "ORGANIZATION",
-                },
-            ),
-            FakeResponse(200, {"cohosts": [{"email": "contact@example.com"}]}),
         ]
     )
     client = telemost_client.YandexTelemostClient("acct", session=session)
@@ -180,6 +162,7 @@ def test_update_conference_with_patch_and_cohosts():
     assert session.calls[0]["json"] == {"waiting_room_level": "ORGANIZATION"}
     assert session.calls[1]["method"] == "PUT"
     assert session.calls[1]["json"] == {"cohosts": [{"email": "contact@example.com"}]}
+    assert len(session.calls) == 2
 
 
 def test_get_conference_maps_404():

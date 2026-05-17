@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 
@@ -17,7 +18,6 @@ SUBSKILL_NAMES = {
     "directory": "Директория",
     "disk": "Диск",
     "telemost": "Телемост",
-    "cloud": "Облако",
     "forms": "Формы",
     "tracker": "Трекер",
 }
@@ -29,7 +29,6 @@ SUBSKILL_DOCS = {
     "directory": ROOT / "directory" / "directory.md",
     "disk": ROOT / "disk" / "disk.md",
     "telemost": ROOT / "telemost" / "telemost.md",
-    "cloud": ROOT / "cloud" / "cloud.md",
     "forms": ROOT / "forms" / "forms.md",
     "tracker": ROOT / "tracker" / "tracker.md",
 }
@@ -52,3 +51,11 @@ def test_each_subskill_doc_contains_english_and_russian_name() -> None:
         content = SUBSKILL_DOCS[subskill].read_text(encoding="utf-8")
         assert russian_name in content
         assert subskill in content.lower()
+
+
+def test_tracked_files_do_not_contain_local_openclaw_paths() -> None:
+    result = subprocess.run(
+        ["git", "grep", "-n", "--fixed-strings", "/opt/" + "openclaw"],
+        cwd=ROOT, capture_output=True, text=True,
+    )
+    assert result.returncode == 1, result.stdout

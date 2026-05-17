@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+import re
 from pathlib import Path
-import shutil
 from typing import Any
 
 
-GLOBAL_CONFIG_NAME = "config.json"
-GLOBAL_CONFIG_TEMPLATE_NAME = "config.example.json"
+GLOBAL_CONFIG_NAME = "config.skill.json"
+LEGACY_GLOBAL_CONFIG_NAME = "config.json"
 AGENT_CONFIG_NAME = "config.agent.json"
 AGENT_CONFIG_TEMPLATE_NAME = "config.agent.example.json"
 DEFAULT_DATA_DIR = "yandex-data"
@@ -30,18 +30,22 @@ class RuntimeContext:
     config: dict[str, Any]
 
     def path(self, *parts: str) -> Path:
+        """Return a path inside the resolved runtime data directory."""
         return self.data_dir.joinpath(*parts)
 
     def auth_file(self, account: str) -> Path:
+        """Return the token file path for an account alias."""
         return self.path("auth", f"{account}.token")
 
 
 def _read_json(path: Path) -> dict[str, Any]:
+    """Read a JSON object from disk."""
     with open(path, encoding="utf-8") as handle:
         return json.load(handle)
 
 
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
+    """Write a JSON object to disk with stable formatting."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
@@ -49,7 +53,97 @@ def _write_json(path: Path, payload: dict[str, Any]) -> None:
     )
 
 
+def list_token_accounts(data_dir: str | Path) -> list[dict[str, Any]]:
+    """Return account rows derived from managed auth token files."""
+    auth_dir = Path(data_dir).resolve() / "auth"
+    if not auth_dir.exists():
+        return []
+    accounts: list[dict[str, Any]] = []
+    for token_path in sorted(auth_dir.glob("*.token")):
+        try:
+            payload = _read_json(token_path)
+        except json.JSONDecodeError:
+            continue
+        email = str(payload.get("email", "")).strip()
+        if not email:
+            continue
+        tokens: dict[str, str] = {}
+        for key, value in payload.items():
+            if key == "email":
+                continue
+            if key.startswith("token."):
+                continue
+            if isinstance(value, dict):
+                client_id = str(value.get("client_id", "")).strip()
+                if client_id:
+                    tokens[str(key)] = client_id
+            elif isinstance(value, str):
+                # Legacy transitional read for pre-runtime-state token files.
+                tokens[str(key)] = value
+        accounts.append(
+            {
+                "name": token_path.stem,
+                "alias": token_path.stem,
+                "email": email,
+                "token_path": str(token_path),
+                "tokens": tokens,
+            }
+        )
+    return accounts
+
+
+def yandex_identity_matches(left: str, right: str) -> bool:
+    """Return whether two values describe the same Yandex login identity."""
+    left_value = str(left).strip().lower()
+    right_value = str(right).strip().lower()
+    if not left_value or not right_value:
+        return False
+    return (
+        left_value == right_value
+        or ("@" not in left_value and right_value == f"{left_value}@yandex.ru")
+        or ("@" not in right_value and left_value == f"{right_value}@yandex.ru")
+    )
+
+
+def find_token_account_by_email(data_dir: str | Path, email: str) -> dict[str, Any] | None:
+    """Find a token-backed account by verified Yandex identity."""
+    if not str(email).strip():
+        return None
+    for account in list_token_accounts(data_dir):
+        if yandex_identity_matches(str(account.get("email", "")), email):
+            return account
+    return None
+
+
+def _suggest_account_name(email: str, preferred_name: str | None = None) -> str:
+    """Suggest a stable account alias from an email or preferred name."""
+    preferred = str(preferred_name or "").strip()
+    if preferred:
+        return preferred
+    local_part = str(email).split("@", 1)[0].strip().lower()
+    slug = re.sub(r"[^a-z0-9]+", "-", local_part).strip("-")
+    return slug or "account"
+
+
+def choose_account_alias(
+    data_dir: str | Path,
+    email: str,
+    preferred_name: str | None = None,
+) -> str:
+    """Choose an unused token-file alias for an email address."""
+    auth_dir = Path(data_dir).resolve() / "auth"
+    used_names = {path.stem for path in auth_dir.glob("*.token")} if auth_dir.exists() else set()
+    base_name = _suggest_account_name(email, preferred_name)
+    resolved_name = base_name
+    suffix = 2
+    while resolved_name in used_names:
+        resolved_name = f"{base_name}-{suffix}"
+        suffix += 1
+    return resolved_name
+
+
 def _deep_merge(base: Any, override: Any) -> Any:
+    """Recursively merge override values into a base config object."""
     if isinstance(base, dict) and isinstance(override, dict):
         merged = dict(base)
         for key, value in override.items():
@@ -62,18 +156,19 @@ def _deep_merge(base: Any, override: Any) -> Any:
 
 
 def find_skill_root(start_path: str | Path) -> Path:
+    """Find the shared skill root above a path."""
     current = Path(start_path).resolve()
     if current.is_file():
         current = current.parent
 
     for candidate in [current] + list(current.parents):
         config_path = candidate / GLOBAL_CONFIG_NAME
-        template_path = candidate / GLOBAL_CONFIG_TEMPLATE_NAME
-        if config_path.exists() or template_path.exists():
+        legacy_config_path = candidate / LEGACY_GLOBAL_CONFIG_NAME
+        if config_path.exists() or legacy_config_path.exists():
             return candidate
 
     raise FileNotFoundError(
-        f"{GLOBAL_CONFIG_NAME} or {GLOBAL_CONFIG_TEMPLATE_NAME} not found above "
+        f"{GLOBAL_CONFIG_NAME} or {LEGACY_GLOBAL_CONFIG_NAME} not found above "
         f"{Path(start_path).resolve()}"
     )
 
@@ -83,71 +178,46 @@ def load_global_config(
     *,
     bootstrap: bool = False,
 ) -> tuple[Path, dict[str, Any]]:
+    """Load the shared skill config file."""
+    del bootstrap
     root = Path(skill_root).resolve()
     config_path = root / GLOBAL_CONFIG_NAME
     if config_path.exists():
         return config_path, _read_json(config_path)
 
-    template_path = root / GLOBAL_CONFIG_TEMPLATE_NAME
-    if bootstrap and template_path.exists():
-        shutil.copyfile(template_path, config_path)
-        return config_path, _read_json(config_path)
+    legacy_config_path = root / LEGACY_GLOBAL_CONFIG_NAME
+    if legacy_config_path.exists():
+        return legacy_config_path, _read_json(legacy_config_path)
 
-    if template_path.exists():
-        raise FileNotFoundError(
-            f"Global config not found: {config_path}. Run onboarding first to create "
-            f"{GLOBAL_CONFIG_NAME} from {GLOBAL_CONFIG_TEMPLATE_NAME}."
-        )
-
-    raise FileNotFoundError(f"Global config not found: {config_path}")
+    raise FileNotFoundError(
+        f"Global config not found: expected {config_path} "
+        f"(or legacy compatibility file {legacy_config_path})."
+    )
 
 
 def _ensure_external_data_dir(skill_root: Path, data_dir: Path) -> None:
+    """Reject data directories inside the shared skill tree."""
     if data_dir == skill_root or skill_root in data_dir.parents:
         raise RuntimeError(
             "Resolved data_dir points inside the shared skill tree. "
-            "Run from the agent workspace CWD or pass --data-dir explicitly."
+            "Run from CWD or pass --data-dir explicitly."
         )
 
 
 def _bootstrap_agent_config(
     skill_root: Path,
     agent_config_path: Path,
-    *,
-    account: str | None = None,
-    email: str | None = None,
 ) -> None:
+    """Create or normalize the agent config file in the data directory."""
     if agent_config_path.exists():
         payload = _read_json(agent_config_path)
     else:
         template_path = skill_root / AGENT_CONFIG_TEMPLATE_NAME
         payload = _read_json(template_path) if template_path.exists() else {}
+        if payload.get("accounts") == []:
+            payload.pop("accounts", None)
 
-    accounts_raw = payload.get("accounts")
-    if accounts_raw is None:
-        accounts_raw = payload.get("mailboxes")
-    accounts = list(accounts_raw) if isinstance(accounts_raw, list) else []
-    updated = False
-    if account is not None and email is not None:
-        for account_entry in accounts:
-            if account_entry.get("name") == account:
-                if account_entry.get("email") != email:
-                    account_entry["email"] = email
-                    updated = True
-                break
-        else:
-            accounts.append({"name": account, "email": email})
-            updated = True
-
-    if "mailboxes" in payload:
-        payload.pop("mailboxes", None)
-        updated = True
-
-    if "accounts" not in payload:
-        updated = True
-
-    if not agent_config_path.exists() or updated:
-        payload["accounts"] = accounts
+    if not agent_config_path.exists():
         _write_json(agent_config_path, payload)
 
 
@@ -159,6 +229,7 @@ def bootstrap_runtime_context(
     cwd: str | Path | None = None,
     data_dir_override: str | Path | None = None,
 ) -> RuntimeContext:
+    """Bootstrap runtime data directories and return a runtime context."""
     skill_root = find_skill_root(start_path)
     actual_cwd = Path.cwd() if cwd is None else Path(cwd).resolve()
     _, global_config = load_global_config(skill_root, bootstrap=True)
@@ -170,12 +241,7 @@ def bootstrap_runtime_context(
         (data_dir / name).mkdir(parents=True, exist_ok=True)
 
     agent_config_path = data_dir / AGENT_CONFIG_NAME
-    _bootstrap_agent_config(
-        skill_root,
-        agent_config_path,
-        account=account,
-        email=email,
-    )
+    _bootstrap_agent_config(skill_root, agent_config_path)
 
     return load_runtime_context(
         start_path,
@@ -190,6 +256,7 @@ def resolve_data_dir(
     cwd: str | Path | None = None,
     data_dir_override: str | Path | None = None,
 ) -> Path:
+    """Resolve the runtime data directory from CWD or an explicit override."""
     if data_dir_override is not None:
         return Path(data_dir_override).resolve()
     base_dir = Path.cwd() if cwd is None else Path(cwd).resolve()
@@ -201,21 +268,42 @@ def load_agent_config(
     *,
     required: bool = False,
 ) -> tuple[Path, dict[str, Any]]:
+    """Load and normalize the agent config payload for a data directory."""
     data_path = Path(data_dir).resolve()
     agent_config_path = data_path / AGENT_CONFIG_NAME
     if agent_config_path.exists():
         payload = _read_json(agent_config_path)
-        if "accounts" not in payload and "mailboxes" in payload:
-            payload["accounts"] = payload["mailboxes"]
+        token_accounts = list_token_accounts(data_path)
+        if token_accounts:
+            payload["accounts"] = [
+                {"name": item["alias"], "email": item["email"]}
+                for item in token_accounts
+            ]
+        else:
+            payload["accounts"] = []
         return agent_config_path, payload
     if required:
         raise FileNotFoundError(
             f"Agent config not found: {agent_config_path}. "
             "Onboarding is not complete or the resolved data_dir is wrong. "
-            "Run scripts/oauth_setup.py by full path from the agent workspace CWD "
+            "Run python3 <full-path-to-yandex-office>/scripts/oauth_setup.py from CWD "
             "or pass --data-dir explicitly."
         )
     return agent_config_path, {}
+
+
+def load_agent_config_payload(data_dir: str | Path) -> tuple[Path, dict[str, Any]]:
+    """Load the raw agent config payload without token-derived account overlay."""
+    data_path = Path(data_dir).resolve()
+    agent_config_path = data_path / AGENT_CONFIG_NAME
+    if agent_config_path.exists():
+        return agent_config_path, _read_json(agent_config_path)
+    return agent_config_path, {}
+
+
+def save_agent_config_payload(agent_config_path: str | Path, payload: dict[str, Any]) -> None:
+    """Save an agent config payload to disk."""
+    _write_json(Path(agent_config_path).resolve(), payload)
 
 
 def load_runtime_context(
@@ -226,6 +314,7 @@ def load_runtime_context(
     require_agent_config: bool = False,
     require_external_data_dir: bool = False,
 ) -> RuntimeContext:
+    """Load merged shared and agent configuration for a sub-skill."""
     skill_root = find_skill_root(start_path)
     global_config_path, global_config = load_global_config(skill_root)
     actual_cwd = Path.cwd() if cwd is None else Path(cwd).resolve()
