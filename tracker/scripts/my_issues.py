@@ -4,12 +4,13 @@ List issues assigned to current user.
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from tracker_client import load_tracker_client, TrackerError
+from tracker.scripts.tracker_client import load_tracker_client, TrackerError
 
 
 def format_issue_line(issue: dict) -> str:

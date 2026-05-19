@@ -13,7 +13,7 @@ ROOT_DOCS = [
 
 SUBSKILL_NAMES = {
     "mail": "Почта",
-    "calendar": "Календарь",
+    "calendars": "Календарь",
     "contacts": "Контакты",
     "directory": "Директория",
     "disk": "Диск",
@@ -24,7 +24,7 @@ SUBSKILL_NAMES = {
 
 SUBSKILL_DOCS = {
     "mail": ROOT / "mail" / "mail.md",
-    "calendar": ROOT / "calendar" / "calendar.md",
+    "calendars": ROOT / "calendars" / "calendar.md",
     "contacts": ROOT / "contacts" / "contacts.md",
     "directory": ROOT / "directory" / "directory.md",
     "disk": ROOT / "disk" / "disk.md",

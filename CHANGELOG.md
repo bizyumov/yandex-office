@@ -2,7 +2,36 @@
 
 All public `yandex-office` skill releases use the `YYYY.MM.DD` version format.
 
-## 2026.05.16
+## 2026.05.19
+
+### Fixed
+
+- Replaced the rejected import bootstrap detour with direct file-relative
+  `sys.path.insert(...)` setup in the affected command, library, and test files.
+- Removed `PYTHONPATH` re-exec bootstraps, `importlib.util` loading, and the
+  unapproved standalone Calendar package split.
+- Renamed the Calendar sub-skill directory to `calendars/` and restored normal
+  `calendars.lib.client` imports to avoid Python standard-library `calendar`
+  shadowing.
+
+### Changed
+
+- Aligned `VERSION`, root skill metadata, touched sub-skill metadata, and README
+  release summary to `2026.05.19`.
+
+### Verification
+
+- `python3 -m py_compile $(rg --files -g '*.py')`
+- direct `--help` smoke tests for Calendar, Disk, Forms, Mail, OAuth, Telemost,
+  and Tracker command entrypoints from outside the repo root
+- source scan confirming no `PYTHONPATH` re-exec, `importlib.util` loader usage,
+  or rejected standalone Calendar package references
+- `python3 -m pytest calendars/scripts/test_create_event.py -q`
+- full `pytest` with one existing `datetime.utcnow()` deprecation warning
+- `python3 capabilities/audit-method-auth.py`
+- `git diff --check`
+
+## 2026.05.18
 
 ### Fixed
 
@@ -18,6 +47,29 @@ All public `yandex-office` skill releases use the `YYYY.MM.DD` version format.
 - Taught Telemost processing to read Mail filter output under
   `incoming/<filter>/<email-dir>/meta.json` and to pass the processing runtime
   data directory into recording downloads.
+- Replaced the Calendar list-events path's use of the deprecated `caldav`
+  `date_search()` helper with the supported `Calendar.search()` surface while
+  keeping the `calendar.caldav.report.date_search` capability id for the
+  underlying CalDAV REPORT operation.
+
+### Changed
+
+- Extended the method-auth audit to fail on production `_call_api` usage and to
+  print warnings when decorated API calls are hidden behind deep local wrappers.
+- Aligned `VERSION`, root skill metadata, README release summary, and touched
+  sub-skill metadata to `2026.05.18`.
+
+### Verification
+
+- `python3 -m pytest calendars/scripts/test_create_event.py -q`
+- full `pytest` with one existing `datetime.utcnow()` deprecation warning
+- `python3 capabilities/audit-method-auth.py`
+- `git diff --check`
+
+## 2026.05.16
+
+### Fixed
+
 - Completed PR 42 account/Mail/auth scope for #31, #40, and #48.
 - Made `oauth_setup.py --accounts list` the agent-facing account discovery
   helper. It prints managed account aliases only, one per line.
@@ -41,8 +93,6 @@ All public `yandex-office` skill releases use the `YYYY.MM.DD` version format.
 
 ### Changed
 
-- Extended the method-auth audit to fail on production `_call_api` usage and to
-  print warnings when decorated API calls are hidden behind deep local wrappers.
 - Updated root and sub-skill agent-facing docs to use account-first routing,
   app-aware account summaries, and full
   `python3 <full-path-to-yandex-office>/...` command paths.
@@ -101,7 +151,7 @@ All public `yandex-office` skill releases use the `YYYY.MM.DD` version format.
 
 ### Verification
 
-- `pytest common/tests/test_api_runtime.py disk/scripts/test_download.py calendar/scripts/test_create_event.py mail/scripts/test_fetch_emails.py`
+- `pytest common/tests/test_api_runtime.py disk/scripts/test_download.py calendars/scripts/test_create_event.py mail/scripts/test_fetch_emails.py`
 - `python3 capabilities/audit-method-auth.py`
 
 ## 2026.04.26

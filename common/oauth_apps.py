@@ -4,11 +4,15 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+import os
 import re
+import sys
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import HTTPRedirectHandler, Request, build_opener, urlopen
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from common.auth import build_approval_url
 

@@ -6,6 +6,7 @@ Can be used to manually check forms and get monthly totals.
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -15,9 +16,7 @@ import requests
 
 FORMS_API = "https://api.forms.yandex.net/v1"
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from common.auth import resolve_token
 from common.config import load_runtime_context

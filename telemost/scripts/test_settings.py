@@ -4,21 +4,16 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
-from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
-SCRIPTS_DIR = Path(__file__).resolve().parent
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
-if str(SCRIPTS_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS_DIR))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from telemost.lib import client as telemost_client
-import settings as settings_cli
+from telemost.scripts import settings as settings_cli
 
 TEST_ORG_ID = 1234567
 

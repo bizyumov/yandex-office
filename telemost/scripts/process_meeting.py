@@ -20,18 +20,21 @@ Data flow:
 import argparse
 import json
 import logging
+import os
 import re
 import shutil
 import sys
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from common.config import load_runtime_context
-from process_transcript import transform_transcript, format_utc, parse_reference_timestamp
+from telemost.scripts.process_transcript import (
+    format_utc,
+    parse_reference_timestamp,
+    transform_transcript,
+)
 
 logger = logging.getLogger("telemost")
 
@@ -641,7 +644,7 @@ def download_recordings(
     Uses the account name from meeting metadata and the processing runtime
     data_dir to resolve managed Disk auth.
 
-    Requires disk skill to be available (sys.path or installed).
+    Requires the Disk skill package to be available.
     Returns list of download result dicts, or empty list on failure.
     """
     links = meeting_data.get("media_links", [])
@@ -649,14 +652,7 @@ def download_recordings(
         return []
 
     try:
-        import sys
-
-        # Try to find disk scripts (sibling skill directory)
-        disk_scripts = Path(__file__).resolve().parent.parent.parent / "disk" / "scripts"
-        if disk_scripts.exists() and str(disk_scripts) not in sys.path:
-            sys.path.insert(0, str(disk_scripts))
-
-        from download import YandexDisk
+        from disk.scripts.download import YandexDisk
     except ImportError:
         logger.warning("disk skill not available — skipping recording downloads")
         return []

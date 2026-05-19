@@ -8,18 +8,21 @@ T16: Unit test — enrich_incoming() classifies and extracts metadata
 """
 
 import json
+import os
 import shutil
 import sys
 import tempfile
 from pathlib import Path
 from types import SimpleNamespace
 
-from process_transcript import (
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+from telemost.scripts.process_transcript import (
     format_utc,
     parse_reference_timestamp,
     transform_transcript,
 )
-from process_meeting import (
+from telemost.scripts.process_meeting import (
     archive_dirs,
     build_meeting_output_path,
     classify_email,
@@ -547,8 +550,10 @@ def test_download_recordings_uses_runtime_data_dir():
                 captured["output_dir"] = output_dir
                 return {"name": "recording.mp4", "size": 10}
 
-        old_download = sys.modules.get("download")
-        sys.modules["download"] = SimpleNamespace(YandexDisk=StubDisk)
+        import disk.scripts.download as disk_download
+
+        old_disk = disk_download.YandexDisk
+        disk_download.YandexDisk = StubDisk
         try:
             results = download_recordings(
                 {
@@ -559,10 +564,7 @@ def test_download_recordings_uses_runtime_data_dir():
                 data_dir=data_dir,
             )
         finally:
-            if old_download is None:
-                sys.modules.pop("download", None)
-            else:
-                sys.modules["download"] = old_download
+            disk_download.YandexDisk = old_disk
 
         assert len(results) == 1
         assert captured["account"] == "test"

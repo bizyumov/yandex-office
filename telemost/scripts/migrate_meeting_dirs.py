@@ -7,17 +7,15 @@ Target layout:
 
 import argparse
 import logging
+import os
 import shutil
+import sys
 from pathlib import Path
 
-import sys
-
-ROOT_DIR = Path(__file__).resolve().parents[2]
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from common.config import load_runtime_context
-from process_meeting import build_meeting_output_path
+from telemost.scripts.process_meeting import build_meeting_output_path
 
 logger = logging.getLogger("telemost-migrate")
 

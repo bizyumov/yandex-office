@@ -5,7 +5,7 @@ license: MIT
 compatibility: Requires Python 3.10+, requests, network access to Yandex Disk API
 metadata:
   author: bizyumov
-  version: "2026.05.16"
+  version: "2026.05.19"
 ---
 
 # Yandex Disk / Диск

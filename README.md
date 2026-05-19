@@ -4,26 +4,23 @@ A collection of [agentskills.io](https://agentskills.io/specification)-compliant
 
 Current release:
 
-- version: `2026.05.16`
+- version: `2026.05.19`
 - version file: `VERSION`
 - cumulative release notes: `CHANGELOG.md`
 
-2026.05.16 completes PR 42 account/Mail/auth work and integrates the retained
-PR #32 consultation provisioning fixes from Sergey Pimenov:
+2026.05.19 fixes source-wide import resolution on top of the 2026.05.18 PR #32
+consultation provisioning integration:
 
-- account discovery is via `scripts/oauth_setup.py --accounts list`, which
-  prints managed account aliases only
-- account capability info is explicit: `scripts/oauth_setup.py --account
-  <alias>` prints compact JSON with `alias`, optional `email`, and `apps`
-- OAuth links do not require email: `scripts/oauth_setup.py --app <app_id>`
-  prints the approval URL
-- token import is identity-driven: `scripts/oauth_setup.py --from-env <ENV_VAR>`
-  stores by verified Yandex identity
-- Mail supports `--account`, one-message `--uid`, dry-run `--extract-links`,
-  and non-persistent ad-hoc sender/subject/date searches
+- affected source files use direct file-relative `sys.path.insert(...)` import
+  bootstraps; no `PYTHONPATH` re-exec or `importlib.util` loader is used
+- Calendar implementation now lives under `calendars/`, with normal
+  `calendars.lib.client` imports that avoid Python standard-library `calendar`
+  shadowing
 - Calendar Telemost event creation requires explicit `--timezone` or
   `--utc-offset`, supports event UID and Telemost link reuse, and can update an
   existing Telemost conference before writing the Calendar event
+- Calendar list-events uses the supported `caldav.Calendar.search()` surface for
+  date-range CalDAV REPORT behavior
 - Telemost create/update writes no longer perform implicit post-write reads;
   `get_conference()` is the explicit read path
 - Telemost processing handles Mail filter output under
@@ -43,7 +40,7 @@ PR #32 consultation provisioning fixes from Sergey Pimenov:
 | Skill | Description |
 |-------|-------------|
 | [mail](mail/) | Mail / Почта: generic email fetcher via IMAP XOAUTH2 — saves emails to incoming/ |
-| [calendar](calendar/) | Calendar / Календарь: CalDAV integration for Yandex Calendar — list/create/update events, find slots, Telemost binding |
+| [calendars](calendars/) | Calendar / Календарь: CalDAV integration for Yandex Calendar — list/create/update events, find slots, Telemost binding |
 | [contacts](contacts/) | Contacts / Контакты: CardDAV integration for Yandex Contacts — fuzzy lookup, create/update contacts |
 | [directory](directory/) | Directory / Директория: Yandex 360 Directory API — users, departments, groups, and org-aware identity data |
 | [telemost](telemost/) | Telemost / Телемост: process Telemost emails, manage real conferences, and admin Telemost org defaults |
@@ -228,7 +225,7 @@ Telemost recording OAuth caveat:
 
 Telemost calendar note:
 
-- `python3 <full-path-to-yandex-office>/calendar/scripts/create_event.py` can create a new Telemost conference, bind an existing one with `--telemost-conference-id`, or reuse an already known join URL with `--telemost-link`.
+- `python3 <full-path-to-yandex-office>/calendars/scripts/create_event.py` can create a new Telemost conference, bind an existing one with `--telemost-conference-id`, or reuse an already known join URL with `--telemost-link`.
 - Every create-event call must pass exactly one of `--timezone <IANA>` or `--utc-offset <Z|+HH:MM|-HH:MM>`.
 - Existing-conference binding can apply `--telemost-access-level`, `--telemost-waiting-room`, and `--telemost-cohosts` before the Calendar event is written.
 

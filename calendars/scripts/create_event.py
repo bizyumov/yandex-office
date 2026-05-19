@@ -6,27 +6,20 @@ from __future__ import annotations
 import argparse
 import json
 import mimetypes
+import os
 import re
 import sys
 import uuid
 from datetime import datetime, timedelta, timezone, tzinfo
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from pathlib import Path
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
-CALENDAR_LIB_DIR = Path(__file__).resolve().parent.parent / "lib"
-DISK_SCRIPT_DIR = ROOT_DIR / "disk" / "scripts"
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
-if str(CALENDAR_LIB_DIR) not in sys.path:
-    sys.path.insert(0, str(CALENDAR_LIB_DIR))
-if str(DISK_SCRIPT_DIR) not in sys.path:
-    sys.path.insert(0, str(DISK_SCRIPT_DIR))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from client import YandexCalendarClient
 from common.api import YandexApiError
-from download import YandexDisk
+from disk.scripts.download import YandexDisk
 from telemost.lib.client import TelemostError, YandexTelemostClient
+from calendars.lib.client import YandexCalendarClient
 
 
 DEFAULT_ATTACHMENT_DIR = "disk:/yandex-office Calendar Attachments"

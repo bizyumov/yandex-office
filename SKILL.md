@@ -6,7 +6,7 @@ license: MIT
 compatibility: Python 3.10+, per-skill dependencies, network access for Yandex APIs
 metadata:
   author: bizyumov
-  version: "2026.05.16"
+  version: "2026.05.19"
   openclaw:
     emoji: "🟡"
     requires:
@@ -57,13 +57,16 @@ this CWD yet; choose the minimum setup path from the user's request.
 
 Then choose the sub-skill:
 - Mail: `mail/mail.md`
-- Calendar: `calendar/calendar.md`
+- Calendar: `calendars/calendar.md`
 - Telemost: `telemost/telemost.md`
 - Disk: `disk/disk.md`
 - Contacts: `contacts/contacts.md`
 - Directory: `directory/directory.md`
 - Forms: `forms/forms.md`
 - Tracker: `tracker/tracker.md`
+
+Calendar note: `calendar` is reserved by Python library so the dir was renamed
+to `calendars`.
 
 Run the business command from that sub-skill doc with `--account <alias>`.
 No-arg `oauth_setup.py` is legacy/bootstrap troubleshooting, not the primary
@@ -173,7 +176,7 @@ Telemost transcripts:
 Calendar with Telemost:
 - Resolve account.
 - Check `apps` for `office-core` or Calendar plus Telemost coverage.
-- Open `calendar/calendar.md`.
+- Open `calendars/calendar.md`.
 
 Disk, Tracker, Contacts, Directory, Forms:
 - Choose default app for read/search.

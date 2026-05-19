@@ -15,4 +15,4 @@ pytest -q \
   telemost/scripts/test_conference.py \
   telemost/scripts/test_settings.py \
   telemost/scripts/test_telemost.py \
-  calendar/scripts/test_create_event.py
+  calendars/scripts/test_create_event.py

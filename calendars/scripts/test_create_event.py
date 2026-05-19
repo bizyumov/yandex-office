@@ -3,21 +3,18 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 import json
+import os
 import sys
 from pathlib import Path
 
 import pytest
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
-SCRIPT_DIR = Path(__file__).resolve().parent
-CAL_LIB = Path(__file__).resolve().parent.parent / 'lib'
-for entry in (ROOT_DIR, SCRIPT_DIR, CAL_LIB):
-    if str(entry) not in sys.path:
-        sys.path.insert(0, str(entry))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
+from calendars.lib import client as calendar_client_module
 import create_event
-import client as calendar_client_module
 
 
 class DummyCalendar:
@@ -110,6 +107,25 @@ class DummyResponse:
     def __init__(self, status_code, text=""):
         self.status_code = status_code
         self.text = text
+
+
+def write_calendar_token(data_dir: Path) -> Path:
+    auth_dir = data_dir / "auth"
+    auth_dir.mkdir(parents=True)
+    token_path = auth_dir / "acct.token"
+    token_path.write_text(
+        json.dumps(
+            {
+                "email": "user@example.com",
+                "calendar-token": {
+                    "client_id": "902e7ef779014d31b94d69d8cc863034",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    (data_dir / "config.agent.json").write_text("{}\n", encoding="utf-8")
+    return token_path
 
 
 def test_create_telemost_event_uses_real_conference(monkeypatch):
@@ -420,21 +436,7 @@ def test_create_event_marks_calendar_token_good_through_standard_dispatch(
     # Business success is not enough for GH41: every token-backed method must
     # pass through dispatch, which proves itself by writing good_at.
     data_dir = tmp_path / "yandex-data"
-    auth_dir = data_dir / "auth"
-    auth_dir.mkdir(parents=True)
-    token_path = auth_dir / "acct.token"
-    token_path.write_text(
-        json.dumps(
-            {
-                "email": "user@example.com",
-                "calendar-token": {
-                    "client_id": "902e7ef779014d31b94d69d8cc863034",
-                },
-            }
-        ),
-        encoding="utf-8",
-    )
-    (data_dir / "config.agent.json").write_text("{}\n", encoding="utf-8")
+    token_path = write_calendar_token(data_dir)
 
     captured = {}
 
@@ -473,3 +475,59 @@ def test_create_event_marks_calendar_token_good_through_standard_dispatch(
     assert captured["dav_auth"] == ("user@example.com", "calendar-token")
     assert captured["put_auth"] == ("user@example.com", "calendar-token")
     assert "good_at" in saved["calendar-token"]
+
+
+def test_list_events_uses_supported_calendar_search(monkeypatch, tmp_path: Path) -> None:
+    data_dir = tmp_path / "yandex-data"
+    write_calendar_token(data_dir)
+    captured = {}
+
+    class FakeEvent:
+        data = """BEGIN:VCALENDAR
+BEGIN:VEVENT
+UID:event-1
+DTSTART:20260312T140000Z
+DTEND:20260312T143000Z
+SUMMARY:Search result
+END:VEVENT
+END:VCALENDAR
+"""
+
+    class FakeCalendar:
+        name = "default"
+
+        def search(self, **kwargs):
+            captured["search"] = kwargs
+            return [FakeEvent()]
+
+    class FakeDAVClient:
+        def __init__(self, *, url, username, password):
+            captured["dav_auth"] = (username, password)
+
+        def principal(self):
+            return type(
+                "Principal",
+                (),
+                {"calendars": lambda self: [FakeCalendar()]},
+            )()
+
+    monkeypatch.setattr(calendar_client_module.caldav, "DAVClient", FakeDAVClient)
+
+    client = calendar_client_module.YandexCalendarClient(
+        "acct",
+        data_dir=str(data_dir),
+    )
+    start = datetime(2026, 3, 12, 14, 0)
+    end = datetime(2026, 3, 12, 15, 0)
+
+    events = client.list_events(start=start, end=end)
+
+    assert captured["dav_auth"] == ("user@example.com", "calendar-token")
+    assert captured["search"] == {
+        "start": start,
+        "end": end,
+        "event": True,
+        "expand": True,
+        "split_expanded": False,
+    }
+    assert events[0]["uid"] == "event-1"

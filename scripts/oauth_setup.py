@@ -15,9 +15,7 @@ import os
 import sys
 from pathlib import Path
 
-ROOT_DIR = Path(__file__).resolve().parents[1]
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from common.auth import load_token_file, save_token_file, token_refs
 from common.config import bootstrap_runtime_context, choose_account_alias, find_token_account_by_email

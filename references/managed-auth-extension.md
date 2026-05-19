@@ -28,6 +28,34 @@ Run:
 python3 capabilities/audit-method-auth.py
 ```
 
+## Script Import Bootstrap
+
+Command scripts in this repository are documented and executed by full file path,
+for example `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py`.
+They therefore cannot rely on installed packages, `python -m`, or relative
+package imports to reach shared runtime code.
+
+Each Python command, library module, or test that imports another repo-root
+module must add the repository root with a deterministic `__file__`-relative
+bootstrap before repo-local imports:
+
+```python
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+```
+
+Use the number of `os.path.dirname(...)` calls required by the file's location
+relative to the repository root. A file directly under `scripts/` uses two
+dirname calls; files under `<sub-skill>/scripts/` or `<sub-skill>/lib/` use
+three.
+
+After that bootstrap, imports should use repo-root package names such as
+`common.config`, `disk.scripts.download`, `telemost.lib.client`, or
+`calendars.lib.client`. Do not use `PYTHONPATH` re-exec, `importlib.util`
+source loaders, or extra per-module path inserts.
+
 Runtime proof should show managed dispatch evidence such as `good_at` updates
 and no legacy raw-token paths like `token_meta` or `token.<service>`.
 
