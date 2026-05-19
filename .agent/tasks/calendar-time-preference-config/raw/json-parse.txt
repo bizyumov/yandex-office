@@ -1,2 +1,0 @@
-json ok: config.agent.schema.json
-json ok: config.agent.example.json

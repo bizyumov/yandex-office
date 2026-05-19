@@ -1,9 +1,0 @@
-{
-  "repo_root": "/opt/openclaw/shared/skills/yandex-office",
-  "task_id": "calendar-time-preference-config",
-  "task_dir": "/opt/openclaw/shared/skills/yandex-office/.agent/tasks/calendar-time-preference-config",
-  "init_in_progress": false,
-  "valid": true,
-  "missing_files": [],
-  "errors": []
-}

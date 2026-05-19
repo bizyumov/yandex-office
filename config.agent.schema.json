@@ -112,29 +112,29 @@
         "default_calendar": {
           "type": "string",
           "minLength": 1,
-          "description": "Preferred Yandex Calendar name when a command does not specify one."
+          "description": "(RESERVED FOR FUTURE USE) Preferred Yandex Calendar name when a command does not specify one."
         },
         "business_hours": {
           "type": "object",
-          "description": "Preferred local business-hours window for availability helpers.",
+          "description": "(RESERVED FOR FUTURE USE) Preferred local business-hours window for availability helpers.",
           "additionalProperties": false,
           "properties": {
             "start": {
               "type": "string",
               "pattern": "^\\d{2}:\\d{2}$",
-              "description": "Business day start time in HH:MM local wall-clock format."
+              "description": "(RESERVED FOR FUTURE USE) Business day start time in HH:MM local wall-clock format."
             },
             "end": {
               "type": "string",
               "pattern": "^\\d{2}:\\d{2}$",
-              "description": "Business day end time in HH:MM local wall-clock format."
+              "description": "(RESERVED FOR FUTURE USE) Business day end time in HH:MM local wall-clock format."
             }
           }
         },
         "slot_granularity_minutes": {
           "type": "integer",
           "minimum": 1,
-          "description": "Preferred availability slot size in minutes."
+          "description": "(RESERVED FOR FUTURE USE) Preferred availability slot size in minutes."
         },
         "timezone": {
           "type": "string",
@@ -150,83 +150,83 @@
     },
     "contacts": {
       "type": "object",
-      "description": "Local Contacts settings.",
+      "description": "(RESERVED FOR FUTURE USE) Local Contacts settings.",
       "additionalProperties": false,
       "properties": {
         "default_addressbook": {
           "type": "string",
           "minLength": 1,
-          "description": "Preferred address book name for Contacts commands."
+          "description": "(RESERVED FOR FUTURE USE) Preferred address book name for Contacts commands."
         },
         "sync_on_startup": {
           "type": "boolean",
-          "description": "Whether Contacts workflows should refresh local data at startup when supported."
+          "description": "(RESERVED FOR FUTURE USE) Whether Contacts workflows should refresh local data at startup when supported."
         },
         "cache_ttl_seconds": {
           "type": "integer",
           "minimum": 0,
-          "description": "Contacts cache time-to-live in seconds."
+          "description": "(RESERVED FOR FUTURE USE) Contacts cache time-to-live in seconds."
         },
         "fuzzy_match_threshold": {
           "type": "number",
           "minimum": 0,
           "maximum": 1,
-          "description": "Minimum fuzzy-match score for contact name matching."
+          "description": "(RESERVED FOR FUTURE USE) Minimum fuzzy-match score for contact name matching."
         }
       }
     },
     "directory": {
       "type": "object",
-      "description": "Local Directory lookup settings.",
+      "description": "(RESERVED FOR FUTURE USE) Local Directory lookup settings.",
       "additionalProperties": false,
       "properties": {
         "cache_ttl_hours": {
           "type": "integer",
           "minimum": 0,
-          "description": "Directory cache time-to-live in hours."
+          "description": "(RESERVED FOR FUTURE USE) Directory cache time-to-live in hours."
         },
         "default_per_page": {
           "type": "integer",
           "minimum": 1,
-          "description": "Default Yandex 360 Directory page size for list operations."
+          "description": "(RESERVED FOR FUTURE USE) Default Yandex 360 Directory page size for list operations."
         },
         "search_fuzzy_threshold": {
           "type": "number",
           "minimum": 0,
           "maximum": 1,
-          "description": "Minimum fuzzy-match score for Directory search matching."
+          "description": "(RESERVED FOR FUTURE USE) Minimum fuzzy-match score for Directory search matching."
         }
       }
     },
     "forms": {
       "type": "object",
-      "description": "Local Forms export and polling settings.",
+      "description": "(RESERVED FOR FUTURE USE) Local Forms export and polling settings.",
       "additionalProperties": false,
       "properties": {
         "state_file": {
           "type": "string",
           "minLength": 1,
-          "description": "Forms state file name under {data_dir}."
+          "description": "(RESERVED FOR FUTURE USE) Forms state file name under {data_dir}."
         },
         "default_format": {
           "type": "string",
           "enum": ["xlsx", "json"],
-          "description": "Default response export format for Forms commands."
+          "description": "(RESERVED FOR FUTURE USE) Default response export format for Forms commands."
         },
         "export": {
           "type": "object",
-          "description": "Forms export polling settings.",
+          "description": "(RESERVED FOR FUTURE USE) Forms export polling settings.",
           "additionalProperties": false,
           "properties": {
             "poll_interval_seconds": {
               "type": "integer",
               "minimum": 1,
-              "description": "Seconds between Forms export polling attempts."
+              "description": "(RESERVED FOR FUTURE USE) Seconds between Forms export polling attempts."
             },
             "max_wait_seconds": {
               "type": "integer",
               "minimum": 1,
-              "description": "Maximum seconds to wait for a Forms export to become ready."
+              "description": "(RESERVED FOR FUTURE USE) Maximum seconds to wait for a Forms export to become ready."
             }
           }
         }
