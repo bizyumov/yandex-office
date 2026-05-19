@@ -18,19 +18,19 @@
           "properties": {
             "sender": {
               "type": "string",
-              "description": "Legacy top-level FROM criterion upgraded in memory into mail.filters.telemost.sender."
+              "description": "(DEPRECATED) see mail.filters.<name>. Legacy top-level FROM criterion upgraded in memory into mail.filters.telemost.sender."
             },
             "subject": {
               "type": "string",
-              "description": "Legacy top-level SUBJECT criterion upgraded in memory into the Telemost filter."
+              "description": "(DEPRECATED) see mail.filters.<name>. Legacy top-level SUBJECT criterion upgraded in memory into the Telemost filter."
             },
             "since_date": {
               "type": "string",
-              "description": "Legacy top-level lower date bound for Mail search, in YYYY-MM-DD form."
+              "description": "(DEPRECATED) see mail.filters.<name>. Legacy top-level lower date bound for Mail search, in YYYY-MM-DD form."
             },
             "before_date": {
               "type": "string",
-              "description": "Legacy top-level upper date bound for Mail search, in YYYY-MM-DD form."
+              "description": "(DEPRECATED) see mail.filters.<name>. Legacy top-level upper date bound for Mail search, in YYYY-MM-DD form."
             }
           },
           "patternProperties": {

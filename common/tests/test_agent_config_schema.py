@@ -197,6 +197,14 @@ def test_agent_config_schema_keeps_supported_properties_unreserved() -> None:
         assert "(RESERVED FOR FUTURE USE)" not in description, ".".join(path)
 
 
+def test_agent_config_schema_marks_legacy_mail_filters_as_deprecated() -> None:
+    schema = json.loads((ROOT / "config.agent.schema.json").read_text(encoding="utf-8"))
+
+    for field in ("sender", "subject", "since_date", "before_date"):
+        description = _schema_node(schema, "mail", "filters", field)["description"]
+        assert "(DEPRECATED) see mail.filters.<name>" in description
+
+
 def test_agent_config_example_validates_against_schema() -> None:
     schema = json.loads((ROOT / "config.agent.schema.json").read_text(encoding="utf-8"))
     example = json.loads((ROOT / "config.agent.example.json").read_text(encoding="utf-8"))

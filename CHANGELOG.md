@@ -25,6 +25,11 @@ All public `yandex-office` skill releases use the `YYYY.MM.DD` version format.
 - Aligned `VERSION`, root skill metadata, touched sub-skill metadata, and README
   release summary to `2026.05.19`.
 - Documented Calendar time-context instructions in `calendars/calendar.md`.
+- Moved the low-level extension notes to
+  `references/yandex-office-extension.md` and added the agent-config schema
+  contract there.
+- Marked legacy top-level Mail filter fields as deprecated in favor of
+  `mail.filters.<name>`.
 
 ### Verification
 

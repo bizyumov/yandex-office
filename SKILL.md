@@ -35,7 +35,7 @@ Yandex identity behind an alias. Apps, scopes, and tokens are defined in
 - (106-131) OAuth App Selector
 - (133-150) Token Handling
 - (152-181) Common Workflows
-- (183-188) Managed Auth Link
+- (183-188) Extension Reference Link
 - (190-199) Migration, Versioning, License
 
 ## Reference Map
@@ -43,7 +43,7 @@ Yandex identity behind an alias. Apps, scopes, and tokens are defined in
 - Auth model: `references/yandex-office-auth-principles.md`
 - Config and data shape: `references/config-data-and-tests.md`
 - Service overview: `references/yandex-service-reference.md`
-- Low-level auth extension: `references/managed-auth-extension.md`
+- Extension reference: `references/yandex-office-extension.md`
 
 ## Account-First Workflow
 
@@ -183,10 +183,10 @@ Disk, Tracker, Contacts, Directory, Forms:
 - Choose broader/write app only when requested or approved.
 - Open the relevant sub-skill doc and pass `--account <alias>`.
 
-## Managed Auth Link
+## Extension Reference Link
 
 For low-level Yandex API method extension or audit, read
-`references/managed-auth-extension.md`. Do not add raw `token` parameters,
+`references/yandex-office-extension.md`. Do not add raw `token` parameters,
 raw-token CLIs, `auth_call(...)` wrappers, parallel auth registries, per-method
 response handling, or service-specific HTTP subclasses.
 
