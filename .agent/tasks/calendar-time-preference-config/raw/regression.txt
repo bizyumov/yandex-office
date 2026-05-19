@@ -1,0 +1,10 @@
+........................................................................ [ 45%]
+........................................................................ [ 90%]
+...............                                                          [100%]
+=============================== warnings summary ===============================
+forms/scripts/test_discover_forms.py::test_discover_forms_merges_registry_and_api_stats
+  /opt/openclaw/shared/skills/yandex-office/forms/scripts/discover_forms.py:232: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "discovered_at": datetime.utcnow().isoformat() + "Z",
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+159 passed, 1 warning in 0.83s

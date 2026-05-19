@@ -16,9 +16,10 @@ consultation provisioning integration:
 - Calendar implementation now lives under `calendars/`, with normal
   `calendars.lib.client` imports that avoid Python standard-library `calendar`
   shadowing
-- Calendar Telemost event creation requires explicit `--timezone` or
-  `--utc-offset`, supports event UID and Telemost link reuse, and can update an
-  existing Telemost conference before writing the Calendar event
+- Calendar Telemost event creation supports local `config.agent.json` time
+  preference plus explicit `--timezone` / `--utc-offset`, event UID reuse,
+  Telemost link reuse, and existing-conference updates before writing the
+  Calendar event
 - Calendar list-events uses the supported `caldav.Calendar.search()` surface for
   date-range CalDAV REPORT behavior
 - Telemost create/update writes no longer perform implicit post-write reads;
@@ -226,7 +227,7 @@ Telemost recording OAuth caveat:
 Telemost calendar note:
 
 - `python3 <full-path-to-yandex-office>/calendars/scripts/create_event.py` can create a new Telemost conference, bind an existing one with `--telemost-conference-id`, or reuse an already known join URL with `--telemost-link`.
-- Every create-event call must pass exactly one of `--timezone <IANA>` or `--utc-offset <Z|+HH:MM|-HH:MM>`.
+- Every create-event call must have an effective time context from local agent config or `--timezone <IANA>` / `--utc-offset <Z|+HH:MM|-HH:MM>`.
 - Existing-conference binding can apply `--telemost-access-level`, `--telemost-waiting-room`, and `--telemost-cohosts` before the Calendar event is written.
 
 Each skill is self-contained and can be used independently.

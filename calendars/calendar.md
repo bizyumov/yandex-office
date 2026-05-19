@@ -111,10 +111,22 @@ python3 <full-path-to-yandex-office>/calendars/scripts/list_events.py --account 
 #### Create a New Telemost Meeting in Calendar
 
 Use this when the user wants a calendar event with a new Telemost join link.
-Every create call must include exactly one explicit user time context:
-`--timezone <IANA>` or `--utc-offset <Z|+HH:MM|-HH:MM>`. Naive `--start`
-values are treated as local wall time in that context; aware `--start` values
-are converted into it.
+
+Agent time context rule:
+
+- Every create call needs one effective time context: either an IANA timezone or
+  a fixed UTC offset.
+- Preferred: save it in local `{data_dir}/config.agent.json` as
+  `calendar.timezone` or `calendar.utc_offset`.
+- If it is not saved, pass `--timezone <IANA>` or
+  `--utc-offset <Z|+HH:MM|-HH:MM>` on the CLI.
+- Do not put `calendar.timezone` or `calendar.utc_offset` in root
+  `config.skill.json`; agents can need different local times.
+- If both timezone and UTC offset are present in the same source, they must
+  match at the event start. CLI values override config for one command.
+
+Naive `--start` values are treated as local wall time in the effective context;
+aware `--start` values are converted into it.
 
 ```bash
 python3 <full-path-to-yandex-office>/calendars/scripts/create_event.py \
@@ -429,11 +441,11 @@ python-dateutil>=2.8.0
 ```
 
 ### Configuration Extension
-Add shared defaults to root `config.skill.json` and local overrides to
-`yandex-data/config.agent.json`:
+Add local Calendar settings to `yandex-data/config.agent.json`:
 ```json
 {
   "calendar": {
+    "timezone": "Europe/Moscow",
     "default_calendar": "Мои события",
     "business_hours": {"start": "09:00", "end": "18:00"},
     "slot_granularity_minutes": 15

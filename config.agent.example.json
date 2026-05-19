@@ -1,4 +1,7 @@
 {
+  "calendar": {
+    "timezone": "Europe/Moscow"
+  },
   "mail": {
     "filters": {
       "forms": {

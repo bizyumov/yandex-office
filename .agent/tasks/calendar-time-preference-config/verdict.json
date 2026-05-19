@@ -1,0 +1,46 @@
+{
+  "task_id": "calendar-time-preference-config",
+  "verified_at_utc": "2026-05-19T15:05:00Z",
+  "verifier_role": "current-working-tree verification",
+  "overall_verdict": "PASS",
+  "artifacts_used": [
+    ".agent/tasks/calendar-time-preference-config/spec.md",
+    ".agent/tasks/calendar-time-preference-config/evidence.md",
+    ".agent/tasks/calendar-time-preference-config/evidence.json",
+    ".agent/tasks/calendar-time-preference-config/raw/json-parse.txt",
+    ".agent/tasks/calendar-time-preference-config/raw/build.txt",
+    ".agent/tasks/calendar-time-preference-config/raw/help-smoke.txt",
+    ".agent/tasks/calendar-time-preference-config/raw/calendar-schema-pytest.txt",
+    ".agent/tasks/calendar-time-preference-config/raw/config-docs-pytest.txt",
+    ".agent/tasks/calendar-time-preference-config/raw/full-pytest.txt",
+    ".agent/tasks/calendar-time-preference-config/raw/regression.txt",
+    ".agent/tasks/calendar-time-preference-config/raw/audit.txt",
+    ".agent/tasks/calendar-time-preference-config/raw/diff-check.txt",
+    ".agent/tasks/calendar-time-preference-config/raw/skill-md-diff.txt"
+  ],
+  "criteria": [
+    {"id": "AC1", "status": "PASS", "reason": "New root config.agent.schema.json exists and schema scan found no prior schema artifact."},
+    {"id": "AC2", "status": "PASS", "reason": "Schema tests cover all current persistent local agent-config sections and property descriptions."},
+    {"id": "AC3", "status": "PASS", "reason": "Calendar schema descriptions cover local preference, global prohibition, CLI override, and matching rule."},
+    {"id": "AC4", "status": "PASS", "reason": "Example config includes calendar.timezone, omits accounts, parses as JSON, and validates against the schema test."},
+    {"id": "AC5", "status": "PASS", "reason": "create_event uses local preference only when CLI time context is omitted, with targeted fallback coverage."},
+    {"id": "AC6", "status": "PASS", "reason": "Targeted tests cover existing CLI timezone/offset behavior, matching pair acceptance, conflicts, CLI override, and no-config failure."},
+    {"id": "AC7", "status": "PASS", "reason": "Invalid config tests assert failures happen before Calendar or Telemost client initialization."},
+    {"id": "AC8", "status": "PASS", "reason": "Agent-facing explanation is in calendars/calendar.md and SKILL.md has no diff."},
+    {"id": "AC9", "status": "PASS", "reason": "CHANGELOG.md and README.md mention the change."},
+    {"id": "AC10", "status": "PASS", "reason": "Targeted pytest, full pytest, and regression pass."},
+    {"id": "AC11", "status": "PASS", "reason": "Schema test validates config.agent.example.json against config.agent.schema.json."}
+  ],
+  "commands_run": [
+    {"command": "python3 -m json.tool config.agent.schema.json && python3 -m json.tool config.agent.example.json", "exit_code": 0},
+    {"command": "python3 -m py_compile $(rg --files -g '*.py')", "exit_code": 0},
+    {"command": "python3 /opt/openclaw/shared/skills/yandex-office/calendars/scripts/create_event.py --help", "exit_code": 0},
+    {"command": "python3 -m pytest calendars/scripts/test_create_event.py common/tests/test_agent_config_schema.py -q", "exit_code": 0, "summary": "24 passed"},
+    {"command": "python3 -m pytest common/tests/test_config_auth.py common/tests/test_docs.py -q", "exit_code": 0, "summary": "16 passed"},
+    {"command": "python3 -m pytest -q", "exit_code": 0, "summary": "176 passed, 1 warning"},
+    {"command": "scripts/test_regression.sh", "exit_code": 0, "summary": "159 passed, 1 warning"},
+    {"command": "python3 capabilities/audit-method-auth.py", "exit_code": 0},
+    {"command": "git diff --check", "exit_code": 0}
+  ],
+  "non_pass_acceptance_criteria": []
+}

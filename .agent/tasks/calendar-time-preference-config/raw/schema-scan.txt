@@ -1,0 +1,3 @@
+./config.agent.example.json
+./config.json
+./config.skill.json

@@ -28,8 +28,10 @@ class DummyPrincipal:
 
 class DummyCalendarClient:
     put_handler = None
+    init_count = 0
 
     def __init__(self, *args, **kwargs):
+        DummyCalendarClient.init_count += 1
         self.account = "acct"
         self.email = "user@example.com"
         self.token = "calendar-token"
@@ -126,6 +128,22 @@ def write_calendar_token(data_dir: Path) -> Path:
     )
     (data_dir / "config.agent.json").write_text("{}\n", encoding="utf-8")
     return token_path
+
+
+def write_agent_config(data_dir: Path, payload: dict) -> None:
+    data_dir.mkdir(parents=True, exist_ok=True)
+    (data_dir / "config.agent.json").write_text(
+        json.dumps(payload, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+
+
+def capture_put_data(captured: dict):
+    def fake_put(url, auth=None, data=None, headers=None, timeout=None):
+        captured.setdefault("data", data)
+        return DummyResponse(201)
+
+    return fake_put
 
 
 def test_create_telemost_event_uses_real_conference(monkeypatch):
@@ -354,6 +372,8 @@ def test_create_telemost_event_rejects_link_settings_without_conference_id(monke
 
 
 def test_create_telemost_event_requires_explicit_time_context(monkeypatch):
+    DummyCalendarClient.init_count = 0
+    DummyTelemostClient.init_count = 0
     DummyCalendarClient.put_handler = lambda *args, **kwargs: DummyResponse(201)
     monkeypatch.setattr(create_event, "YandexCalendarClient", DummyCalendarClient)
     monkeypatch.setattr(create_event, "YandexTelemostClient", DummyTelemostClient)
@@ -367,21 +387,207 @@ def test_create_telemost_event_requires_explicit_time_context(monkeypatch):
             attendees=[],
         )
 
-    with pytest.raises(ValueError, match="exactly one"):
+    assert DummyCalendarClient.init_count == 0
+    assert DummyTelemostClient.init_count == 0
+
+
+def test_create_telemost_event_accepts_matching_cli_time_context(monkeypatch):
+    captured = {}
+    DummyCalendarClient.put_handler = capture_put_data(captured)
+    monkeypatch.setattr(create_event, "YandexCalendarClient", DummyCalendarClient)
+    monkeypatch.setattr(create_event, "YandexTelemostClient", DummyTelemostClient)
+
+    result = create_event.create_telemost_event(
+        account="acct",
+        summary="Both matching",
+        start_str="2026-03-12T13:00:00",
+        duration_minutes=15,
+        attendees=[],
+        timezone_name="Europe/Moscow",
+        utc_offset="+03:00",
+    )
+
+    assert result["timezone"] == "Europe/Moscow"
+    assert "utc_offset" not in result
+    assert "DTSTART;TZID=Europe/Moscow:20260312T130000" in captured["data"]
+
+
+def test_create_telemost_event_rejects_conflicting_cli_time_context(monkeypatch):
+    DummyCalendarClient.init_count = 0
+    DummyTelemostClient.init_count = 0
+    DummyCalendarClient.put_handler = lambda *args, **kwargs: DummyResponse(201)
+    monkeypatch.setattr(create_event, "YandexCalendarClient", DummyCalendarClient)
+    monkeypatch.setattr(create_event, "YandexTelemostClient", DummyTelemostClient)
+
+    with pytest.raises(ValueError, match="conflict"):
         create_event.create_telemost_event(
             account="acct",
-            summary="Both",
+            summary="Both conflicting",
             start_str="2026-03-12T13:00:00",
             duration_minutes=15,
             attendees=[],
             timezone_name="Europe/Moscow",
-            utc_offset="+03:00",
+            utc_offset="+02:00",
         )
+
+    assert DummyCalendarClient.init_count == 0
+    assert DummyTelemostClient.init_count == 0
+
+
+def test_create_telemost_event_uses_agent_config_timezone(monkeypatch, tmp_path: Path):
+    captured = {}
+    data_dir = tmp_path / "yandex-data"
+    write_agent_config(data_dir, {"calendar": {"timezone": "Europe/Moscow"}})
+    DummyCalendarClient.put_handler = capture_put_data(captured)
+    monkeypatch.setattr(create_event, "YandexCalendarClient", DummyCalendarClient)
+    monkeypatch.setattr(create_event, "YandexTelemostClient", DummyTelemostClient)
+
+    result = create_event.create_telemost_event(
+        account="acct",
+        summary="Config timezone",
+        start_str="2026-03-12T13:00:00",
+        duration_minutes=15,
+        attendees=[],
+        data_dir=str(data_dir),
+    )
+
+    assert result["timezone"] == "Europe/Moscow"
+    assert "DTSTART;TZID=Europe/Moscow:20260312T130000" in captured["data"]
+
+
+def test_create_telemost_event_cli_overrides_agent_config(monkeypatch, tmp_path: Path):
+    captured = {}
+    data_dir = tmp_path / "yandex-data"
+    write_agent_config(data_dir, {"calendar": {"timezone": "Europe/Moscow"}})
+    DummyCalendarClient.put_handler = capture_put_data(captured)
+    monkeypatch.setattr(create_event, "YandexCalendarClient", DummyCalendarClient)
+    monkeypatch.setattr(create_event, "YandexTelemostClient", DummyTelemostClient)
+
+    result = create_event.create_telemost_event(
+        account="acct",
+        summary="CLI wins",
+        start_str="2026-03-12T13:00:00",
+        duration_minutes=15,
+        attendees=[],
+        data_dir=str(data_dir),
+        utc_offset="+02:00",
+    )
+
+    assert result["utc_offset"] == "+02:00"
+    assert "timezone" not in result
+    assert "DTSTART:20260312T110000Z" in captured["data"]
+
+
+def test_create_telemost_event_accepts_matching_agent_config_pair(monkeypatch, tmp_path: Path):
+    data_dir = tmp_path / "yandex-data"
+    write_agent_config(
+        data_dir,
+        {"calendar": {"timezone": "Europe/Moscow", "utc_offset": "+03:00"}},
+    )
+    DummyCalendarClient.put_handler = lambda *args, **kwargs: DummyResponse(201)
+    monkeypatch.setattr(create_event, "YandexCalendarClient", DummyCalendarClient)
+    monkeypatch.setattr(create_event, "YandexTelemostClient", DummyTelemostClient)
+
+    result = create_event.create_telemost_event(
+        account="acct",
+        summary="Config pair",
+        start_str="2026-03-12T13:00:00",
+        duration_minutes=15,
+        attendees=[],
+        data_dir=str(data_dir),
+    )
+
+    assert result["timezone"] == "Europe/Moscow"
+
+
+def test_create_telemost_event_rejects_bad_agent_config_before_side_effects(monkeypatch, tmp_path: Path):
+    data_dir = tmp_path / "yandex-data"
+    write_agent_config(
+        data_dir,
+        {"calendar": {"timezone": "Europe/Moscow", "utc_offset": "+02:00"}},
+    )
+    DummyCalendarClient.init_count = 0
+    DummyTelemostClient.init_count = 0
+    DummyCalendarClient.put_handler = lambda *args, **kwargs: DummyResponse(201)
+    monkeypatch.setattr(create_event, "YandexCalendarClient", DummyCalendarClient)
+    monkeypatch.setattr(create_event, "YandexTelemostClient", DummyTelemostClient)
+
+    with pytest.raises(ValueError, match="conflict"):
+        create_event.create_telemost_event(
+            account="acct",
+            summary="Bad config",
+            start_str="2026-03-12T13:00:00",
+            duration_minutes=15,
+            attendees=[],
+            data_dir=str(data_dir),
+        )
+
+    assert DummyCalendarClient.init_count == 0
+    assert DummyTelemostClient.init_count == 0
+
+
+def test_create_telemost_event_rejects_unknown_config_timezone(monkeypatch, tmp_path: Path):
+    data_dir = tmp_path / "yandex-data"
+    write_agent_config(data_dir, {"calendar": {"timezone": "Mars/Base"}})
+    monkeypatch.setattr(create_event, "YandexCalendarClient", DummyCalendarClient)
+    monkeypatch.setattr(create_event, "YandexTelemostClient", DummyTelemostClient)
+
+    with pytest.raises(ValueError, match="Unknown timezone"):
+        create_event.create_telemost_event(
+            account="acct",
+            summary="Bad timezone",
+            start_str="2026-03-12T13:00:00",
+            duration_minutes=15,
+            attendees=[],
+            data_dir=str(data_dir),
+        )
+
+
+def test_create_telemost_event_rejects_malformed_config_offset(monkeypatch, tmp_path: Path):
+    data_dir = tmp_path / "yandex-data"
+    write_agent_config(data_dir, {"calendar": {"utc_offset": "+25:00"}})
+    monkeypatch.setattr(create_event, "YandexCalendarClient", DummyCalendarClient)
+    monkeypatch.setattr(create_event, "YandexTelemostClient", DummyTelemostClient)
+
+    with pytest.raises(ValueError, match="--utc-offset"):
+        create_event.create_telemost_event(
+            account="acct",
+            summary="Bad offset",
+            start_str="2026-03-12T13:00:00",
+            duration_minutes=15,
+            attendees=[],
+            data_dir=str(data_dir),
+        )
+
+
+def test_create_telemost_event_rejects_global_calendar_time_preference(monkeypatch):
+    DummyCalendarClient.init_count = 0
+    DummyTelemostClient.init_count = 0
+    monkeypatch.setattr(
+        create_event,
+        "load_global_config",
+        lambda _skill_root: (Path("config.skill.json"), {"calendar": {"timezone": "Europe/Moscow"}}),
+    )
+    monkeypatch.setattr(create_event, "YandexCalendarClient", DummyCalendarClient)
+    monkeypatch.setattr(create_event, "YandexTelemostClient", DummyTelemostClient)
+
+    with pytest.raises(ValueError, match="config.skill.json must not define calendar.timezone"):
+        create_event.create_telemost_event(
+            account="acct",
+            summary="Global bad",
+            start_str="2026-03-12T13:00:00",
+            duration_minutes=15,
+            attendees=[],
+            timezone_name="Europe/Moscow",
+        )
+
+    assert DummyCalendarClient.init_count == 0
+    assert DummyTelemostClient.init_count == 0
 
 
 def test_create_telemost_event_aware_start_converts_to_utc_offset(monkeypatch):
     captured = {}
-    DummyCalendarClient.put_handler = lambda url, auth=None, data=None, headers=None, timeout=None: captured.setdefault("data", data) or DummyResponse(201)
+    DummyCalendarClient.put_handler = capture_put_data(captured)
     monkeypatch.setattr(create_event, "YandexCalendarClient", DummyCalendarClient)
     monkeypatch.setattr(create_event, "YandexTelemostClient", DummyTelemostClient)
 

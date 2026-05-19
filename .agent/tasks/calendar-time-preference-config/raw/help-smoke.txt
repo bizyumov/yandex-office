@@ -1,0 +1,56 @@
+usage: create_event.py [-h] --account ACCOUNT --summary SUMMARY --start START
+                       [--duration DURATION] [--attendees ATTENDEES]
+                       [--data-dir DATA_DIR] [--timezone TIMEZONE]
+                       [--utc-offset UTC_OFFSET] [--event-uid EVENT_UID]
+                       [--telemost-link TELEMOST_LINK]
+                       [--telemost-conference-id TELEMOST_CONFERENCE_ID]
+                       [--attachment ATTACHMENT]
+                       [--attachment-remote-dir ATTACHMENT_REMOTE_DIR]
+                       [--telemost-access-level TELEMOST_ACCESS_LEVEL]
+                       [--telemost-waiting-room TELEMOST_WAITING_ROOM]
+                       [--telemost-cohosts TELEMOST_COHOSTS] [--json]
+
+Create Yandex Calendar event with Telemost
+
+options:
+  -h, --help            show this help message and exit
+  --account ACCOUNT, -a ACCOUNT
+                        Account name
+  --summary SUMMARY, -s SUMMARY
+                        Event title
+  --start START         Start time (ISO format, e.g., 2026-03-04T15:00:00)
+  --duration DURATION, -d DURATION
+                        Duration in minutes
+  --attendees ATTENDEES
+                        Comma-separated email addresses
+  --data-dir DATA_DIR   Path to data directory
+  --timezone TIMEZONE   IANA timezone for the user-provided start time;
+                        overrides config.agent.json
+  --utc-offset UTC_OFFSET
+                        UTC offset for the user-provided start time: Z,
+                        +HH:MM, or -HH:MM; overrides config.agent.json
+  --event-uid EVENT_UID
+                        Reuse an existing calendar event UID instead of
+                        creating a new one
+  --telemost-link TELEMOST_LINK
+                        Reuse an existing Telemost join URL instead of
+                        fetching/creating a conference
+  --telemost-conference-id TELEMOST_CONFERENCE_ID
+                        Use an existing Telemost conference instead of
+                        creating a new one
+  --attachment ATTACHMENT
+                        Local file to upload to Disk and attach to the event
+                        as an ATTACH URI
+  --attachment-remote-dir ATTACHMENT_REMOTE_DIR
+                        Disk directory for uploaded attachments (default:
+                        disk:/yandex-office Calendar Attachments)
+  --telemost-access-level TELEMOST_ACCESS_LEVEL
+                        Telemost access level for a newly created conference
+                        (default: PUBLIC)
+  --telemost-waiting-room TELEMOST_WAITING_ROOM
+                        Telemost waiting room level for a newly created
+                        conference (default: PUBLIC)
+  --telemost-cohosts TELEMOST_COHOSTS
+                        Comma-separated cohost emails for a newly created
+                        conference (default: none)
+  --json, -j            Output as JSON

@@ -20,10 +20,12 @@ from common.api import YandexApiError
 from disk.scripts.download import YandexDisk
 from telemost.lib.client import TelemostError, YandexTelemostClient
 from calendars.lib.client import YandexCalendarClient
+from common.config import find_skill_root, load_agent_config, load_global_config, resolve_data_dir
 
 
 DEFAULT_ATTACHMENT_DIR = "disk:/yandex-office Calendar Attachments"
 UTC_OFFSET_RE = re.compile(r"^([+-])(\d{2}):(\d{2})$")
+TIME_CONTEXT_KEYS = ("timezone", "utc_offset")
 
 
 def _escape_ical_text(value: str) -> str:
@@ -121,13 +123,120 @@ def _parse_utc_offset(value: str) -> tuple[timezone, str]:
     return timezone(delta), raw
 
 
+def _format_utc_offset(delta: timedelta | None) -> str:
+    if delta is None:
+        raise ValueError("Timezone has no UTC offset at the event start")
+    total_seconds = int(delta.total_seconds())
+    if total_seconds == 0:
+        return "Z"
+    sign = "+" if total_seconds >= 0 else "-"
+    total_seconds = abs(total_seconds)
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes = remainder // 60
+    return f"{sign}{hours:02d}:{minutes:02d}"
+
+
+def _calendar_config_section(config: dict[str, object], *, source: str) -> dict[str, object]:
+    raw = config.get("calendar")
+    if raw is None:
+        return {}
+    if not isinstance(raw, dict):
+        raise ValueError(f"{source} calendar config must be an object")
+    return raw
+
+
+def _config_string(section: dict[str, object], key: str, *, source: str) -> str | None:
+    if key not in section:
+        return None
+    raw = section.get(key)
+    if not isinstance(raw, str) or not raw.strip():
+        raise ValueError(f"{source} calendar.{key} must be a non-empty string")
+    return raw.strip()
+
+
+def _reject_global_calendar_time_preference() -> None:
+    skill_root = find_skill_root(__file__)
+    global_config_path, global_config = load_global_config(skill_root)
+    section = _calendar_config_section(global_config, source=global_config_path.name)
+    forbidden = [key for key in TIME_CONTEXT_KEYS if key in section]
+    if forbidden:
+        fields = ", ".join(f"calendar.{key}" for key in forbidden)
+        raise ValueError(
+            f"{global_config_path.name} must not define {fields}; "
+            "set Calendar time preference in config.agent.json"
+        )
+
+
+def _agent_calendar_time_preference(data_dir: str | None) -> tuple[str | None, str | None]:
+    resolved_data_dir = resolve_data_dir(data_dir_override=data_dir)
+    _agent_config_path, agent_config = load_agent_config(resolved_data_dir, required=False)
+    section = _calendar_config_section(agent_config, source="config.agent.json")
+    return (
+        _config_string(section, "timezone", source="config.agent.json"),
+        _config_string(section, "utc_offset", source="config.agent.json"),
+    )
+
+
+def _validate_matching_time_context(
+    *,
+    start_str: str,
+    timezone_name: str,
+    utc_offset: str,
+    source: str,
+) -> None:
+    try:
+        context_tz = ZoneInfo(timezone_name)
+    except ZoneInfoNotFoundError as exc:
+        raise ValueError(f"Unknown timezone: {timezone_name}") from exc
+    _offset_tz, normalized_offset = _parse_utc_offset(utc_offset)
+    localized_start = _localize_start(start_str, context_tz)
+    timezone_offset = _format_utc_offset(localized_start.utcoffset())
+    if timezone_offset != normalized_offset:
+        raise ValueError(
+            f"{source} timezone and utc_offset conflict: {timezone_name} is "
+            f"{timezone_offset} at {start_str}, not {normalized_offset}"
+        )
+
+
+def _effective_time_context(
+    *,
+    start_str: str,
+    data_dir: str | None,
+    timezone_name: str | None,
+    utc_offset: str | None,
+) -> tuple[str | None, str | None]:
+    _reject_global_calendar_time_preference()
+    cli_timezone = timezone_name.strip() if isinstance(timezone_name, str) and timezone_name.strip() else None
+    cli_utc_offset = utc_offset.strip() if isinstance(utc_offset, str) and utc_offset.strip() else None
+    if cli_timezone or cli_utc_offset:
+        if cli_timezone and cli_utc_offset:
+            _validate_matching_time_context(
+                start_str=start_str,
+                timezone_name=cli_timezone,
+                utc_offset=cli_utc_offset,
+                source="CLI",
+            )
+        return cli_timezone, cli_utc_offset
+
+    config_timezone, config_utc_offset = _agent_calendar_time_preference(data_dir)
+    if config_timezone and config_utc_offset:
+        _validate_matching_time_context(
+            start_str=start_str,
+            timezone_name=config_timezone,
+            utc_offset=config_utc_offset,
+            source="config.agent.json",
+        )
+    return config_timezone, config_utc_offset
+
+
 def _resolve_scheduling_context(
+    start_str: str,
     timezone_name: str | None,
     utc_offset: str | None,
 ) -> tuple[tzinfo, str | None, str | None]:
     """Resolve the explicit user time context required for event creation."""
 
-    if bool(timezone_name) == bool(utc_offset):
+    if not timezone_name and not utc_offset:
         raise ValueError("Provide exactly one of --timezone or --utc-offset")
     if timezone_name:
         try:
@@ -178,9 +287,16 @@ def create_telemost_event(
     Yandex web Calendar's internal attachment API described in issue #28.
     """
 
+    effective_timezone, effective_utc_offset = _effective_time_context(
+        start_str=start_str,
+        data_dir=data_dir,
+        timezone_name=timezone_name,
+        utc_offset=utc_offset,
+    )
     context_tz, selected_timezone, selected_utc_offset = _resolve_scheduling_context(
-        timezone_name,
-        utc_offset,
+        start_str,
+        effective_timezone,
+        effective_utc_offset,
     )
     settings_requested = (
         telemost_settings_supplied
@@ -332,8 +448,14 @@ def main() -> int:
     parser.add_argument("--duration", "-d", type=int, default=60, help="Duration in minutes")
     parser.add_argument("--attendees", help="Comma-separated email addresses")
     parser.add_argument("--data-dir", help="Path to data directory")
-    parser.add_argument("--timezone", help="IANA timezone for the user-provided start time")
-    parser.add_argument("--utc-offset", help="UTC offset for the user-provided start time: Z, +HH:MM, or -HH:MM")
+    parser.add_argument(
+        "--timezone",
+        help="IANA timezone for the user-provided start time; overrides config.agent.json",
+    )
+    parser.add_argument(
+        "--utc-offset",
+        help="UTC offset for the user-provided start time: Z, +HH:MM, or -HH:MM; overrides config.agent.json",
+    )
     parser.add_argument("--event-uid", help="Reuse an existing calendar event UID instead of creating a new one")
     parser.add_argument("--telemost-link", help="Reuse an existing Telemost join URL instead of fetching/creating a conference")
     parser.add_argument("--telemost-conference-id", help="Use an existing Telemost conference instead of creating a new one")

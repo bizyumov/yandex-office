@@ -1,0 +1,4 @@
+method auth audit warnings
+- disk/scripts/download.py:_finalize_publish_result reaches a decorated API method through 2 non-decorated call layers
+- mail/scripts/fetch_emails.py:main reaches a decorated API method through 2 non-decorated call layers
+method auth audit ok: 27 declarations

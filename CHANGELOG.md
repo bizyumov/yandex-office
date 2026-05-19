@@ -13,20 +13,29 @@ All public `yandex-office` skill releases use the `YYYY.MM.DD` version format.
 - Renamed the Calendar sub-skill directory to `calendars/` and restored normal
   `calendars.lib.client` imports to avoid Python standard-library `calendar`
   shadowing.
+- Added a complete root `config.agent.schema.json` for local agent config and
+  a local Calendar event time preference through `calendar.timezone` or
+  `calendar.utc_offset`.
+- Calendar create-event now accepts the local time preference when CLI
+  `--timezone` / `--utc-offset` is omitted, keeps CLI override precedence, and
+  rejects Calendar time preference in root `config.skill.json`.
 
 ### Changed
 
 - Aligned `VERSION`, root skill metadata, touched sub-skill metadata, and README
   release summary to `2026.05.19`.
+- Documented Calendar time-context instructions in `calendars/calendar.md`.
 
 ### Verification
 
 - `python3 -m py_compile $(rg --files -g '*.py')`
 - direct `--help` smoke tests for Calendar, Disk, Forms, Mail, OAuth, Telemost,
   and Tracker command entrypoints from outside the repo root
+- `config.agent.schema.json` and `config.agent.example.json` JSON parse checks
 - source scan confirming no `PYTHONPATH` re-exec, `importlib.util` loader usage,
   or rejected standalone Calendar package references
 - `python3 -m pytest calendars/scripts/test_create_event.py -q`
+- `python3 -m pytest common/tests/test_agent_config_schema.py -q`
 - full `pytest` with one existing `datetime.utcnow()` deprecation warning
 - `python3 capabilities/audit-method-auth.py`
 - `git diff --check`
