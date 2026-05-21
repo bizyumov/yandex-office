@@ -310,6 +310,15 @@ and managed auth accounts. Key fields:
 - `mail.state_file` — shared state file with per-filter account cursors
 - runtime data dir defaults to `./yandex-data`, or `--data-dir` when explicitly passed
 
+## Email Headers — Observed Behavior
+
+Headers tested with Yandex Mail (smtp.yandex.com) as sender and various clients as recipient:
+
+- **X-Priority: 1** — Works. Red exclamation mark shown in Outlook and other clients.
+- **Importance: high** — Works. Clients recognise high importance.
+- **Disposition-Notification-To** — Set correctly, header is preserved through Yandex SMTP relay, but **read receipt notifications are NOT triggered** in receiving clients (tested with Outlook). The header is present in the delivered message but clients do not act on it. Do NOT rely on this for read confirmation.
+- **X-Yandex-Spam** — Yandex adds this header to incoming messages. Empirically: `1` = not spam, `4` = spam. No official documentation from Yandex on the scale.
+
 ## Sending Emails
 
 Use `send_email.py` to send emails via Yandex SMTP with the same OAuth2 token dispatch as fetching:
