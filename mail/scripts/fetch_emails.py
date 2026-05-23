@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import email
 import email.utils
+import hashlib
 import imaplib
 import json
 import logging
@@ -239,6 +240,22 @@ class EmailFetcher:
         except ValueError:
             return None
 
+    @classmethod
+    def _normalize_filter_branch(cls, raw_branch: Any) -> dict[str, Any] | None:
+        """Normalize one atomic OR branch and attach its stable state key."""
+        if not isinstance(raw_branch, dict):
+            return None
+        branch = {
+            key: value
+            for key in ("sender", "subject", "since_date", "before_date")
+            if (value := cls._clean_value(raw_branch.get(key))) is not None
+        }
+        if not branch:
+            return None
+        canonical = json.dumps(branch, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        branch["branch_key"] = "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+        return branch
+
     def _resolve_named_filters(self) -> dict[str, dict[str, Any]]:
         """Resolve configured named filters into normalized filter records."""
         filters_cfg = self.config.get("mail", {}).get("filters", {})
@@ -265,6 +282,19 @@ class EmailFetcher:
                     if (value := self._clean_value(raw_filter.get(key))) is not None
                 },
             }
+            raw_any = raw_filter.get("any")
+            if isinstance(raw_any, list):
+                branches = [
+                    branch
+                    for raw_branch in raw_any
+                    if (branch := self._normalize_filter_branch(raw_branch)) is not None
+                ]
+                if branches:
+                    merged_filter.pop("sender", None)
+                    merged_filter.pop("subject", None)
+                    merged_filter.pop("since_date", None)
+                    merged_filter.pop("before_date", None)
+                    merged_filter["any"] = branches
             filters[key_name] = merged_filter
 
         legacy_profile = {
@@ -500,6 +530,68 @@ class EmailFetcher:
         return [f'FROM "{sender_value}"']
 
     @staticmethod
+    def _imap_or(criteria: list[str]) -> list[str]:
+        """Build a nested IMAP OR expression from single-key criteria."""
+        if len(criteria) <= 1:
+            return list(criteria)
+        expression = [criteria[-1]]
+        for criterion in reversed(criteria[:-1]):
+            expression = ["OR", criterion, *expression]
+        return expression
+
+    @classmethod
+    def _can_search_any_as_sender_or(cls, branches: list[dict[str, Any]]) -> bool:
+        """Return true when OR branches can share one sender-only IMAP search."""
+        if not branches:
+            return False
+        for branch in branches:
+            sender = cls._clean_value(branch.get("sender"))
+            if sender is None:
+                return False
+            # Full email addresses intentionally keep the existing two-key
+            # local_part/domain_part workaround; do not flatten them into the
+            # sender-domain OR path.
+            if "@" in sender:
+                return False
+            if any(cls._clean_value(branch.get(key)) is not None for key in ("subject", "since_date", "before_date")):
+                return False
+        return True
+
+    @classmethod
+    def _sender_matches_header(cls, sender_filter: str | None, sender_header: str | None) -> bool:
+        """Mirror existing FROM search semantics against a fetched From header."""
+        criteria = cls._sender_criteria(sender_filter)
+        haystack = (sender_header or "").casefold()
+        for criterion in criteria:
+            match = re.fullmatch(r'FROM\s+"(.*)"', criterion)
+            needle = (match.group(1) if match else criterion).casefold()
+            if needle not in haystack:
+                return False
+        return True
+
+    @classmethod
+    def _branch_matches_meta(cls, branch: dict[str, Any], meta: dict[str, Any]) -> bool:
+        """Check whether a fetched message matches one normalized OR branch."""
+        sender = cls._clean_value(branch.get("sender"))
+        if sender is not None and not cls._sender_matches_header(sender, meta.get("sender")):
+            return False
+
+        subject = cls._clean_value(branch.get("subject"))
+        if subject is not None and subject.casefold() not in str(meta.get("subject", "")).casefold():
+            return False
+
+        timestamp = str(meta.get("timestamp") or "")
+        message_date = timestamp.split("T", 1)[0] if "T" in timestamp else timestamp[:10]
+        since = cls._clean_value(branch.get("since_date"))
+        if since is not None and message_date and message_date < since[:10]:
+            return False
+        before = cls._clean_value(branch.get("before_date"))
+        if before is not None and message_date and message_date >= before[:10]:
+            return False
+
+        return True
+
+    @staticmethod
     def _criteria_has_nonascii(criteria: list[str]) -> bool:
         """Return true when search criteria need UTF-8 IMAP search."""
         return any(not value.isascii() for value in criteria)
@@ -603,6 +695,31 @@ class EmailFetcher:
             return []
         return list(uid_data[0].split())
 
+    def _search_emails_by_criteria(
+        self,
+        conn,
+        criteria: list[str],
+        last_uid: int,
+        *,
+        max_uid: int | None = None,
+    ) -> list[tuple[int, bytes]]:
+        """Search for emails using pre-built IMAP criteria within UID bounds."""
+        search_criteria = list(criteria)
+        if max_uid is not None:
+            if max_uid <= 0:
+                return []
+            search_criteria = ["UID", f"1:{max_uid}", *search_criteria]
+
+        result = []
+        for uid_bytes in self._search_uids(conn, search_criteria):
+            uid = int(uid_bytes)
+            if uid <= last_uid:
+                continue
+            if max_uid is not None and uid > max_uid:
+                continue
+            result.append((uid, uid_bytes))
+        return sorted(result, key=lambda item: item[0])
+
     @yandex_api_method("mail.imap.search", one_of=["mail:imap_full", "mail:imap_ro"])
     def _search_emails(
         self,
@@ -634,14 +751,7 @@ class EmailFetcher:
         if not criteria:
             return []
 
-        result = []
-        for uid_bytes in self._search_uids(conn, criteria):
-            uid = int(uid_bytes)
-            if uid <= last_uid:
-                continue
-            result.append((uid, uid_bytes))
-
-        return sorted(result, key=lambda item: item[0])
+        return self._search_emails_by_criteria(conn, criteria, last_uid)
 
     @yandex_api_method("mail.imap.fetch", one_of=["mail:imap_full", "mail:imap_ro"])
     def _fetch_message_data(
@@ -840,37 +950,148 @@ class EmailFetcher:
             logger.error("All connection attempts failed")
             return 0
 
+        any_branches = run_filter.get("any") if isinstance(run_filter.get("any"), list) else None
+        account_state: dict[str, Any] = self._get_account_state(account_name, filter_name) if any_branches else {}
+        branch_state: dict[str, Any] = {
+            key: value
+            for key, value in account_state.items()
+            if isinstance(key, str) and key.startswith("sha256:")
+        }
+        branch_last_uids: dict[str, int] = {}
         single_uid = self.run_options.get("uid")
         if single_uid is not None:
-            matching = [(single_uid, str(single_uid).encode("ascii"))]
+            matching = [(single_uid, str(single_uid).encode("ascii"), None)]
             logger.info(f"Fetching exact UID: {single_uid}")
         else:
-            last_uid = self._effective_last_uid(account_name, filter_name)
-            logger.info(f"Last processed UID: {last_uid}")
-
-            sender = run_filter.get("sender")
-            subject = run_filter.get("subject")
-            since = self._effective_since(account_name, filter_name, run_filter)
-            before = run_filter.get("before_date")
-            if not any([sender, subject, since, before]):
-                logger.error("No mail filter criteria configured for this run")
-                conn.logout()
-                return 0
-
-            try:
-                matching = self._search_emails(
-                    conn,
-                    sender,
-                    last_uid,
-                    subject=subject,
-                    since=since,
-                    before=before,
-                    ctx=api_ctx,
+            if any_branches:
+                persist_state = self._should_persist_state(dry_run=dry_run)
+                all_branch_keys = {str(branch["branch_key"]) for branch in any_branches}
+                missing_branches = [
+                    branch for branch in any_branches if str(branch["branch_key"]) not in branch_state
+                ]
+                high_water_uid = (
+                    int(self.run_options["from_uid"])
+                    if self.run_options.get("from_uid") is not None
+                    else max((value for value in branch_state.values() if isinstance(value, int)), default=0)
                 )
-            except Exception as exc:
-                logger.error(f"Search failed: {exc}")
-                conn.logout()
-                return 0
+                branch_last_uids = {
+                    str(branch["branch_key"]): (
+                        int(branch_state[str(branch["branch_key"])])
+                        if isinstance(branch_state.get(str(branch["branch_key"])), int)
+                        else 0
+                    )
+                    for branch in any_branches
+                }
+                logger.info(f"Filter high-water UID for {filter_name}: {high_water_uid}")
+                for branch_key, last_uid in branch_last_uids.items():
+                    logger.info(f"Last matching UID for branch {branch_key}: {last_uid}")
+
+                matching_by_uid: dict[int, tuple[int, bytes, set[str] | None]] = {}
+
+                def add_matches(
+                    branch_group: list[dict[str, Any]],
+                    *,
+                    last_uid: int,
+                    max_uid: int | None,
+                    update_keys: set[str] | None,
+                ) -> None:
+                    if not branch_group:
+                        return
+                    if self._can_search_any_as_sender_or(branch_group):
+                        criteria = self._imap_or(
+                            [self._sender_criteria(str(branch["sender"]))[0] for branch in branch_group]
+                        )
+                        found = self._search_emails_by_criteria(
+                            conn,
+                            criteria,
+                            last_uid,
+                            max_uid=max_uid,
+                        )
+                    else:
+                        found_by_uid: dict[int, bytes] = {}
+                        for branch in branch_group:
+                            branch_key = str(branch["branch_key"])
+                            branch_floor = last_uid if update_keys is not None else branch_last_uids[branch_key]
+                            branch_matches = self._search_emails(
+                                conn,
+                                branch.get("sender"),
+                                int(branch_floor),
+                                subject=branch.get("subject"),
+                                since=branch.get("since_date"),
+                                before=branch.get("before_date"),
+                                ctx=api_ctx,
+                            )
+                            for uid, uid_bytes in branch_matches:
+                                if max_uid is not None and uid > max_uid:
+                                    continue
+                                found_by_uid.setdefault(uid, uid_bytes)
+                        found = sorted(found_by_uid.items(), key=lambda item: item[0])
+                    for uid, uid_bytes in found:
+                        existing = matching_by_uid.get(uid)
+                        if existing is None:
+                            matching_by_uid[uid] = (uid, uid_bytes, update_keys)
+                        elif existing[2] is not None and update_keys is not None:
+                            existing[2].update(update_keys)
+                        else:
+                            matching_by_uid[uid] = (uid, uid_bytes, None)
+
+                try:
+                    if missing_branches and self.run_options.get("from_uid") is None:
+                        missing_keys = {str(branch["branch_key"]) for branch in missing_branches}
+                        if high_water_uid > 0:
+                            add_matches(
+                                missing_branches,
+                                last_uid=0,
+                                max_uid=high_water_uid,
+                                update_keys=missing_keys,
+                            )
+                        if persist_state:
+                            for branch_key in missing_keys:
+                                account_state[branch_key] = None
+                                branch_state[branch_key] = None
+                            self._save_state()
+                    add_matches(
+                        any_branches,
+                        last_uid=high_water_uid,
+                        max_uid=None,
+                        update_keys=all_branch_keys,
+                    )
+                except Exception as exc:
+                    logger.error(f"OR search failed for filter {filter_name}: {exc}")
+                    conn.logout()
+                    return 0
+
+                matching = [matching_by_uid[uid] for uid in sorted(matching_by_uid)]
+            else:
+                last_uid = self._effective_last_uid(account_name, filter_name)
+                logger.info(f"Last processed UID: {last_uid}")
+
+                sender = run_filter.get("sender")
+                subject = run_filter.get("subject")
+                since = self._effective_since(account_name, filter_name, run_filter)
+                before = run_filter.get("before_date")
+                if not any([sender, subject, since, before]):
+                    logger.error("No mail filter criteria configured for this run")
+                    conn.logout()
+                    return 0
+
+                try:
+                    matching = [
+                        (uid, uid_bytes, None)
+                        for uid, uid_bytes in self._search_emails(
+                            conn,
+                            sender,
+                            last_uid,
+                            subject=subject,
+                            since=since,
+                            before=before,
+                            ctx=api_ctx,
+                        )
+                    ]
+                except Exception as exc:
+                    logger.error(f"Search failed: {exc}")
+                    conn.logout()
+                    return 0
 
         if max_messages is not None:
             matching = matching[:max_messages]
@@ -879,7 +1100,7 @@ class EmailFetcher:
             logger.info(f"Found {len(matching)} new emails")
 
         if dry_run:
-            for uid, uid_bytes in matching:
+            for uid, uid_bytes, _branch_key in matching:
                 try:
                     fetch_query = (
                         "(RFC822)"
@@ -934,7 +1155,7 @@ class EmailFetcher:
         # Process each email
         sleep_seconds = self._get_sleep_seconds()
 
-        for idx, (uid, uid_bytes) in enumerate(matching):
+        for idx, (uid, uid_bytes, update_keys) in enumerate(matching):
             logger.info(f"Processing UID {uid}...")
             try:
                 meta = self._process_email(
@@ -948,13 +1169,37 @@ class EmailFetcher:
                 if meta:
                     self.downloaded.append(meta)
                     if persist_state:
-                        self._update_last_uid(account_name, filter_name, uid)
-                        self._update_last_received_date(
-                            account_name,
-                            filter_name,
-                            meta.get("timestamp"),
-                        )
-                        self._save_state()
+                        if any_branches:
+                            keys_to_update = update_keys or {
+                                str(branch["branch_key"]) for branch in any_branches
+                            }
+                            for branch in any_branches:
+                                matched_branch_key = str(branch["branch_key"])
+                                if matched_branch_key not in keys_to_update:
+                                    continue
+                                if self._branch_matches_meta(branch, meta):
+                                    account_state[matched_branch_key] = uid
+                                    branch_state[matched_branch_key] = uid
+                                else:
+                                    current_branch_value = branch_state.get(matched_branch_key)
+                                    if not isinstance(current_branch_value, int):
+                                        account_state[matched_branch_key] = None
+                                        branch_state[matched_branch_key] = None
+                            self._update_last_uid(account_name, filter_name, uid)
+                            self._update_last_received_date(
+                                account_name,
+                                filter_name,
+                                meta.get("timestamp"),
+                            )
+                            self._save_state()
+                        else:
+                            self._update_last_uid(account_name, filter_name, uid)
+                            self._update_last_received_date(
+                                account_name,
+                                filter_name,
+                                meta.get("timestamp"),
+                            )
+                            self._save_state()
                     fetched_count += 1
                     logger.info(
                         f"  OK: {meta['subject'][:50]} "

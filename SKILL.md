@@ -42,6 +42,7 @@ Yandex identity behind an alias. Apps, scopes, and tokens are defined in
 
 - Auth model: `references/yandex-office-auth-principles.md`
 - Config and data shape: `references/config-data-and-tests.md`
+- Mail OR filters: `references/mail-any-filters.md`
 - Service overview: `references/yandex-service-reference.md`
 - Extension reference: `references/yandex-office-extension.md`
 
@@ -155,6 +156,7 @@ edit token files by hand; use managed import.
 ## Common Workflows
 
 Mail:
+- For named filters that combine multiple alternative branches (`mail.filters.<name>.any`), read `references/mail-any-filters.md` before changing config, state, or fetcher logic. Branch cursors live in the normal `state.json` account bucket as `sha256:*` keys, not in `incoming/<filter>/state.json`.
 - Check recent mail without persistence:
   `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --dry-run --num <limit>`
 - Find links without downloading everything:

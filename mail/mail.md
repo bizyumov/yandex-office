@@ -104,6 +104,32 @@ Behavior:
 }
 ```
 
+For one logical stream with multiple alternative query shapes, use `any`:
+
+```json
+{
+  "mail": {
+    "filters": {
+      "payment_receipts": {
+        "enabled": true,
+        "any": [
+          { "sender": "1-ofd.ru" },
+          { "sender": "taxcom.ru", "since_date": "2026-05-01" }
+        ]
+      }
+    }
+  }
+}
+```
+
+`any` semantics:
+
+- branches are OR'ed under the same logical filter name
+- fields inside one branch keep current AND semantics
+- results are written under the same `incoming/<filter>/` directory
+- each branch gets an independent cursor keyed by `sha256` of canonical compact branch JSON
+- branch cursor state is stored in the normal mail state file (`mail.state_file`, default `state.json`) directly under `filters.<filter>.accounts.<account>` as `sha256:...` keys
+
 Filter key rules:
 
 - filter keys are schema keys, not user-facing labels
@@ -300,6 +326,7 @@ and managed auth accounts. Key fields:
 - `mail.filters.<name>.sender` — FROM filter criterion
 - `mail.filters.<name>.subject` — SUBJECT filter criterion
 - `mail.filters.<name>.since_date` / `before_date` — optional date bounds for that filter
+- `mail.filters.<name>.any` — OR-style atomic query branches for one logical filter; each branch supports `sender`, `subject`, `since_date`, and `before_date`, and stores cursor state in `mail.state_file` directly under `filters.<filter>.accounts.<account>` as `sha256:...` keys
 - legacy `mail.filters.sender` — still supported and upgraded in-memory into `mail.filters.telemost.sender`
 - `mail.since` — `"on"`/`"off"` toggle for state-driven IMAP `SINCE` filtering
 - `mail.fetch.sleep_seconds` — Global sleep between `_process_email` iterations (seconds, default `0.5`)

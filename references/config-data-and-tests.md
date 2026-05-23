@@ -77,6 +77,7 @@ Mail filter notes:
 - configured entries under `mail.filters` are peer filters such as `telemost` and `forms`
 - legacy top-level keys like `mail.filters.sender` are still upgraded in-memory into `mail.filters.telemost`
 - named filters support `enabled: false`; bare runs execute all enabled filters
+- named filters may use `any: [...]` for OR-style branch filters; each branch supports the same `sender`, `subject`, `since_date`, and `before_date` fields, while branch cursor state is stored in the normal mail state file `{data_dir}/{mail.state_file}` (default `{data_dir}/state.json`) directly in the existing account bucket `filters.<filter>.accounts.<account>` as `sha256:...` keys alongside normal cursor fields such as `last_uid`, `last_check`, and `last_received_date`; do not add a `branches` wrapper or a filter-local state file
 - filter keys must be lowercase English schema keys because they are also used as incoming subdirectory names
 - `default` is reserved for ad-hoc one-off runs and must not be used as a configured filter key
 - `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --filter <name>` runs exactly that named filter, even if it is disabled for bare runs

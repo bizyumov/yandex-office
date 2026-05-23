@@ -153,6 +153,198 @@ def test_named_filter_resolution_uses_selected_filter() -> None:
     }]
 
 
+def test_named_filter_resolution_supports_any_branches() -> None:
+    fetcher = build_fetcher(
+        filters={
+            "payment_receipts": {
+                "enabled": True,
+                "any": [
+                    {"sender": "1-ofd.ru"},
+                    {"sender": "taxcom.ru", "since_date": "2026-05-01"},
+                ],
+            },
+        },
+        run_options={"filter": "payment_receipts"},
+    )
+
+    assert fetcher.run_filters == [{
+        "name": "payment_receipts",
+        "enabled": True,
+        "any": [
+            {
+                "sender": "1-ofd.ru",
+                "branch_key": "sha256:e75b486abf384299d869447d554ea9f7084ba6f9e9f4b0da6546101dad818387",
+            },
+            {
+                "sender": "taxcom.ru",
+                "since_date": "2026-05-01",
+                "branch_key": "sha256:4d7448eb318fba3340748b35dae9f3175347824e5425c845c8243715f1c478e3",
+            },
+        ],
+    }]
+
+
+def test_fetch_account_any_filter_uses_filter_local_branch_state(tmp_path) -> None:
+    fetcher = build_fetcher(
+        filters={
+            "payment_receipts": {
+                "any": [
+                    {"sender": "1-ofd.ru"},
+                    {"sender": "taxcom.ru"},
+                ],
+            },
+        },
+        run_options={"filter": "payment_receipts"},
+        state={"filters": {"payment_receipts": {"accounts": {"alex": {"last_uid": 999}}}}},
+    )
+    fetcher.data_dir = tmp_path
+    conn = LogoutConn()
+    calls = []
+    processed = []
+
+    fetcher._connect_imap = lambda *_: conn
+
+    def fake_search_by_criteria(_conn, criteria, last_uid, *, max_uid=None):
+        calls.append((criteria, last_uid, max_uid))
+        return [(101, b"101"), (202, b"202")]
+
+    fetcher._search_emails_by_criteria = fake_search_by_criteria
+
+    def fake_process(_conn, uid_bytes, uid, account, filter_, **_kw):
+        processed.append((uid, account, filter_))
+        sender = "<noreply@1-ofd.ru>" if uid == 101 else "<check@taxcom.ru>"
+        return {
+            "imap_uid": uid,
+            "account": account,
+            "filter": filter_,
+            "subject": "Receipt",
+            "sender": sender,
+            "timestamp": "2026-05-23T10:00:00Z",
+            "attachments": [],
+        }
+
+    fetcher._process_email = fake_process
+
+    fetched = fetcher.fetch_account({"name": "alex", "email": "user@example.com"}, fetcher.run_filters[0])
+
+    assert fetched == 2
+    assert calls == [(['OR', 'FROM "1-ofd.ru"', 'FROM "taxcom.ru"'], 0, None)]
+    assert processed == [(101, "alex", "payment_receipts"), (202, "alex", "payment_receipts")]
+    state = json.loads((tmp_path / "state.json").read_text(encoding="utf-8"))
+    account_state = state["filters"]["payment_receipts"]["accounts"]["alex"]
+    assert account_state["last_uid"] == 202
+    assert account_state["last_received_date"] == "2026-05-23"
+    assert isinstance(account_state["last_check"], str)
+    assert account_state["sha256:e75b486abf384299d869447d554ea9f7084ba6f9e9f4b0da6546101dad818387"] == 101
+    assert account_state["sha256:0db2a7e96f42dabbf9dc1a21055bbabb9d2aa0f3ede03e6e097e8f496f52dd52"] == 202
+
+
+def test_fetch_account_any_filter_backfills_missing_branch_to_high_water(tmp_path) -> None:
+    first_key = "sha256:e75b486abf384299d869447d554ea9f7084ba6f9e9f4b0da6546101dad818387"
+    second_key = "sha256:0db2a7e96f42dabbf9dc1a21055bbabb9d2aa0f3ede03e6e097e8f496f52dd52"
+    (tmp_path / "state.json").write_text(
+        json.dumps(
+            {
+                "filters": {
+                    "payment_receipts": {
+                        "accounts": {
+                            "alex": {first_key: 1000},
+                        },
+                    },
+                },
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    fetcher = build_fetcher(
+        filters={
+            "payment_receipts": {
+                "any": [
+                    {"sender": "1-ofd.ru"},
+                    {"sender": "taxcom.ru"},
+                ],
+            },
+        },
+        run_options={"filter": "payment_receipts"},
+    )
+    fetcher.data_dir = tmp_path
+    fetcher.state = fetcher._load_state()
+    conn = LogoutConn()
+    calls = []
+    fetcher._connect_imap = lambda *_: conn
+
+    def fake_search_by_criteria(_conn, criteria, last_uid, *, max_uid=None):
+        calls.append((criteria, last_uid, max_uid))
+        if max_uid == 1000:
+            return []
+        return [(1001, b"1001")]
+
+    fetcher._search_emails_by_criteria = fake_search_by_criteria
+    fetcher._process_email = lambda _conn, uid_bytes, uid, account, filter_, **_kw: {
+        "imap_uid": uid,
+        "account": account,
+        "filter": filter_,
+        "subject": "Receipt",
+        "sender": "<check@taxcom.ru>",
+        "timestamp": "2026-05-23T10:00:00Z",
+        "attachments": [],
+    }
+
+    fetched = fetcher.fetch_account({"name": "alex", "email": "user@example.com"}, fetcher.run_filters[0])
+
+    assert fetched == 1
+    assert calls == [
+        (['FROM "taxcom.ru"'], 0, 1000),
+        (['OR', 'FROM "1-ofd.ru"', 'FROM "taxcom.ru"'], 1000, None),
+    ]
+    state = json.loads((tmp_path / "state.json").read_text(encoding="utf-8"))
+    account_state = state["filters"]["payment_receipts"]["accounts"]["alex"]
+    assert account_state["last_uid"] == 1001
+    assert account_state["last_received_date"] == "2026-05-23"
+    assert isinstance(account_state["last_check"], str)
+    assert account_state[first_key] == 1000
+    assert account_state[second_key] == 1001
+
+
+def test_fetch_account_any_filter_advances_all_matching_sender_branches(tmp_path) -> None:
+    fetcher = build_fetcher(
+        filters={
+            "payment_receipts": {
+                "any": [
+                    {"sender": "1-ofd.ru"},
+                    {"sender": "ofd.ru"},
+                ],
+            },
+        },
+        run_options={"filter": "payment_receipts"},
+    )
+    fetcher.data_dir = tmp_path
+    conn = LogoutConn()
+    fetcher._connect_imap = lambda *_: conn
+    fetcher._search_emails_by_criteria = lambda _conn, criteria, last_uid, *, max_uid=None: [(101, b"101")]
+    fetcher._process_email = lambda _conn, uid_bytes, uid, account, filter_, **_kw: {
+        "imap_uid": uid,
+        "account": account,
+        "filter": filter_,
+        "subject": "Receipt",
+        "sender": "<noreply@1-ofd.ru>",
+        "timestamp": "2026-05-23T10:00:00Z",
+        "attachments": [],
+    }
+
+    fetched = fetcher.fetch_account({"name": "alex", "email": "user@example.com"}, fetcher.run_filters[0])
+
+    assert fetched == 1
+    state = json.loads((tmp_path / "state.json").read_text(encoding="utf-8"))
+    account_state = state["filters"]["payment_receipts"]["accounts"]["alex"]
+    assert account_state["last_uid"] == 101
+    assert account_state["last_received_date"] == "2026-05-23"
+    assert isinstance(account_state["last_check"], str)
+    assert account_state["sha256:e75b486abf384299d869447d554ea9f7084ba6f9e9f4b0da6546101dad818387"] == 101
+    assert account_state["sha256:9b26153b2c43dd72af051faaac98d47dc7e0c18ecf7ef58c0846668673bc0b58"] == 101
+
+
 def test_named_filter_resolution_rejects_non_english_schema_key() -> None:
     with pytest.raises(ValueError, match="lowercase English schema keys only"):
         build_fetcher(
