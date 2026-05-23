@@ -51,14 +51,7 @@ def make_ctx(
     token: str = "test-token",
     account: str | None = None,
 ) -> mail_send.YandexApiContext:
-    """Build a real YandexApiContext with mock token data for decorator dispatch.
-
-    The decorator dispatches through _dispatch_yandex_api which reads
-    account, data_dir, config, session from the context, and then resolves
-    token candidates from token files. For unit tests that bypass the
-    decorator by calling the original function directly, we just need
-    token_ref and token_data.
-    """
+    """Build a real YandexApiContext with mock token data for decorator dispatch."""
     from common.api import TokenRef
 
     token_ref = TokenRef(
@@ -78,7 +71,67 @@ def make_ctx(
     )
 
 
-# --- Unit tests ---
+# --- Credential resolution tests ---
+
+
+def test_parse_env_file_reads_key_value():
+    """_parse_env_file parses simple KEY=VALUE lines."""
+    tmp = Path("/tmp/test_mail_creds.env")
+    tmp.write_text("# comment\nYANDEX_MAIL_USER=user@yandex.ru\nYANDEX_MAIL_APP_PASSWORD=secret123\n", encoding="utf-8")
+    try:
+        result = mail_send._parse_env_file(tmp)
+        assert result["YANDEX_MAIL_USER"] == "user@yandex.ru"
+        assert result["YANDEX_MAIL_APP_PASSWORD"] == "secret123"
+    finally:
+        tmp.unlink(missing_ok=True)
+
+
+def test_parse_env_file_ignores_missing():
+    """_parse_env_file returns empty dict for non-existent file."""
+    result = mail_send._parse_env_file(Path("/tmp/does_not_exist_12345.env"))
+    assert result == {}
+
+
+def test_load_app_password_returns_none_when_no_file():
+    """_load_app_password returns None when no credentials file exists."""
+    with patch("send_email._resolve_credentials_file", return_value=None):
+        result = mail_send._load_app_password(None)
+        assert result is None
+
+
+def test_load_app_password_returns_credentials():
+    """_load_app_password returns (user, password) from a valid file."""
+    tmp = Path("/tmp/test_mail_creds2.env")
+    tmp.write_text("YANDEX_MAIL_USER=ai@dice-tech.ai\nYANDEX_MAIL_APP_PASSWORD=abc123\n", encoding="utf-8")
+    try:
+        with patch("send_email._resolve_credentials_file", return_value=tmp):
+            user, password = mail_send._load_app_password(None)
+            assert user == "ai@dice-tech.ai"
+            assert password == "abc123"
+    finally:
+        tmp.unlink(missing_ok=True)
+
+
+# --- App-password SMTP connection test ---
+
+
+@patch("send_email.smtplib.SMTP_SSL")
+def test_connect_smtp_app_password_authenticates_with_login(mock_smtp_cls: MagicMock):
+    """_connect_smtp_app_password calls conn.login(user, password)."""
+    mock_conn = MagicMock()
+    mock_smtp_cls.return_value = mock_conn
+
+    result = mail_send._connect_smtp_app_password(
+        user="ai@dice-tech.ai", password="secret",
+    )
+
+    assert isinstance(result, mail_send.SmtpSendResult)
+    assert result.sender_email == "ai@dice-tech.ai"
+    assert result.conn is mock_conn
+    mock_conn.login.assert_called_once_with("ai@dice-tech.ai", "secret")
+
+
+# --- OAuth2 credential tests ---
 
 
 def test_mail_credentials_extracts_email_and_token() -> None:
@@ -117,8 +170,11 @@ def test_mail_credentials_raises_on_missing_email() -> None:
         mail_send.EmailSender._mail_credentials(ctx)
 
 
+# --- OAuth2 SMTP connection tests ---
+
+
 @patch("send_email.smtplib.SMTP_SSL")
-def test_connect_smtp_authenticates_with_xoauth2(mock_smtp_cls: MagicMock) -> None:
+def test_connect_smtp_oauth2_authenticates_with_xoauth2(mock_smtp_cls: MagicMock) -> None:
     mock_conn = MagicMock()
     mock_conn.docmd.return_value = (235, b"2.0.0 OK")
     mock_smtp_cls.return_value = mock_conn
@@ -127,7 +183,7 @@ def test_connect_smtp_authenticates_with_xoauth2(mock_smtp_cls: MagicMock) -> No
     ctx = make_ctx(email="user@yandex.ru", token="ya-token")
 
     # Call the original unwrapped method directly to bypass decorator dispatch
-    original = sender._connect_smtp.__wrapped__  # type: ignore[attr-defined]
+    original = sender._connect_smtp_oauth2.__wrapped__  # type: ignore[attr-defined]
     result = original(sender, ctx)
 
     assert isinstance(result, mail_send.SmtpSendResult)
@@ -142,7 +198,7 @@ def test_connect_smtp_authenticates_with_xoauth2(mock_smtp_cls: MagicMock) -> No
 
 
 @patch("send_email.smtplib.SMTP_SSL")
-def test_connect_smtp_raises_on_auth_failure(mock_smtp_cls: MagicMock) -> None:
+def test_connect_smtp_oauth2_raises_on_auth_failure(mock_smtp_cls: MagicMock) -> None:
     mock_conn = MagicMock()
     mock_smtp_cls.return_value = mock_conn
     mock_conn.docmd.return_value = (535, b"5.7.8 Error: authentication failed")
@@ -150,11 +206,72 @@ def test_connect_smtp_raises_on_auth_failure(mock_smtp_cls: MagicMock) -> None:
     sender = build_sender()
     ctx = make_ctx(email="user@yandex.ru", token="bad-token")
 
-    original = sender._connect_smtp.__wrapped__  # type: ignore[attr-defined]
+    original = sender._connect_smtp_oauth2.__wrapped__  # type: ignore[attr-defined]
     with pytest.raises(RuntimeError, match="SMTP XOAUTH2 auth failed"):
         original(sender, ctx)
 
     mock_conn.quit.assert_called_once()
+
+
+# --- _connect_smtp dispatch tests ---
+
+
+@patch("send_email._connect_smtp_app_password")
+def test_connect_smtp_prefers_app_password(mock_app_pwd: MagicMock):
+    """_connect_smtp uses app-password when available."""
+    mock_result = mail_send.SmtpSendResult(
+        conn=MagicMock(), sender_email="ai@dice-tech.ai",
+    )
+    mock_app_pwd.return_value = mock_result
+
+    sender = build_sender()
+    with patch("send_email._load_app_password", return_value=("ai@dice-tech.ai", "secret")):
+        result = sender._connect_smtp()
+
+    assert result is mock_result
+    mock_app_pwd.assert_called_once()
+
+
+def test_connect_smtp_no_app_password_falls_back_to_oauth2():
+    """_connect_smtp falls back to OAuth2 when no app-password available."""
+    mock_conn = MagicMock()
+    mock_conn.docmd.return_value = (235, b"OK")
+
+    sender = build_sender()
+    # No app-password => _load_app_password returns None
+    with patch("send_email._load_app_password", return_value=None):
+        # The OAuth2 decorator path needs a real token file; mock the inner method
+        with patch.object(sender, "_connect_smtp_oauth2") as mock_oauth2:
+            mock_oauth2.return_value = mail_send.SmtpSendResult(
+                conn=mock_conn, sender_email="user@yandex.ru",
+            )
+            result = sender._connect_smtp()
+
+    assert result.sender_email == "user@yandex.ru"
+    mock_oauth2.assert_called_once()
+
+
+def test_connect_smtp_app_password_failure_falls_back_to_oauth2():
+    """_connect_smtp falls back to OAuth2 when app-password auth fails."""
+    import smtplib as _smtplib
+
+    mock_conn = MagicMock()
+    mock_conn.docmd.return_value = (235, b"OK")
+
+    sender = build_sender()
+    with patch("send_email._load_app_password", return_value=("ai@dice-tech.ai", "bad-pwd")):
+        with patch("send_email._connect_smtp_app_password", side_effect=_smtplib.SMTPAuthenticationError(535, b"Auth failed")):
+            with patch.object(sender, "_connect_smtp_oauth2") as mock_oauth2:
+                mock_oauth2.return_value = mail_send.SmtpSendResult(
+                    conn=mock_conn, sender_email="user@yandex.ru",
+                )
+                result = sender._connect_smtp()
+
+    assert result.sender_email == "user@yandex.ru"
+    mock_oauth2.assert_called_once()
+
+
+# --- Send message tests ---
 
 
 @patch("send_email.smtplib.SMTP_SSL")
@@ -180,7 +297,6 @@ def test_send_builds_correct_message(mock_smtp_cls: MagicMock) -> None:
     assert result["to"] == ["recipient@example.com"]
     assert result["subject"] == "Test Subject"
 
-    # Verify send_message was called
     mock_conn.send_message.assert_called_once()
     msg = mock_conn.send_message.call_args[0][0]
     assert msg["To"] == "recipient@example.com"
@@ -241,6 +357,9 @@ def test_send_html_content_type(mock_smtp_cls: MagicMock) -> None:
     assert "text/html" in msg.get_content_type()
 
 
+# --- CLI tests ---
+
+
 def test_cli_returns_error_without_body() -> None:
     ret = mail_send.main(["--to", "a@b.com", "--subject", "Test"])
     assert ret == 1
@@ -258,7 +377,6 @@ def test_cli_body_file_reads_content(tmp_path: Path) -> None:
             "subject": "Test",
             "message_id": "123",
         }
-        # Patch __init__ to avoid load_runtime_context
         with patch.object(mail_send.EmailSender, "__init__", lambda self, **kw: None):
             ret = mail_send.main([
                 "--to", "a@b.com",
