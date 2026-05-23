@@ -46,6 +46,7 @@ After editing a local `config.agent.json` filter:
 3. Confirm the JSON includes `dry_run: true`, the expected `filter`, and plausible message metadata.
 4. Confirm no branch state was created or changed by dry-run.
 5. Run the checked-in mail/schema tests when changing the implementation or schema.
+6. For PR writeups or public issue comments, include live validation only in redacted/general form: mention counts, timing, two-account coverage, state shape, and absence of pending failures, but do not include configured account aliases, real message UIDs, local paths, buyer/seller names, or receipt contents.
 
 ## Example use: OFD receipt collection
 

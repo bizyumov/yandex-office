@@ -36,7 +36,7 @@ python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --num 20
 python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --filter forms
 
 # Run an ad-hoc one-off search without touching persistent cursor state
-python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --sender "Мария" --subject "Fwd:" --account alex --dry-run --extract-links
+python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --sender "Мария" --subject "Fwd:" --account alex --dry-run --preview-body
 
 # Fetch exactly one message without advancing state
 python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account alex --uid 5131
@@ -59,9 +59,10 @@ python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account alex
 
 1. Run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --accounts list`.
 2. Pick only a listed account alias requested by the user.
-3. Run `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --sender "<pattern>" --dry-run --extract-links`.
-4. If a full saved copy is needed, run `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --uid <uid>`.
-5. Read `email_body.html` or `email_body.txt` from the saved incoming directory.
+3. Run `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --sender "<pattern>" --dry-run`.
+4. If body preview is needed without writing files, add `--preview-body` to the dry-run command.
+5. If a full saved copy is needed, run `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --uid <uid>`.
+6. Read `email_body.html` or `email_body.txt` from the saved incoming directory.
 
 If the requested account alias is missing, stop. The agent imports that account
 through `yandex-office` under user authorization. Do not use another account as
@@ -156,7 +157,8 @@ CLI options:
 - `--account NAME` restricts the run to one token-backed account alias.
 - `--from-uid UID` starts from a specific UID floor for a one-off backfill.
 - `--uid UID` fetches exactly one message, skips filter search logic, and implies non-persistence.
-- `--extract-links` with `--dry-run` includes a `links` array by fetching message bodies without writing incoming files.
+- `--preview-body` with `--dry-run` includes a `body` object for matching messages by fetching message bodies into memory without writing incoming files.
+- `--preview-body` is valid only with `--dry-run`; plain dry-run stays header-only.
 - `--no-persist` disables state writes for the run.
 
 Persistence rules:

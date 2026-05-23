@@ -100,7 +100,7 @@ All public `yandex-office` skill releases use the `YYYY.MM.DD` version format.
 - Simplified managed token import. `oauth_setup.py --from-env <ENV_VAR>` stores
   by verified Yandex identity; supplied `--email` / `--account` values are
   diagnostics, not storage authority.
-- Added Mail `--account`, one-message `--uid`, dry-run `--extract-links`, and
+- Added Mail `--account`, one-message `--uid`, dry-run `--preview-body`, and
   non-persistent ad-hoc sender/subject/date searches.
 - Restored planned Calendar, Contacts, Directory, and Tracker command/API
   shapes as explicitly unimplemented contracts with tracking issues.

@@ -84,7 +84,7 @@ Mail filter notes:
 - `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias>` selects the token-backed account resolved by `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --accounts list`
 - raw CLI overrides such as `--sender`, `--subject`, `--since-date`, `--before-date`, and `--uid` are treated as ad-hoc, do not advance persistent cursors, and search account history by default when no `--filter` is selected
 - `--uid <n>` fetches exactly one message, skips filter search logic, and requires `--account` when multiple accounts are available
-- `--extract-links` with `--dry-run` includes a `links` array for matching messages without writing incoming files
+- `--preview-body` with `--dry-run` includes a `body` object for matching messages without writing incoming files; without it, dry-run fetches headers only
 - sender and subject filters are literal IMAP substring matches; no extra query language is implemented
 - large dry-run result sets spill into `{data_dir}/latest-query/`; the next spilled run replaces the previous artifact, so copy it elsewhere if you need to keep it
 

@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+from email.message import EmailMessage
 from pathlib import Path
 
 import pytest
@@ -13,6 +14,28 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from mail.scripts import fetch_emails as mail_fetch
+
+
+def test_message_bodies_include_inline_text_parts():
+    msg = EmailMessage()
+    msg.set_content("plain receipt body", disposition="inline")
+    msg.add_alternative("<p>html receipt body</p>", subtype="html", disposition="inline")
+
+    text_body, html_body = mail_fetch.EmailFetcher._message_bodies(msg)
+
+    assert text_body == "plain receipt body\n"
+    assert html_body == "<p>html receipt body</p>\n"
+
+
+def test_message_bodies_skip_attachments():
+    msg = EmailMessage()
+    msg.set_content("receipt body")
+    msg.add_attachment("not body", filename="note.txt")
+
+    text_body, html_body = mail_fetch.EmailFetcher._message_bodies(msg)
+
+    assert text_body == "receipt body\n"
+    assert html_body is None
 
 
 class HeaderConn:
@@ -108,7 +131,7 @@ def build_fetcher(
         "from_uid": None,
         "uid": None,
         "no_persist": False,
-        "extract_links": False,
+        "preview_body": False,
     }
     if run_options:
         fetcher.run_options.update(run_options)
@@ -482,6 +505,35 @@ def test_search_emails_uses_utf8_search_and_uid_mapping() -> None:
     assert conn.fetch_calls == [(b"1", "(UID)"), (b"3", "(UID)")]
 
 
+def test_search_emails_normalizes_yo_in_subject_for_yandex_imap() -> None:
+    fetcher = build_fetcher()
+    conn = SearchConn(search_result=b"1", uid_lookup={b"1": 41})
+
+    result = fetcher._search_emails(conn, "gosuslugi.ru", 40, subject="Счёт на оплату")
+
+    assert result == [(41, b"41")]
+    assert conn.search_calls == [
+        (
+            "UTF-8",
+            (
+                b'FROM "gosuslugi.ru"',
+                'SUBJECT "Счет на оплату"'.encode("utf-8"),
+            ),
+        )
+    ]
+
+
+def test_branch_subject_matching_normalizes_yo() -> None:
+    assert mail_fetch.EmailFetcher._branch_matches_meta(
+        {"subject": "Счёт на оплату"},
+        {"subject": "Счет на оплату. Details"},
+    )
+    assert mail_fetch.EmailFetcher._branch_matches_meta(
+        {"subject": "Счет на оплату"},
+        {"subject": "Счёт на оплату"},
+    )
+
+
 def test_search_emails_handles_yandex_bytes_only_uid_fetch() -> None:
     fetcher = build_fetcher()
     conn = SearchConn(
@@ -505,7 +557,7 @@ def test_fetch_account_dry_run_collects_headers(monkeypatch) -> None:
         "https://forms.yandex.ru/u/123/"
     )
     conn = HeaderConn(header_message)
-    fetcher = build_fetcher(run_options={"extract_links": True})
+    fetcher = build_fetcher()
 
     fetcher._connect_imap = lambda *_: conn
     fetcher._search_emails = lambda *_args, **_kwargs: [(11, b"11")]
@@ -522,6 +574,10 @@ def test_fetch_account_dry_run_collects_headers(monkeypatch) -> None:
     assert count == 0
     assert conn.logged_out is True
     assert fetcher._get_last_uid("alex", "telemost") == 10
+    assert conn.calls[-1] == (
+        "FETCH",
+        (b"11", "(BODY.PEEK[HEADER.FIELDS (SUBJECT FROM DATE)])"),
+    )
     assert fetcher.downloaded == [
         {
             "imap_uid": 11,
@@ -531,10 +587,49 @@ def test_fetch_account_dry_run_collects_headers(monkeypatch) -> None:
             "timestamp": "2026-03-12T10:00:00Z",
             "dry_run": True,
             "filter": "telemost",
-            "links": [
-                "https://disk.yandex.ru/i/abc",
-                "https://forms.yandex.ru/u/123/",
-            ],
+        }
+    ]
+
+
+def test_fetch_account_dry_run_preview_body_reads_body_without_links(monkeypatch) -> None:
+    full_message = (
+        "Subject: =?utf-8?B?0KLQtdGB0YI=?=\r\n"
+        "From: news@example.com\r\n"
+        "Date: Thu, 12 Mar 2026 10:00:00 +0000\r\n"
+        "Content-Type: text/html; charset=utf-8\r\n\r\n"
+        '<a href="https://disk.yandex.ru/i/abc">file</a> '
+        "https://forms.yandex.ru/u/123/"
+    )
+    conn = HeaderConn(full_message)
+    fetcher = build_fetcher(run_options={"preview_body": True})
+
+    fetcher._connect_imap = lambda *_: conn
+    fetcher._search_emails = lambda *_args, **_kwargs: [(11, b"11")]
+    fetcher._fetch_message_data = (
+        lambda conn_arg, uid_bytes, query, **_kwargs: conn_arg.uid("FETCH", uid_bytes, query)
+    )
+
+    count = fetcher.fetch_account(
+        {"name": "alex", "email": "user@example.com"},
+        fetcher.run_filters[0],
+        dry_run=True,
+    )
+
+    assert count == 0
+    assert conn.calls[-1] == ("FETCH", (b"11", "(RFC822)"))
+    assert fetcher.downloaded == [
+        {
+            "imap_uid": 11,
+            "account": "alex",
+            "subject": "Тест",
+            "sender": "news@example.com",
+            "timestamp": "2026-03-12T10:00:00Z",
+            "dry_run": True,
+            "filter": "telemost",
+            "body": {
+                "text": "file https://forms.yandex.ru/u/123/",
+                "html": '<a href="https://disk.yandex.ru/i/abc">file</a> https://forms.yandex.ru/u/123/',
+            },
         }
     ]
 
@@ -595,6 +690,148 @@ def test_process_email_persists_filter_under_filter_directory(tmp_path) -> None:
     assert saved["filter"] == "forms"
     assert saved["dir_relpath"] == "forms/2026-03-12_alex_uid11"
 
+def test_process_email_keeps_body_separate_and_writes_attachment_objects(tmp_path) -> None:
+    raw = b"\r\n".join(
+        [
+            b"From: news@example.com",
+            b"Subject: Parts",
+            b"Date: Thu, 12 Mar 2026 10:00:00 +0000",
+            b"Content-Type: multipart/mixed; boundary=outer",
+            b"",
+            b"--outer",
+            b"Content-Type: text/plain; charset=utf-8",
+            b"Content-Disposition: inline",
+            b"",
+            b"plain body",
+            b"--outer",
+            b"Content-Type: text/html; charset=utf-8",
+            b"Content-Disposition: inline",
+            b"",
+            b"<p>html body</p>",
+            b"--outer",
+            b"Content-Type: application/pdf",
+            b"Content-Disposition: attachment; filename=invoice.pdf",
+            b"Content-Transfer-Encoding: base64",
+            b"",
+            b"cGRmLWJ5dGVz",
+            b"--outer",
+            b"Content-Type: image/png",
+            b"Content-Disposition: inline; filename=logo.png",
+            b"Content-ID: <logo@cid>",
+            b"Content-Transfer-Encoding: base64",
+            b"",
+            b"cG5nLWJ5dGVz",
+            b"--outer--",
+            b"",
+        ]
+    )
+
+    class FullMessageConn:
+        def uid(self, command, *_args):
+            assert command == "FETCH"
+            return "OK", [(b"1", raw)]
+
+    fetcher = build_fetcher()
+    fetcher.data_dir = tmp_path
+
+    meta = fetcher._process_email(FullMessageConn(), b"1", 11, "alex", "forms")
+
+    assert meta is not None
+    email_dir = tmp_path / "incoming" / "forms" / "2026-03-12_alex_uid11"
+    assert (email_dir / "email_body.txt").read_text(encoding="utf-8") == "plain body"
+    assert (email_dir / "email_body.html").read_text(encoding="utf-8") == "<p>html body</p>"
+    assert (email_dir / "invoice.pdf").read_bytes() == b"pdf-bytes"
+    assert (email_dir / "logo.png").read_bytes() == b"png-bytes"
+    assert meta["body"] == {"text": "email_body.txt", "html": "email_body.html"}
+    assert "attachment_details" not in meta
+    assert "inline_assets" not in meta
+    assert meta["attachments"] == [
+        {
+            "original-filename": "invoice.pdf",
+            "saved-filename": "invoice.pdf",
+            "content-type": "application/pdf",
+            "size": len(b"pdf-bytes"),
+            "disposition": "attachment",
+            "content-id": None,
+            "part-index": 3,
+        },
+        {
+            "original-filename": "logo.png",
+            "saved-filename": "logo.png",
+            "content-type": "image/png",
+            "size": len(b"png-bytes"),
+            "disposition": "inline",
+            "content-id": "<logo@cid>",
+            "part-index": 4,
+        },
+    ]
+
+
+def test_normalize_attachments_meta_accepts_legacy_strings() -> None:
+    assert mail_fetch.EmailFetcher._normalize_attachments_meta(["invoice.pdf"]) == [
+        {
+            "original-filename": "invoice.pdf",
+            "saved-filename": "invoice.pdf",
+            "content-type": None,
+            "size": None,
+            "disposition": None,
+            "content-id": None,
+            "part-index": None,
+        }
+    ]
+
+
+def test_process_email_avoids_attachment_filename_collisions(tmp_path) -> None:
+    raw = b"\r\n".join(
+        [
+            b"From: news@example.com",
+            b"Subject: Duplicate attachments",
+            b"Date: Thu, 12 Mar 2026 10:00:00 +0000",
+            b"Content-Type: multipart/mixed; boundary=outer",
+            b"",
+            b"--outer",
+            b"Content-Type: text/plain; charset=utf-8",
+            b"",
+            b"body",
+            b"--outer",
+            b"Content-Type: application/octet-stream",
+            b"Content-Disposition: attachment; filename=file.txt",
+            b"Content-Transfer-Encoding: base64",
+            b"",
+            b"b25l",
+            b"--outer",
+            b"Content-Type: application/octet-stream",
+            b"Content-Disposition: attachment; filename=file.txt",
+            b"Content-Transfer-Encoding: base64",
+            b"",
+            b"dHdv",
+            b"--outer--",
+            b"",
+        ]
+    )
+
+    class FullMessageConn:
+        def uid(self, command, *_args):
+            assert command == "FETCH"
+            return "OK", [(b"1", raw)]
+
+    fetcher = build_fetcher()
+    fetcher.data_dir = tmp_path
+
+    meta = fetcher._process_email(FullMessageConn(), b"1", 11, "alex", "forms")
+
+    assert meta is not None
+    email_dir = tmp_path / "incoming" / "forms" / "2026-03-12_alex_uid11"
+    assert (email_dir / "file.txt").read_bytes() == b"one"
+    assert (email_dir / "file-2.txt").read_bytes() == b"two"
+    assert [item["saved-filename"] for item in meta["attachments"]] == [
+        "file.txt",
+        "file-2.txt",
+    ]
+    assert [item["original-filename"] for item in meta["attachments"]] == [
+        "file.txt",
+        "file.txt",
+    ]
 
 def test_extract_message_bytes_accepts_direct_bytes_payload() -> None:
     raw_header = b"From: news@example.com\r\nSubject: Test\r\nDate: Thu, 12 Mar 2026 10:00:00 +0000\r\n\r\n"
@@ -700,8 +937,11 @@ def test_fetch_all_rejects_uid_without_unambiguous_account() -> None:
 
 
 def test_main_spills_heavy_pending_output_to_file(monkeypatch, tmp_path, capsys) -> None:
+    seen_kwargs = {}
+
     class FakeFetcher:
-        def __init__(self, **_kwargs):
+        def __init__(self, **kwargs):
+            seen_kwargs.update(kwargs)
             self.active_filter = {"name": "telemost"}
             self.run_filters = [{"name": "telemost"}]
             self.account_counts = {"work": 3}
@@ -752,12 +992,76 @@ def test_main_spills_heavy_pending_output_to_file(monkeypatch, tmp_path, capsys)
     assert captured["filters"] == ["telemost"]
     assert captured["filter_counts"] == {"telemost": 2}
     assert captured["pending_total"] == 2
+    assert captured["preview_body"] is False
+    assert seen_kwargs["preview_body"] is False
     assert captured["pending"] == []
     assert captured["output_spilled"] is True
     assert captured["inline_threshold_symbols"] == 10
     assert captured["output_file"].endswith("mail_dry_run.json")
     assert "Copy this file if you need to keep it." in captured["output_notice"]
     assert Path(captured["output_file"]).exists()
+
+
+def test_main_preview_body_requires_dry_run(monkeypatch) -> None:
+    monkeypatch.setattr(sys, "argv", ["fetch_emails.py", "--preview-body"])
+
+    with pytest.raises(SystemExit) as excinfo:
+        mail_fetch.main()
+
+    assert excinfo.value.code == 2
+
+
+def test_main_dry_run_preview_body_includes_body(monkeypatch, capsys) -> None:
+    seen_kwargs = {}
+
+    class FakeFetcher:
+        def __init__(self, **kwargs):
+            seen_kwargs.update(kwargs)
+            self.active_filter = {"name": "telemost"}
+            self.run_filters = [{"name": "telemost"}]
+            self.account_counts = {"work": 1}
+            self.filter_counts = {"telemost": 1}
+            self.config = {"mail": {"output": {"max_inline_symbols": 10000}}}
+
+        def fetch_all(self, num_messages=None, dry_run=False):
+            assert dry_run is True
+            return [
+                {
+                    "imap_uid": 1,
+                    "account": "work",
+                    "sender": "alice@example.com",
+                    "subject": "Preview",
+                    "timestamp": "2026-03-12T10:00:00Z",
+                    "filter": "telemost",
+                    "body": {"text": "hello", "html": "<p>hello</p>"},
+                }
+            ]
+
+        def _should_persist_state(self, *, dry_run):
+            return not dry_run
+
+        def _get_output_max_inline_symbols(self):
+            return 10000
+
+    monkeypatch.setattr(mail_fetch, "EmailFetcher", FakeFetcher)
+    monkeypatch.setattr(sys, "argv", ["fetch_emails.py", "--dry-run", "--preview-body"])
+
+    mail_fetch.main()
+
+    captured = json.loads(capsys.readouterr().out)
+    assert seen_kwargs["preview_body"] is True
+    assert captured["preview_body"] is True
+    assert captured["pending"] == [
+        {
+            "uid": 1,
+            "account": "work",
+            "sender": "alice@example.com",
+            "subject": "Preview",
+            "timestamp": "2026-03-12T10:00:00Z",
+            "filter": "telemost",
+            "body": {"text": "hello", "html": "<p>hello</p>"},
+        }
+    ]
 
 
 def test_spill_payload_replaces_previous_artifact(tmp_path) -> None:

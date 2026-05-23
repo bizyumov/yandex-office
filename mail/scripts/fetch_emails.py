@@ -64,7 +64,7 @@ class EmailFetcher:
         from_uid: int | None = None,
         uid: int | None = None,
         no_persist: bool = False,
-        extract_links: bool = False,
+        preview_body: bool = False,
     ):
         """Initialize fetcher from shared + agent config."""
         self.runtime = load_runtime_context(
@@ -90,7 +90,7 @@ class EmailFetcher:
             "from_uid": from_uid,
             "uid": uid,
             "no_persist": bool(no_persist),
-            "extract_links": bool(extract_links),
+            "preview_body": bool(preview_body),
         }
         self.named_filters = self._resolve_named_filters()
         self.run_filters = self._resolve_run_filters()
@@ -477,7 +477,8 @@ class EmailFetcher:
         for part in msg.walk():
             if part.get_content_maintype() == "multipart":
                 continue
-            if part.get("Content-Disposition") is not None:
+            disposition = (part.get_content_disposition() or "").lower()
+            if disposition == "attachment":
                 continue
             charset = part.get_content_charset() or "utf-8"
             payload = part.get_payload(decode=True)
@@ -489,25 +490,6 @@ class EmailFetcher:
                 email_body_html = payload.decode(charset, errors="replace")
         return email_body_text, email_body_html
 
-    @classmethod
-    def _extract_links(cls, *, text_body: str | None, html_body: str | None) -> list[str]:
-        """Extract unique HTTP(S) links from plain text and HTML bodies."""
-        chunks = [text_body or ""]
-        if html_body:
-            chunks.extend(
-                re.findall(r"""(?:href|src)\s*=\s*["']([^"']+)""", html_body, re.I)
-            )
-            chunks.append(cls._html_to_text(html_body))
-
-        result = []
-        seen = set()
-        for link in re.findall(r"https?://[^\s<>'\"]+", "\n".join(chunks)):
-            cleaned = link.strip().rstrip(".,;:)]}")
-            if cleaned and cleaned not in seen:
-                seen.add(cleaned)
-                result.append(cleaned)
-        return result
-
     @staticmethod
     def _safe_filename(filename: str) -> str:
         """Sanitize attachment filename for local filesystem writes."""
@@ -517,6 +499,59 @@ class EmailFetcher:
         name = re.sub(r"[\x00-\x1f]+", " ", name)
         name = re.sub(r"\s+", " ", name).strip()
         return name or "attachment.bin"
+
+    @classmethod
+    def _available_filename(cls, directory: Path, filename: str) -> str:
+        """Return a sanitized filename that will not overwrite an existing file."""
+        safe_name = cls._safe_filename(filename)
+        candidate = safe_name
+        stem = Path(safe_name).stem or "attachment"
+        suffix = Path(safe_name).suffix
+        index = 2
+        while (directory / candidate).exists():
+            candidate = f"{stem}-{index}{suffix}"
+            index += 1
+        return candidate
+
+    @staticmethod
+    def _normalize_attachment_meta(item: Any) -> dict[str, Any]:
+        """Normalize new object attachments and legacy string attachments."""
+        if isinstance(item, str):
+            return {
+                "original-filename": item,
+                "saved-filename": item,
+                "content-type": None,
+                "size": None,
+                "disposition": None,
+                "content-id": None,
+                "part-index": None,
+            }
+        if isinstance(item, dict):
+            return {
+                "original-filename": item.get("original-filename"),
+                "saved-filename": item.get("saved-filename"),
+                "content-type": item.get("content-type"),
+                "size": item.get("size"),
+                "disposition": item.get("disposition"),
+                "content-id": item.get("content-id"),
+                "part-index": item.get("part-index"),
+            }
+        return {
+            "original-filename": None,
+            "saved-filename": None,
+            "content-type": None,
+            "size": None,
+            "disposition": None,
+            "content-id": None,
+            "part-index": None,
+        }
+
+    @classmethod
+    def _normalize_attachments_meta(cls, attachments: Any) -> list[dict[str, Any]]:
+        """Normalize a meta.json attachments field while accepting the legacy list[str] format."""
+        if not isinstance(attachments, list):
+            return []
+        return [cls._normalize_attachment_meta(item) for item in attachments]
 
     @staticmethod
     def _sender_criteria(sender: str | None) -> list[str]:
@@ -569,6 +604,16 @@ class EmailFetcher:
                 return False
         return True
 
+    @staticmethod
+    def _normalize_subject_for_match(value: str | None) -> str:
+        """Normalize subject text for Yandex IMAP/local matching quirks."""
+        return (value or "").replace("Ё", "Е").replace("ё", "е").casefold()
+
+    @staticmethod
+    def _normalize_subject_for_imap(value: str) -> str:
+        """Normalize subject search terms to match Yandex IMAP's ё/е indexing."""
+        return value.replace("Ё", "Е").replace("ё", "е")
+
     @classmethod
     def _branch_matches_meta(cls, branch: dict[str, Any], meta: dict[str, Any]) -> bool:
         """Check whether a fetched message matches one normalized OR branch."""
@@ -577,7 +622,7 @@ class EmailFetcher:
             return False
 
         subject = cls._clean_value(branch.get("subject"))
-        if subject is not None and subject.casefold() not in str(meta.get("subject", "")).casefold():
+        if subject is not None and cls._normalize_subject_for_match(subject) not in cls._normalize_subject_for_match(str(meta.get("subject", ""))):
             return False
 
         timestamp = str(meta.get("timestamp") or "")
@@ -746,7 +791,7 @@ class EmailFetcher:
 
         subject_value = (subject or "").strip()
         if subject_value:
-            criteria.append(f'SUBJECT "{subject_value}"')
+            criteria.append(f'SUBJECT "{self._normalize_subject_for_imap(subject_value)}"')
 
         if not criteria:
             return []
@@ -794,6 +839,7 @@ class EmailFetcher:
             "sender": "",
             "timestamp": now_utc,
             "attachments": [],
+            "body": {},
             "dir_name": dir_name,
             "partial": False,
         }
@@ -839,23 +885,38 @@ class EmailFetcher:
             )
             if body_for_text:
                 (email_dir / "email_body.txt").write_text(body_for_text, encoding="utf-8")
+                meta["body"]["text"] = "email_body.txt"
             if email_body_html:
                 (email_dir / "email_body.html").write_text(email_body_html, encoding="utf-8")
+                meta["body"]["html"] = "email_body.html"
 
-            # Download attachments (preserve original filename semantically, sanitize for fs)
-            for part in msg.walk():
+            # Download non-body file parts (preserve original filename semantically, sanitize for fs)
+            for part_index, part in enumerate(msg.walk()):
                 if part.get_content_maintype() == "multipart":
                     continue
-                if part.get("Content-Disposition") is None:
+                disposition = (part.get_content_disposition() or "").lower()
+                content_type = part.get_content_type()
+                is_text_body = content_type in {"text/plain", "text/html"} and disposition != "attachment"
+                if is_text_body:
                     continue
                 filename = part.get_filename()
                 if not filename:
                     continue
                 decoded = self._decode_header(filename)
-                safe_name = self._safe_filename(decoded)
+                safe_name = self._available_filename(email_dir, decoded)
                 try:
-                    (email_dir / safe_name).write_bytes(part.get_payload(decode=True))
-                    meta["attachments"].append(safe_name)
+                    payload = part.get_payload(decode=True) or b""
+                    (email_dir / safe_name).write_bytes(payload)
+                    detail = {
+                        "original-filename": decoded,
+                        "saved-filename": safe_name,
+                        "content-type": content_type,
+                        "size": len(payload),
+                        "disposition": disposition or None,
+                        "content-id": part.get("Content-ID"),
+                        "part-index": part_index,
+                    }
+                    meta["attachments"].append(detail)
                 except Exception as exc:
                     meta["partial"] = True
                     logger.error(
@@ -1104,7 +1165,7 @@ class EmailFetcher:
                 try:
                     fetch_query = (
                         "(RFC822)"
-                        if self.run_options.get("extract_links")
+                        if self.run_options.get("preview_body")
                         else "(BODY.PEEK[HEADER.FIELDS (SUBJECT FROM DATE)])"
                     )
                     _, msg_data = self._fetch_message_data(
@@ -1136,12 +1197,16 @@ class EmailFetcher:
                         "dry_run": True,
                         "filter": filter_name,
                     }
-                    if self.run_options.get("extract_links"):
+                    if self.run_options.get("preview_body"):
                         text_body, html_body = self._message_bodies(msg)
-                        row["links"] = self._extract_links(
-                            text_body=text_body,
-                            html_body=html_body,
-                        )
+                        body: dict[str, str] = {}
+                        if text_body:
+                            body["text"] = text_body
+                        elif html_body:
+                            body["text"] = self._html_to_text(html_body)
+                        if html_body:
+                            body["html"] = html_body
+                        row["body"] = body
                     self.downloaded.append(row)
                 except Exception as exc:
                     logger.warning(f"Dry-run header fetch failed for UID {uid}: {exc}")
@@ -1296,9 +1361,9 @@ def main() -> None:
         help="Fetch exactly one UID without filter search logic or state updates",
     )
     parser.add_argument(
-        "--extract-links",
+        "--preview-body",
         action="store_true",
-        help="In dry-run mode, fetch message bodies and include extracted links",
+        help="In dry-run mode, fetch message bodies into the JSON preview without writing incoming/",
     )
     parser.add_argument(
         "--no-persist",
@@ -1330,6 +1395,8 @@ def main() -> None:
         parser.error("--uid must be a positive integer")
     if args.uid is not None and args.from_uid is not None:
         parser.error("--uid cannot be combined with --from-uid")
+    if args.preview_body and not args.dry_run:
+        parser.error("--preview-body requires --dry-run")
 
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.WARNING,
@@ -1348,7 +1415,7 @@ def main() -> None:
             from_uid=args.from_uid,
             uid=args.uid,
             no_persist=args.no_persist or args.uid is not None,
-            extract_links=args.extract_links,
+            preview_body=args.preview_body,
         )
         results = fetcher.fetch_all(num_messages=args.num, dry_run=args.dry_run)
     except ValueError as exc:
@@ -1366,8 +1433,8 @@ def main() -> None:
                 "timestamp": item.get("timestamp", ""),
                 "filter": item.get("filter", ""),
             }
-            if "links" in item:
-                row["links"] = item.get("links", [])
+            if "body" in item:
+                row["body"] = item.get("body", {})
             pending_rows.append(row)
 
     response = {
@@ -1378,7 +1445,7 @@ def main() -> None:
         "fetched_total": 0 if args.dry_run else len(results),
         "pending_total": len(pending_rows) if args.dry_run else 0,
         "pending": pending_rows if args.dry_run else [],
-        "extract_links": bool(args.extract_links) if args.dry_run else False,
+        "preview_body": bool(args.preview_body) if args.dry_run else False,
         "accounts": fetcher.account_counts,
         "filter_counts": fetcher.filter_counts,
     }
