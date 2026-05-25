@@ -28,6 +28,34 @@ Installed workflow agents:
 - `.codex/agents/task-fixer.toml`
 <!-- repo-task-proof-loop:end -->
 
+## yandex-office PR Hygiene
+
+- Before committing or pushing PR work, identify and report the current branch,
+  upstream, PR head/base, and whether the user has rescoped the task away from
+  that PR. Do not push to a PR branch after rescope unless the user explicitly
+  approves that branch as the target.
+- Root `SKILL.md` is a first-read router. Propose exact `SKILL.md` changes
+  first and wait for explicit approval. Every approved `SKILL.md` edit must
+  update the Document Map in the same diff and verify line ranges with
+  `nl -ba SKILL.md`.
+- Keep low-level extension/auth mechanics out of root `SKILL.md` by default.
+  Put implementation guidance in `references/yandex-office-extension.md` unless
+  the user explicitly approves exact root `SKILL.md` text.
+- Keep release metadata aligned: `VERSION`, top `CHANGELOG.md` entry, README
+  current-release block, root `SKILL.md` metadata, and relevant sub-skill
+  metadata. Run a version scan before commit.
+- Before saying a PR can merge, check GitHub mergeability and a local
+  `git merge-tree --write-tree origin/main HEAD`. If conflicts exist, report
+  exact files. After resolving, re-check mergeability, branch divergence, and
+  checks.
+- For code changes, run the project checks before commit/push:
+  `python3 -m pytest -q`, `python3 -m py_compile $(rg --files -g '*.py')`,
+  `python3 capabilities/audit-method-auth.py`, `python3 capabilities/validate.py`,
+  and `git diff --check`.
+- Managed auth is the production auth path. Do not add raw-token API
+  parameters, side scripts, app-password paths, raw `imaplib`/`smtplib`
+  workflow bypasses, or IMAP-scope fallback for SMTP send.
+
 ## Yandex-office Calendar Time Context Docs
 
 - Do not add or remove explanatory prose in root `SKILL.md` for Calendar
