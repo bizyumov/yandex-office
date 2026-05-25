@@ -1,0 +1,26 @@
+{
+  "probe": "mail",
+  "timestamp": "2026-05-25T14:18:42.300954+00:00",
+  "fixture": {
+    "id": "mail-method-access-fixture",
+    "variables": "<redacted>"
+  },
+  "rows": [
+    {
+      "timestamp": "2026-05-25T14:18:42.300906+00:00",
+      "method_id": "mail.smtp.authenticate",
+      "scope_id": "mail:smtp",
+      "status": "works",
+      "http": {
+        "status_code": 235,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "smtp_status"
+        ]
+      },
+      "request_fixture_id": "mail-smtp-authenticate"
+    }
+  ],
+  "cleanup_errors": []
+}

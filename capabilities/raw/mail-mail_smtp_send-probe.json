@@ -1,0 +1,26 @@
+{
+  "probe": "mail",
+  "timestamp": "2026-05-25T14:19:09.793454+00:00",
+  "fixture": {
+    "id": "mail-method-access-fixture",
+    "variables": "<redacted>"
+  },
+  "rows": [
+    {
+      "timestamp": "2026-05-25T14:19:09.793401+00:00",
+      "method_id": "mail.smtp.send",
+      "scope_id": "mail:smtp",
+      "status": "works",
+      "http": {
+        "status_code": 250,
+        "ok": true,
+        "content_type": "",
+        "json_keys": [
+          "smtp_status"
+        ]
+      },
+      "request_fixture_id": "mail-smtp-send"
+    }
+  ],
+  "cleanup_errors": []
+}

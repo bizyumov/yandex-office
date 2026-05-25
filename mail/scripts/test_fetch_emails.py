@@ -587,6 +587,11 @@ def test_fetch_account_dry_run_collects_headers(monkeypatch) -> None:
             "timestamp": "2026-03-12T10:00:00Z",
             "dry_run": True,
             "filter": "telemost",
+            "headers": {
+                "From": "news@example.com",
+                "Subject": "Тест",
+                "Date": "Thu, 12 Mar 2026 10:00:00 +0000",
+            },
         }
     ]
 
@@ -626,12 +631,57 @@ def test_fetch_account_dry_run_preview_body_reads_body_without_links(monkeypatch
             "timestamp": "2026-03-12T10:00:00Z",
             "dry_run": True,
             "filter": "telemost",
+            "headers": {
+                "From": "news@example.com",
+                "Subject": "Тест",
+                "Date": "Thu, 12 Mar 2026 10:00:00 +0000",
+            },
             "body": {
                 "text": "file https://forms.yandex.ru/u/123/",
                 "html": '<a href="https://disk.yandex.ru/i/abc">file</a> https://forms.yandex.ru/u/123/',
             },
         }
     ]
+
+
+def test_cli_dry_run_includes_headers(monkeypatch, capsys) -> None:
+    class FakeFetcher:
+        active_filter = {"name": "default"}
+        run_filters = [{"name": "default"}]
+        account_counts = {"alex": 0}
+        filter_counts = {"default": 0}
+
+        def fetch_all(self, num_messages=None, dry_run=False):
+            assert dry_run is True
+            return [
+                {
+                    "imap_uid": 11,
+                    "account": "alex",
+                    "sender": "news@example.com",
+                    "subject": "Header Test",
+                    "timestamp": "2026-03-12T10:00:00Z",
+                    "filter": "default",
+                    "headers": {"To": "user@example.com", "Subject": "Header Test"},
+                }
+            ]
+
+        def _should_persist_state(self, *, dry_run=False):
+            return not dry_run
+
+        def _get_output_max_inline_symbols(self):
+            return 9999
+
+    monkeypatch.setattr(mail_fetch, "EmailFetcher", lambda **_kwargs: FakeFetcher())
+
+    monkeypatch.setattr(sys, "argv", ["fetch_emails.py", "--dry-run", "--subject", "Header Test"])
+
+    mail_fetch.main()
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["pending"][0]["headers"] == {
+        "To": "user@example.com",
+        "Subject": "Header Test",
+    }
 
 
 def test_fetch_account_dry_run_does_not_sleep(monkeypatch) -> None:
@@ -689,6 +739,11 @@ def test_process_email_persists_filter_under_filter_directory(tmp_path) -> None:
     saved = json.loads(meta_path.read_text(encoding="utf-8"))
     assert saved["filter"] == "forms"
     assert saved["dir_relpath"] == "forms/2026-03-12_alex_uid11"
+    assert saved["headers"] == {
+        "From": "news@example.com",
+        "Subject": "Test",
+        "Date": "Thu, 12 Mar 2026 10:00:00 +0000",
+    }
 
 def test_process_email_keeps_body_separate_and_writes_attachment_objects(tmp_path) -> None:
     raw = b"\r\n".join(

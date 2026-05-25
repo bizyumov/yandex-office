@@ -6,7 +6,7 @@ license: MIT
 compatibility: Python 3.10+, per-skill dependencies, network access for Yandex APIs
 metadata:
   author: bizyumov
-  version: "2026.05.19"
+  version: "2026.05.25"
   openclaw:
     emoji: "🟡"
     requires:
@@ -28,15 +28,16 @@ Yandex identity behind an alias. Apps, scopes, and tokens are defined in
 
 - (1-16) Frontmatter
 - (17-25) Opening Model
-- (27-39) Document Map
-- (41-46) Reference Map
-- (48-71) Account-First Workflow
-- (73-104) Account And OAuth Helper
-- (106-131) OAuth App Selector
-- (133-150) Token Handling
-- (152-181) Common Workflows
-- (183-188) Extension Reference Link
-- (190-199) Migration, Versioning, License
+- (27-40) Document Map
+- (42-47) Reference Map
+- (49-75) Account-First Workflow
+- (77-108) Account And OAuth Helper
+- (110-135) OAuth App Selector
+- (137-154) Token Handling
+- (156-179) Full Authorization Workflow
+- (181-214) Common Workflows
+- (216-221) Extension Reference Link
+- (223-232) Migration, Versioning, License
 
 ## Reference Map
 
@@ -117,7 +118,7 @@ Maintenance:
 Use the default/read app unless the user requests a write-capable operation or
 explicitly approves broader access.
 
-- Mail read/fetch: default `mail-readonly`; write-capable `mail-readwrite`.
+- Mail read/fetch: default `mail-readonly`; IMAP mutation/delete: `mail-readwrite`; SMTP send: `mail-smtp`.
 - Disk read/download: default `disk-read`; write-capable `disk-full`.
 - Calendar: `calendar-user`; default app already has operational coverage.
 - Contacts: `contacts-default`; default app already has operational coverage.
@@ -158,6 +159,31 @@ If the user deliberately sends a token in chat, treat it as current
 user-provided secret input. Do not recover tokens from session logs and do not
 edit token files by hand; use managed import.
 
+## Full Authorization Workflow
+
+To authorize an account across ALL yandex-office sub-skills with maximum
+permissions, generate OAuth URLs for this set of apps:
+
+1. `office-core` — Mail (read), Disk (full), Calendar, Telemost
+2. `mail-readwrite` — Mail IMAP mutation/delete
+3. `mail-smtp` — Mail SMTP send
+4. `contacts-default` — Contacts (read + modify)
+5. `tracker-full` — Tracker (read + write)
+6. `forms-full` — Forms (read + write)
+7. `directory-full` — Directory (all read + write scopes)
+
+`office-core` alone does NOT cover Contacts, Tracker, Forms, or Directory.
+Each of those requires a separate app authorization.
+
+Non-interactive URL extraction: `oauth_setup.py` is interactive (prompts for
+token), but the URL is printed to stdout *before* the prompt. Extract with:
+```bash
+python3 <skill>/scripts/oauth_setup.py --account <alias> --app <app_id> 2>&1 | grep "oauth.yandex.ru"
+```
+Do NOT wrap in `timeout` — it causes the process to be blocked/killed before
+output flushes. Plain execution + grep works because the URL prints before the
+interactive token prompt blocks.
+
 ## Common Workflows
 
 Mail:
@@ -171,6 +197,10 @@ Mail:
   `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --dry-run --preview-body --sender <sender-or-pattern>`
 - Fetch one known message:
   `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --uid <uid>`
+- Send an email:
+  `python3 <full-path-to-yandex-office>/mail/scripts/send_email.py --account <alias> --to <addr> --subject <subj> --body <text>`
+- Send with CC/BCC/HTML:
+  `python3 <full-path-to-yandex-office>/mail/scripts/send_email.py --account <alias> --to <addr> --cc <addr> --bcc <addr> --subject <subj> --body <html> --content-type html --format json`
 - Backfill from a UID floor without persisting state:
   use `--from-uid <uid>`. Exact single-message fetch uses `--uid <uid>`.
 - Current Mail CLI uses `--account`; do not write legacy `--mailbox`.

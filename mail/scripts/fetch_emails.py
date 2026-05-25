@@ -46,6 +46,20 @@ FILTER_KEY_RE = re.compile(r"^[a-z][a-z0-9_]*$")
 LEGACY_FILTER_NAME = "telemost"
 AD_HOC_FILTER_NAME = "default"
 REMOVED_FILTER_SCHEMA_KEY = "profiles"
+MESSAGE_HEADER_FIELDS = (
+    "From",
+    "To",
+    "Cc",
+    "Bcc",
+    "Subject",
+    "Date",
+    "Reply-To",
+    "Return-Path",
+    "Authentication-Results",
+    "DKIM-Signature",
+    "X-Yandex-Spam",
+    "X-Yandex-Fwd",
+)
 
 
 class EmailFetcher:
@@ -490,6 +504,18 @@ class EmailFetcher:
                 email_body_html = payload.decode(charset, errors="replace")
         return email_body_text, email_body_html
 
+    @classmethod
+    def _selected_headers(cls, msg) -> dict[str, str | list[str]]:
+        """Extract stable headers useful for delivery and auth evidence."""
+        headers: dict[str, str | list[str]] = {}
+        for name in MESSAGE_HEADER_FIELDS:
+            values = [cls._decode_header(value) for value in msg.get_all(name, [])]
+            values = [value for value in values if value]
+            if not values:
+                continue
+            headers[name] = values[0] if len(values) == 1 else values
+        return headers
+
     @staticmethod
     def _safe_filename(filename: str) -> str:
         """Sanitize attachment filename for local filesystem writes."""
@@ -877,6 +903,7 @@ class EmailFetcher:
             meta["timestamp"] = timestamp
             meta["dir_name"] = email_dir.name
             meta["dir_relpath"] = str(email_dir.relative_to(self.data_dir / "incoming"))
+            meta["headers"] = self._selected_headers(msg)
 
             email_body_text, email_body_html = self._message_bodies(msg)
 
@@ -1196,6 +1223,7 @@ class EmailFetcher:
                         "timestamp": timestamp,
                         "dry_run": True,
                         "filter": filter_name,
+                        "headers": self._selected_headers(msg),
                     }
                     if self.run_options.get("preview_body"):
                         text_body, html_body = self._message_bodies(msg)
@@ -1435,6 +1463,8 @@ def main() -> None:
             }
             if "body" in item:
                 row["body"] = item.get("body", {})
+            if "headers" in item:
+                row["headers"] = item.get("headers", {})
             pending_rows.append(row)
 
     response = {

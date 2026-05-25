@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from dataclasses import dataclass
 import json
 import os
@@ -23,7 +22,13 @@ from common.config import (
     find_token_account_by_email,
     yandex_identity_matches,
 )
-from common.oauth_apps import oauth_app_for_client_id, upsert_agent_oauth_app
+from common.oauth_apps import (
+    OAuthClientMetadataCaptchaError,
+    UNRESOLVED_SCOPE,
+    fetch_yandex_oauth_client_metadata,
+    oauth_app_for_client_id,
+    upsert_agent_oauth_app,
+)
 
 
 @dataclass(frozen=True)
@@ -42,6 +47,32 @@ class ManagedTokenImportResult:
         return len([key for key in self.token_data if key != "email"])
 
 
+def _write_agent_oauth_app(
+    *,
+    agent_config: dict[str, Any],
+    agent_config_path: str | Path,
+    client_id: str,
+    scopes: list[str],
+    app_name: str | None,
+) -> str:
+    """Persist one agent-local OAuth app definition and return its app id."""
+    updated_agent_config = dict(agent_config)
+    updated_agent_config.pop("accounts", None)
+    app_id = upsert_agent_oauth_app(
+        updated_agent_config,
+        client_id=client_id,
+        scopes=scopes,
+        app_name=app_name,
+    )
+    path = Path(agent_config_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(updated_agent_config, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    return app_id
+
+
 def import_managed_oauth_token(
     *,
     config: dict[str, Any],
@@ -53,8 +84,6 @@ def import_managed_oauth_token(
     account: str | None = None,
     service: str | None = None,
     selected_app_id: str | None = None,
-    selected_scopes: list[str] | None = None,
-    permissions_note_provider: Callable[[], str | None] | None = None,
     account_context_only: bool = False,
 ) -> ManagedTokenImportResult:
     """Verify and store a managed OAuth token under the resolved account file."""
@@ -101,28 +130,47 @@ def import_managed_oauth_token(
     if matched_app is None:
         warnings.append(
             f"Token client_id {identity.client_id} is not in the shipped OAuth app catalog. "
-            "Saving as a custom-app token."
+            "Resolving live OAuth client metadata before saving a custom-app token."
         )
-        permissions_note = (
-            permissions_note_provider() if permissions_note_provider is not None else None
-        )
-        updated_agent_config = dict(agent_config)
-        updated_agent_config.pop("accounts", None)
-        app_id = upsert_agent_oauth_app(
-            updated_agent_config,
-            client_id=identity.client_id,
-            scopes=selected_scopes or [],
-            app_name=permissions_note,
-        )
-        path = Path(agent_config_path)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(
-            json.dumps(updated_agent_config, indent=2, ensure_ascii=False) + "\n",
-            encoding="utf-8",
-        )
-        warnings.append(
-            f'Created agent-local OAuth app "{app_id}" for client_id {identity.client_id}.'
-        )
+        client_metadata = None
+        try:
+            client_metadata = fetch_yandex_oauth_client_metadata(
+                config,
+                client_id=identity.client_id,
+            )
+        except OAuthClientMetadataCaptchaError as exc:
+            app_id = _write_agent_oauth_app(
+                agent_config=agent_config,
+                agent_config_path=agent_config_path,
+                client_id=identity.client_id,
+                scopes=[UNRESOLVED_SCOPE],
+                app_name=f"Unresolved Yandex OAuth app {identity.client_id[:8]}",
+            )
+            detail = f" ({exc.captcha_page})" if exc.captcha_page else ""
+            warnings.append(
+                f"Live Yandex OAuth client metadata returned CAPTCHA JSON{detail}. "
+                f'Created agent-local OAuth app "{app_id}" with scopes ["{UNRESOLVED_SCOPE}"]. '
+                "Managed auth must resolve it from Yandex before actual use."
+            )
+        except (RuntimeError, ValueError) as exc:
+            raise RuntimeError(
+                f"Cannot import unknown OAuth client_id {identity.client_id}: "
+                f"live OAuth client metadata lookup failed ({exc}). "
+                "Add the client_id to oauth_apps.catalog with verified scopes, "
+                "or retry after Yandex metadata is available."
+            ) from exc
+
+        if client_metadata is not None:
+            app_id = _write_agent_oauth_app(
+                agent_config=agent_config,
+                agent_config_path=agent_config_path,
+                client_id=client_metadata.client_id,
+                scopes=client_metadata.scopes,
+                app_name=client_metadata.app_name,
+            )
+            warnings.append(
+                f'Created agent-local OAuth app "{app_id}" for client_id {identity.client_id}.'
+            )
 
     token_path = Path(data_dir) / "auth" / f"{resolved_account}.token"
     try:

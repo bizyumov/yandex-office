@@ -232,6 +232,77 @@ def test_dispatch_auto_upgrades_unknown_client_id_from_oauth_metadata(
     ]
 
 
+def test_dispatch_resolves_unresolved_client_id_before_use(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    write_json(
+        tmp_path / "auth" / "acct.token",
+        {
+            "email": "user@example.com",
+            "cloud-token": {"client_id": "cloud-client"},
+        },
+    )
+    attempts = []
+
+    def fake_verify(_config: dict, *, token: str) -> VerifiedTokenIdentity:
+        assert token == "cloud-token"
+        return VerifiedTokenIdentity(
+            email="user@example.com",
+            client_id="cloud-client",
+        )
+
+    def fake_metadata(
+        _config: dict,
+        *,
+        client_id: str,
+    ) -> OAuthClientMetadata:
+        assert client_id == "cloud-client"
+        return OAuthClientMetadata(
+            client_id="cloud-client",
+            app_name="Yandex.Cloud",
+            scopes=["cloud:auth"],
+        )
+
+    monkeypatch.setattr(api_module, "verify_token_identity", fake_verify)
+    monkeypatch.setattr(
+        api_module,
+        "fetch_yandex_oauth_client_metadata",
+        fake_metadata,
+    )
+
+    @yandex_api_method("demo.cloud", one_of=["cloud:auth"])
+    def method(ctx: YandexApiContext) -> str:
+        attempts.append(ctx.token_ref.token)
+        return "ok"
+
+    runtime_config = config()
+    runtime_config["oauth_apps"]["catalog"]["custom-cloud-client"] = {
+        "client_id": "cloud-client",
+        "scopes": ["unresolved"],
+        "name": "Unresolved Yandex OAuth app cloud-cl",
+        "omit_scope_in_url": False,
+    }
+    result = method(
+        YandexApiContext(
+            account="acct",
+            data_dir=tmp_path,
+            config=runtime_config,
+            session=FakeSession(),
+        )
+    )
+    agent_config = json.loads((tmp_path / "config.agent.json").read_text())
+
+    assert result == "ok"
+    assert attempts == ["cloud-token"]
+    assert agent_config["oauth_apps"]["catalog"]["custom-cloud-client"] == {
+        "client_id": "cloud-client",
+        "scopes": ["cloud:auth"],
+        "name": "Yandex.Cloud",
+        "omit_scope_in_url": False,
+    }
+
+
 def test_forbidden_error_marks_bad_and_tries_next_token(tmp_path: Path) -> None:
     write_json(
         tmp_path / "auth" / "acct.token",
