@@ -3,6 +3,7 @@
 
 import json
 import os
+import sys
 import tempfile
 from pathlib import Path
 from io import StringIO
@@ -10,10 +11,10 @@ from unittest.mock import MagicMock, patch
 
 import requests
 
-import download
-from download import YandexDisk, API_BASE
-import share
-import upload
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+from disk.scripts import download, share, upload
+from disk.scripts.download import YandexDisk, API_BASE
 
 
 def disk_with_account(
@@ -152,7 +153,7 @@ def test_cli_rejects_token_file_option(capsys):
     ]
     with patch("sys.argv", argv):
         try:
-            from download import main
+            from disk.scripts.download import main
 
             main()
         except SystemExit as exc:
@@ -383,7 +384,7 @@ def test_publish_file_refreshes_metadata_when_api_returns_href_only(tmp_path):
 def test_build_share_payload_matches_documented_public_settings_shape():
     """employees/org payload matches the documented public_settings schema."""
     disk = YandexDisk()
-    with patch("download.time.time", return_value=1_700_000_000):
+    with patch("disk.scripts.download.time.time", return_value=1_700_000_000):
         payload = disk._build_share_payload(
             access="employees",
             org_id="123456",
@@ -409,14 +410,14 @@ def test_build_share_payload_matches_documented_public_settings_shape():
 def test_normalize_available_until_converts_ttl_seconds():
     """TTL seconds are converted to a future Unix timestamp."""
     disk = YandexDisk()
-    with patch("download.time.time", return_value=1_700_000_000):
+    with patch("disk.scripts.download.time.time", return_value=1_700_000_000):
         assert disk._normalize_available_until(3600) == 1_700_003_600
 
 
 def test_normalize_available_until_keeps_future_timestamp():
     """Future Unix timestamps remain unchanged for compatibility."""
     disk = YandexDisk()
-    with patch("download.time.time", return_value=1_700_000_000):
+    with patch("disk.scripts.download.time.time", return_value=1_700_000_000):
         assert disk._normalize_available_until(1_700_100_000) == 1_700_100_000
 
 
@@ -607,7 +608,7 @@ def test_share_cli_parses_and_prints_json():
     ])
 
     fake_stdout = StringIO()
-    with patch("share.YandexDisk") as mock_disk_cls, \
+    with patch("disk.scripts.share.YandexDisk") as mock_disk_cls, \
          patch("sys.stdout", fake_stdout):
         mock_disk = mock_disk_cls.return_value
         mock_disk.publish_file.return_value = {"path": "disk:/team/report.txt", "public_key": "pk", "public_url": "url", "public_settings": {}}
@@ -634,7 +635,7 @@ def test_share_cli_returns_nonzero_on_validation_error():
     """share CLI returns non-zero and prints JSON error payload."""
     parser = share.build_parser()
     fake_stderr = StringIO()
-    with patch("share.YandexDisk") as mock_disk_cls, \
+    with patch("disk.scripts.share.YandexDisk") as mock_disk_cls, \
          patch("sys.stderr", fake_stderr), \
          patch.object(share, "build_parser", return_value=parser), \
          patch("sys.argv", ["share.py", "info", "--account", "alex", "--path", "disk:/team/report.txt"]):
@@ -760,7 +761,7 @@ def test_upload_cli_parses_publish_and_prints_json():
         "--user-ids", "1,2",
     ]
 
-    with patch("upload.YandexDisk") as mock_disk_cls, \
+    with patch("disk.scripts.upload.YandexDisk") as mock_disk_cls, \
          patch("sys.stdout", fake_stdout), \
          patch.object(upload, "build_parser", return_value=parser), \
          patch("sys.argv", argv):
@@ -797,7 +798,7 @@ def test_upload_cli_returns_nonzero_on_error():
         "--remote", "disk:/Проекты/photo.jpg",
     ]
 
-    with patch("upload.YandexDisk") as mock_disk_cls, \
+    with patch("disk.scripts.upload.YandexDisk") as mock_disk_cls, \
          patch("sys.stderr", fake_stderr), \
          patch.object(upload, "build_parser", return_value=parser), \
          patch("sys.argv", argv):

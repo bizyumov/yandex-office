@@ -17,6 +17,7 @@ import sys
 import json
 import argparse
 import logging
+import os
 import time
 from pathlib import Path
 
@@ -31,9 +32,7 @@ logger = logging.getLogger("YandexDisk")
 
 API_BASE = "https://cloud-api.yandex.net"
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from common.api import (
     YandexApiContext,

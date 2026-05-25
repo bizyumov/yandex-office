@@ -50,6 +50,9 @@ Local runtime override example `{data_dir}/config.agent.json`:
 }
 ```
 
+For the full local config schema contract, including supported fields and
+reserved placeholders, see `references/yandex-office-extension.md`.
+
 Config management boundary:
 
 - `oauth_setup.py --accounts list` bootstraps `{data_dir}/config.agent.json`

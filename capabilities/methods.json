@@ -3122,7 +3122,7 @@
       ],
       "success_evidence": "CalDAV principal object is returned.",
       "local_sources": [
-        "calendar/lib/client.py:connect"
+        "calendars/lib/client.py:connect"
       ],
       "upstream_source_ids": [
         "yandex-service-applications-docs",
@@ -3163,7 +3163,7 @@
       ],
       "success_evidence": "Calendar list is returned.",
       "local_sources": [
-        "calendar/lib/client.py:get_calendars"
+        "calendars/lib/client.py:get_calendars"
       ],
       "upstream_source_ids": [
         "yandex-service-applications-docs",
@@ -3206,7 +3206,7 @@
       ],
       "success_evidence": "CalDAV event list is returned.",
       "local_sources": [
-        "calendar/lib/client.py:list_events"
+        "calendars/lib/client.py:list_events"
       ],
       "upstream_source_ids": [
         "yandex-service-applications-docs",
@@ -3243,7 +3243,7 @@
       ],
       "success_evidence": "HTTP 201 or 204.",
       "local_sources": [
-        "calendar/scripts/create_event.py:create_calendar_event_with_telemost"
+        "calendars/scripts/create_event.py:create_calendar_event_with_telemost"
       ],
       "upstream_source_ids": [
         "yandex-service-applications-docs",
@@ -3279,7 +3279,7 @@
       ],
       "success_evidence": "HTTP 200 iCalendar object.",
       "local_sources": [
-        "calendar/calendar.md"
+        "calendars/calendar.md"
       ],
       "upstream_source_ids": [
         "yandex-service-applications-docs",
@@ -3310,7 +3310,7 @@
       ],
       "success_evidence": "HTTP 204.",
       "local_sources": [
-        "calendar/calendar.md"
+        "calendars/calendar.md"
       ],
       "upstream_source_ids": [
         "yandex-service-applications-docs",

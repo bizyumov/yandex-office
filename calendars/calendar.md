@@ -73,8 +73,8 @@ OAuth app catalog and the decorated Calendar method auth shape.
 
 **CLI Interface:**
 ```bash
-python3 <full-path-to-yandex-office>/calendar/scripts/list_events.py --account mary --date tomorrow
-python3 <full-path-to-yandex-office>/calendar/scripts/list_events.py --account mary --date 2026-03-03 --calendar "Мои события"
+python3 <full-path-to-yandex-office>/calendars/scripts/list_events.py --account mary --date tomorrow
+python3 <full-path-to-yandex-office>/calendars/scripts/list_events.py --account mary --date 2026-03-03 --calendar "Мои события"
 ```
 
 ---
@@ -112,11 +112,28 @@ python3 <full-path-to-yandex-office>/calendar/scripts/list_events.py --account m
 
 Use this when the user wants a calendar event with a new Telemost join link.
 
+Agent time context rule:
+
+- Every create call needs one effective time context: either an IANA timezone or
+  a fixed UTC offset.
+- Preferred: save it in local `{data_dir}/config.agent.json` as
+  `calendar.timezone` or `calendar.utc_offset`.
+- If it is not saved, pass `--timezone <IANA>` or
+  `--utc-offset <Z|+HH:MM|-HH:MM>` on the CLI.
+- Do not put `calendar.timezone` or `calendar.utc_offset` in root
+  `config.skill.json`; agents can need different local times.
+- If both timezone and UTC offset are present in the same source, they must
+  match at the event start. CLI values override config for one command.
+
+Naive `--start` values are treated as local wall time in the effective context;
+aware `--start` values are converted into it.
+
 ```bash
-python3 <full-path-to-yandex-office>/calendar/scripts/create_event.py \
+python3 <full-path-to-yandex-office>/calendars/scripts/create_event.py \
   --account <account> \
   --summary "<title>" \
   --start "YYYY-MM-DDTHH:MM:SS" \
+  --timezone Europe/Moscow \
   --duration <minutes> \
   --attendees "<email1>,<email2>" \
   --json
@@ -127,22 +144,42 @@ python3 <full-path-to-yandex-office>/calendar/scripts/create_event.py \
 Bind an existing Telemost conference instead of creating a new one:
 
 ```bash
-python3 <full-path-to-yandex-office>/calendar/scripts/create_event.py \
+python3 <full-path-to-yandex-office>/calendars/scripts/create_event.py \
   --account <account> \
   --summary "<title>" \
   --start "YYYY-MM-DDTHH:MM:SS" \
+  --timezone Europe/Moscow \
   --duration <minutes> \
   --telemost-conference-id <conference_id> \
   --json
 ```
 
-Attach a local file while creating the event:
+Existing conference settings can be changed in the same provisioning run:
 
 ```bash
-python3 <full-path-to-yandex-office>/calendar/scripts/create_event.py \
+python3 <full-path-to-yandex-office>/calendars/scripts/create_event.py \
   --account <account> \
   --summary "<title>" \
   --start "YYYY-MM-DDTHH:MM:SS" \
+  --timezone Europe/Moscow \
+  --duration <minutes> \
+  --telemost-conference-id <conference_id> \
+  --telemost-waiting-room ADMINS \
+  --json
+```
+
+For repeat provisioning, pass `--event-uid <uid>` to overwrite the same
+Calendar object and `--telemost-link <join_url>` when the Telemost link is
+already known.
+
+Attach a local file while creating the event:
+
+```bash
+python3 <full-path-to-yandex-office>/calendars/scripts/create_event.py \
+  --account <account> \
+  --summary "<title>" \
+  --start "YYYY-MM-DDTHH:MM:SS" \
+  --timezone Europe/Moscow \
   --duration <minutes> \
   --attendees "<email1>,<email2>" \
   --attachment "<local-file>" \
@@ -187,17 +224,17 @@ Attachment implementation note:
 **Planned CLI Interface:**
 
 **Implementation status:** unimplemented design contract. Do not run until
-`calendar/scripts/reschedule.py` exists. Tracking issue:
+`calendars/scripts/reschedule.py` exists. Tracking issue:
 GitHub #45.
 
 ```bash
-python3 <full-path-to-yandex-office>/calendar/scripts/reschedule.py \
+python3 <full-path-to-yandex-office>/calendars/scripts/reschedule.py \
   --account mary \
   --search "Сбер ЦФА" \
   --date "2026-03-03" \
   --new-start "2026-03-03T16:00:00"
 
-python3 <full-path-to-yandex-office>/calendar/scripts/reschedule.py \
+python3 <full-path-to-yandex-office>/calendars/scripts/reschedule.py \
   --account mary \
   --event-uid "uuid-here" \
   --postpone 30  # minutes
@@ -227,16 +264,16 @@ python3 <full-path-to-yandex-office>/calendar/scripts/reschedule.py \
 **Planned CLI Interface:**
 
 **Implementation status:** unimplemented design contract. Do not run until
-`calendar/scripts/cancel.py` exists. Tracking issue:
+`calendars/scripts/cancel.py` exists. Tracking issue:
 GitHub #45.
 
 ```bash
-python3 <full-path-to-yandex-office>/calendar/scripts/cancel.py \
+python3 <full-path-to-yandex-office>/calendars/scripts/cancel.py \
   --account mary \
   --search "Team Sync" \
   --date "2026-03-03"
 
-python3 <full-path-to-yandex-office>/calendar/scripts/cancel.py \
+python3 <full-path-to-yandex-office>/calendars/scripts/cancel.py \
   --account mary \
   --event-uid "uuid-here" \
   --cancel-series
@@ -306,18 +343,18 @@ python3 <full-path-to-yandex-office>/calendar/scripts/cancel.py \
 **Planned CLI Interface:**
 
 **Implementation status:** unimplemented design contract. Do not run until
-`calendar/scripts/find_slots.py` exists. Tracking issue:
+`calendars/scripts/find_slots.py` exists. Tracking issue:
 GitHub #45.
 
 ```bash
-python3 <full-path-to-yandex-office>/calendar/scripts/find_slots.py \
+python3 <full-path-to-yandex-office>/calendars/scripts/find_slots.py \
   --duration 120 \
   --attendees "alex,mary,colleague@yandex.ru" \
   --from "tomorrow" \
   --to "friday" \
   --time-window "9:00-18:00"
 
-python3 <full-path-to-yandex-office>/calendar/scripts/find_slots.py \
+python3 <full-path-to-yandex-office>/calendars/scripts/find_slots.py \
   --duration 60 \
   --attendees "alex,mary" \
   --next-available
@@ -336,15 +373,16 @@ python3 <full-path-to-yandex-office>/calendar/scripts/find_slots.py \
   - Update event when Telemost details change
   - Add the real Telemost `join_url` to event location/description
   - Cancel event when Telemost meeting is deleted
-- Existing Telemost conference binding is supported via `--telemost-conference-id`
-- `--telemost-conference-id` is mutually exclusive with:
-  - `--telemost-access-level`
-  - `--telemost-waiting-room`
-  - `--telemost-cohosts`
+- Existing Telemost conference binding is supported via `--telemost-conference-id`.
+- Existing conference settings can be updated in the same run with
+  `--telemost-access-level`, `--telemost-waiting-room`, and
+  `--telemost-cohosts`.
+- If only `--telemost-link` is supplied, the script reuses that URL and does
+  not read or write Telemost.
 
 **Integration Contract:**
 ```python
-# calendar/skill_api.py exposes:
+# calendars/skill_api.py exposes:
 def create_event_with_telemost(
     account: str,
     summary: str,
@@ -366,8 +404,10 @@ def update_telemost_link(
 **Data Contract:**
 - Telemost link stored in `LOCATION`
 - Event description may include Telemost dial-in info
-- `python3 <full-path-to-yandex-office>/calendar/scripts/create_event.py` now creates the Telemost conference first, then writes the returned `join_url` into the event
+- `python3 <full-path-to-yandex-office>/calendars/scripts/create_event.py` now creates the Telemost conference first, then writes the returned `join_url` into the event
 - if `--telemost-conference-id` is provided, the script fetches the existing conference and writes that conference's `join_url` into the event instead of creating a new conference
+- if `--telemost-conference-id` is provided with Telemost settings, the script
+  updates that conference before writing the Calendar event
 
 ---
 
@@ -375,7 +415,7 @@ def update_telemost_link(
 
 ### Directory Structure
 ```
-calendar/
+calendars/
 ├── calendar.md              # This file
 ├── scripts/
 │   ├── list_events.py
@@ -401,11 +441,11 @@ python-dateutil>=2.8.0
 ```
 
 ### Configuration Extension
-Add shared defaults to root `config.skill.json` and local overrides to
-`yandex-data/config.agent.json`:
+Add local Calendar settings to `yandex-data/config.agent.json`:
 ```json
 {
   "calendar": {
+    "timezone": "Europe/Moscow",
     "default_calendar": "Мои события",
     "business_hours": {"start": "09:00", "end": "18:00"},
     "slot_granularity_minutes": 15
@@ -416,7 +456,7 @@ Add shared defaults to root `config.skill.json` and local overrides to
 ### State Files
 ```
 {data_dir}/
-└── calendar/
+└── calendars/
     └── freebusy_cache.json  # Optional: cache for availability queries
 ```
 

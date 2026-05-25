@@ -5,13 +5,13 @@ Search issues in Yandex Tracker.
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from tracker_client import load_tracker_client, TrackerError
+from tracker.scripts.tracker_client import load_tracker_client, TrackerError
 
 
 def format_issue(issue: dict) -> str:

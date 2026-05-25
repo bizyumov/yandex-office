@@ -30,21 +30,21 @@ Yandex identity behind an alias. Apps, scopes, and tokens are defined in
 - (17-25) Opening Model
 - (27-40) Document Map
 - (42-47) Reference Map
-- (49-72) Account-First Workflow
-- (74-105) Account And OAuth Helper
-- (107-132) OAuth App Selector
-- (134-151) Token Handling
-- (153-176) Full Authorization Workflow
-- (178-210) Common Workflows
-- (212-217) Managed Auth Link
-- (219-228) Migration, Versioning, License
+- (49-75) Account-First Workflow
+- (77-108) Account And OAuth Helper
+- (110-135) OAuth App Selector
+- (137-154) Token Handling
+- (156-179) Full Authorization Workflow
+- (181-214) Common Workflows
+- (216-221) Extension Reference Link
+- (223-232) Migration, Versioning, License
 
 ## Reference Map
 
 - Auth model: `references/yandex-office-auth-principles.md`
 - Config and data shape: `references/config-data-and-tests.md`
 - Service overview: `references/yandex-service-reference.md`
-- Low-level auth extension: `references/managed-auth-extension.md`
+- Extension reference: `references/yandex-office-extension.md`
 
 ## Account-First Workflow
 
@@ -58,13 +58,16 @@ this CWD yet; choose the minimum setup path from the user's request.
 
 Then choose the sub-skill:
 - Mail: `mail/mail.md`
-- Calendar: `calendar/calendar.md`
+- Calendar: `calendars/calendar.md`
 - Telemost: `telemost/telemost.md`
 - Disk: `disk/disk.md`
 - Contacts: `contacts/contacts.md`
 - Directory: `directory/directory.md`
 - Forms: `forms/forms.md`
 - Tracker: `tracker/tracker.md`
+
+Calendar note: `calendar` is reserved by Python library so the dir was renamed
+to `calendars`.
 
 Run the business command from that sub-skill doc with `--account <alias>`.
 No-arg `oauth_setup.py` is legacy/bootstrap troubleshooting, not the primary
@@ -203,17 +206,17 @@ Telemost transcripts:
 Calendar with Telemost:
 - Resolve account.
 - Check `apps` for `office-core` or Calendar plus Telemost coverage.
-- Open `calendar/calendar.md`.
+- Open `calendars/calendar.md`.
 
 Disk, Tracker, Contacts, Directory, Forms:
 - Choose default app for read/search.
 - Choose broader/write app only when requested or approved.
 - Open the relevant sub-skill doc and pass `--account <alias>`.
 
-## Managed Auth Link
+## Extension Reference Link
 
 For low-level Yandex API method extension or audit, read
-`references/managed-auth-extension.md`. Do not add raw `token` parameters,
+`references/yandex-office-extension.md`. Do not add raw `token` parameters,
 raw-token CLIs, `auth_call(...)` wrappers, parallel auth registries, per-method
 response handling, or service-specific HTTP subclasses.
 

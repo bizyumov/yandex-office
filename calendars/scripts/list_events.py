@@ -3,13 +3,13 @@
 import sys
 import json
 import argparse
+import os
 from datetime import datetime, timedelta
 from pathlib import Path
 
-# Add lib to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from client import YandexCalendarClient
+from calendars.lib.client import YandexCalendarClient
 
 
 def parse_date(date_str: str) -> datetime:

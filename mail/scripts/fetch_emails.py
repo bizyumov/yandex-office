@@ -24,6 +24,7 @@ import email.utils
 import imaplib
 import json
 import logging
+import os
 import re
 import requests
 import ssl
@@ -34,9 +35,7 @@ from email.header import decode_header
 from pathlib import Path
 from typing import Any
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from common.api import YandexApiContext, yandex_api_method
 from common.config import load_runtime_context

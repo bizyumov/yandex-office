@@ -246,7 +246,7 @@ def suggest_attendees(account: str, partial_name: str, limit: int = 5) -> List[C
 
 **Usage in Calendar:**
 ```bash
-python3 <full-path-to-yandex-office>/calendar/scripts/create_event.py \
+python3 <full-path-to-yandex-office>/calendars/scripts/create_event.py \
   --account mary \
   --contact "Иванов" \
   --start "2026-03-04T11:00:00" \

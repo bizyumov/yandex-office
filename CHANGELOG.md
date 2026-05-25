@@ -32,7 +32,7 @@ All public `yandex-office` skill releases use the `YYYY.MM.DD` version format.
   and send behavior after outgoing SMTP ports became available.
 - Updated Mail and release docs to route SMTP send through managed OAuth and
   keep low-level unknown-`client_id` resolution rules in
-  `references/managed-auth-extension.md`.
+  `references/yandex-office-extension.md`.
 
 ### Verification
 
@@ -40,6 +40,84 @@ All public `yandex-office` skill releases use the `YYYY.MM.DD` version format.
 - `python3 -m pytest common/tests/test_oauth_setup.py common/tests/test_api_runtime.py common/tests/test_config_auth.py`
 - live token onboarding through `scripts/oauth_setup.py --from-env`
 - live Mail SMTP auth/send probes and CLI send/reply/header roundtrip checks
+- `git diff --check`
+
+## 2026.05.19
+
+### Fixed
+
+- Replaced the rejected import bootstrap detour with direct file-relative
+  `sys.path.insert(...)` setup in the affected command, library, and test files.
+- Removed `PYTHONPATH` re-exec bootstraps, `importlib.util` loading, and the
+  unapproved standalone Calendar package split.
+- Renamed the Calendar sub-skill directory to `calendars/` and restored normal
+  `calendars.lib.client` imports to avoid Python standard-library `calendar`
+  shadowing.
+- Added a complete root `config.agent.schema.json` for local agent config and
+  a local Calendar event time preference through `calendar.timezone` or
+  `calendar.utc_offset`.
+- Calendar create-event now accepts the local time preference when CLI
+  `--timezone` / `--utc-offset` is omitted, keeps CLI override precedence, and
+  rejects Calendar time preference in root `config.skill.json`.
+
+### Changed
+
+- Aligned `VERSION`, root skill metadata, touched sub-skill metadata, and README
+  release summary to `2026.05.19`.
+- Documented Calendar time-context instructions in `calendars/calendar.md`.
+- Broadened `references/managed-auth-extension.md` into
+  `references/yandex-office-extension.md`, a single extension guide covering
+  managed auth, script import bootstrap, and local agent-config schema rules.
+- Marked legacy top-level Mail filter fields as deprecated in favor of
+  `mail.filters.<name>`.
+
+### Verification
+
+- `python3 -m py_compile $(rg --files -g '*.py')`
+- direct `--help` smoke tests for Calendar, Disk, Forms, Mail, OAuth, Telemost,
+  and Tracker command entrypoints from outside the repo root
+- `config.agent.schema.json` and `config.agent.example.json` JSON parse checks
+- source scan confirming no `PYTHONPATH` re-exec, `importlib.util` loader usage,
+  or rejected standalone Calendar package references
+- `python3 -m pytest calendars/scripts/test_create_event.py -q`
+- `python3 -m pytest common/tests/test_agent_config_schema.py -q`
+- full `pytest` with one existing `datetime.utcnow()` deprecation warning
+- `python3 capabilities/audit-method-auth.py`
+- `git diff --check`
+
+## 2026.05.18
+
+### Fixed
+
+- Integrated the still-valid PR #32 consultation provisioning fixes from Sergey
+  Pimenov on top of current managed-auth architecture.
+- Made Calendar Telemost event creation require explicit user time context via
+  `--timezone` or `--utc-offset`, with UID reuse and Telemost link reuse for
+  repeat provisioning runs.
+- Preserved existing Calendar attachment upload behavior while allowing
+  existing Telemost conferences to be updated before writing the Calendar event.
+- Stopped Telemost conference create/update writes from doing implicit
+  post-write reads; explicit `get_conference()` remains the read/hydration path.
+- Taught Telemost processing to read Mail filter output under
+  `incoming/<filter>/<email-dir>/meta.json` and to pass the processing runtime
+  data directory into recording downloads.
+- Replaced the Calendar list-events path's use of the deprecated `caldav`
+  `date_search()` helper with the supported `Calendar.search()` surface while
+  keeping the `calendar.caldav.report.date_search` capability id for the
+  underlying CalDAV REPORT operation.
+
+### Changed
+
+- Extended the method-auth audit to fail on production `_call_api` usage and to
+  print warnings when decorated API calls are hidden behind deep local wrappers.
+- Aligned `VERSION`, root skill metadata, README release summary, and touched
+  sub-skill metadata to `2026.05.18`.
+
+### Verification
+
+- `python3 -m pytest calendars/scripts/test_create_event.py -q`
+- full `pytest` with one existing `datetime.utcnow()` deprecation warning
+- `python3 capabilities/audit-method-auth.py`
 - `git diff --check`
 
 ## 2026.05.16
@@ -127,7 +205,7 @@ All public `yandex-office` skill releases use the `YYYY.MM.DD` version format.
 
 ### Verification
 
-- `pytest common/tests/test_api_runtime.py disk/scripts/test_download.py calendar/scripts/test_create_event.py mail/scripts/test_fetch_emails.py`
+- `pytest common/tests/test_api_runtime.py disk/scripts/test_download.py calendars/scripts/test_create_event.py mail/scripts/test_fetch_emails.py`
 - `python3 capabilities/audit-method-auth.py`
 
 ## 2026.04.26

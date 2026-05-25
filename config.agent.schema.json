@@ -1,0 +1,306 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/bizyumov/yandex-office/config.agent.schema.json",
+  "title": "yandex-office agent config",
+  "description": "Local runtime configuration for one agent/data directory. This file lives at {data_dir}/config.agent.json and stores local preferences and overrides only; account inventory and OAuth tokens are managed by the auth runtime.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "mail": {
+      "type": "object",
+      "description": "Local Mail runtime settings, including named filters, throttling, output spill behavior, and state file naming.",
+      "additionalProperties": false,
+      "properties": {
+        "filters": {
+          "type": "object",
+          "description": "Named Mail filters keyed by lowercase English schema keys. Keys are used for persistent state and incoming subdirectory names; default is reserved for ad-hoc runs.",
+          "additionalProperties": false,
+          "properties": {
+            "sender": {
+              "type": "string",
+              "description": "(DEPRECATED) see mail.filters.<name>. Legacy top-level FROM criterion upgraded in memory into mail.filters.telemost.sender."
+            },
+            "subject": {
+              "type": "string",
+              "description": "(DEPRECATED) see mail.filters.<name>. Legacy top-level SUBJECT criterion upgraded in memory into the Telemost filter."
+            },
+            "since_date": {
+              "type": "string",
+              "description": "(DEPRECATED) see mail.filters.<name>. Legacy top-level lower date bound for Mail search, in YYYY-MM-DD form."
+            },
+            "before_date": {
+              "type": "string",
+              "description": "(DEPRECATED) see mail.filters.<name>. Legacy top-level upper date bound for Mail search, in YYYY-MM-DD form."
+            }
+          },
+          "patternProperties": {
+            "^(?!default$|sender$|subject$|since_date$|before_date$)[a-z][a-z0-9_]*$": {
+              "type": "object",
+              "description": "One named Mail filter. The key must be a lowercase English schema key used for state and incoming directory names.",
+              "additionalProperties": false,
+              "properties": {
+                "sender": {
+                  "type": "string",
+                  "description": "Literal IMAP FROM substring criterion for this named filter."
+                },
+                "subject": {
+                  "type": "string",
+                  "description": "Literal IMAP SUBJECT substring criterion for this named filter."
+                },
+                "since_date": {
+                  "type": "string",
+                  "description": "Lower date bound for this named filter, in YYYY-MM-DD form."
+                },
+                "before_date": {
+                  "type": "string",
+                  "description": "Upper date bound for this named filter, in YYYY-MM-DD form."
+                },
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Whether this named filter participates in bare fetch runs; --filter can still run disabled filters explicitly."
+                }
+              }
+            }
+          }
+        },
+        "fetch": {
+          "type": "object",
+          "description": "Mail fetch execution settings.",
+          "additionalProperties": false,
+          "properties": {
+            "sleep_seconds": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Pause between real Mail message processing iterations, in seconds. Dry-run search-only queries do not use this delay."
+            }
+          }
+        },
+        "output": {
+          "type": "object",
+          "description": "Mail output handling for broad dry-run result sets.",
+          "additionalProperties": false,
+          "properties": {
+            "max_inline_symbols": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Maximum inline output size measured in symbols/characters before Mail writes a spill file."
+            },
+            "spill_dir": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Directory name under {data_dir} where oversized dry-run Mail output is written."
+            }
+          }
+        },
+        "since": {
+          "type": "string",
+          "enum": ["on", "off"],
+          "description": "Whether Mail uses state-driven IMAP SINCE filtering for large accounts."
+        },
+        "state_file": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Mail state file name under {data_dir}; tracks UID/date cursors by account and filter."
+        }
+      }
+    },
+    "calendar": {
+      "type": "object",
+      "description": "Local Calendar settings for event creation and future availability workflows. Calendar event creation needs one effective time context from CLI or this local config. If both timezone and utc_offset are present here, they must represent the same UTC offset at the event start. Time preference belongs here, not in config.skill.json.",
+      "additionalProperties": false,
+      "properties": {
+        "default_calendar": {
+          "type": "string",
+          "minLength": 1,
+          "description": "(RESERVED FOR FUTURE USE) Preferred Yandex Calendar name when a command does not specify one."
+        },
+        "business_hours": {
+          "type": "object",
+          "description": "(RESERVED FOR FUTURE USE) Preferred local business-hours window for availability helpers.",
+          "additionalProperties": false,
+          "properties": {
+            "start": {
+              "type": "string",
+              "pattern": "^\\d{2}:\\d{2}$",
+              "description": "(RESERVED FOR FUTURE USE) Business day start time in HH:MM local wall-clock format."
+            },
+            "end": {
+              "type": "string",
+              "pattern": "^\\d{2}:\\d{2}$",
+              "description": "(RESERVED FOR FUTURE USE) Business day end time in HH:MM local wall-clock format."
+            }
+          }
+        },
+        "slot_granularity_minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "(RESERVED FOR FUTURE USE) Preferred availability slot size in minutes."
+        },
+        "timezone": {
+          "type": "string",
+          "minLength": 1,
+          "description": "IANA timezone default for Calendar event creation, such as Europe/Moscow. Use this or calendar.utc_offset in local config.agent.json, not config.skill.json; CLI --timezone overrides it for one command."
+        },
+        "utc_offset": {
+          "type": "string",
+          "pattern": "^(Z|[+-](?:[01][0-9]|2[0-3]):[0-5][0-9])$",
+          "description": "Fixed UTC offset default for Calendar event creation: Z, +HH:MM, or -HH:MM. Use this or calendar.timezone in local config.agent.json, not config.skill.json; CLI --utc-offset overrides it for one command."
+        }
+      }
+    },
+    "contacts": {
+      "type": "object",
+      "description": "(RESERVED FOR FUTURE USE) Local Contacts settings.",
+      "additionalProperties": false,
+      "properties": {
+        "default_addressbook": {
+          "type": "string",
+          "minLength": 1,
+          "description": "(RESERVED FOR FUTURE USE) Preferred address book name for Contacts commands."
+        },
+        "sync_on_startup": {
+          "type": "boolean",
+          "description": "(RESERVED FOR FUTURE USE) Whether Contacts workflows should refresh local data at startup when supported."
+        },
+        "cache_ttl_seconds": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "(RESERVED FOR FUTURE USE) Contacts cache time-to-live in seconds."
+        },
+        "fuzzy_match_threshold": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "(RESERVED FOR FUTURE USE) Minimum fuzzy-match score for contact name matching."
+        }
+      }
+    },
+    "directory": {
+      "type": "object",
+      "description": "(RESERVED FOR FUTURE USE) Local Directory lookup settings.",
+      "additionalProperties": false,
+      "properties": {
+        "cache_ttl_hours": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "(RESERVED FOR FUTURE USE) Directory cache time-to-live in hours."
+        },
+        "default_per_page": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "(RESERVED FOR FUTURE USE) Default Yandex 360 Directory page size for list operations."
+        },
+        "search_fuzzy_threshold": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "(RESERVED FOR FUTURE USE) Minimum fuzzy-match score for Directory search matching."
+        }
+      }
+    },
+    "forms": {
+      "type": "object",
+      "description": "(RESERVED FOR FUTURE USE) Local Forms export and polling settings.",
+      "additionalProperties": false,
+      "properties": {
+        "state_file": {
+          "type": "string",
+          "minLength": 1,
+          "description": "(RESERVED FOR FUTURE USE) Forms state file name under {data_dir}."
+        },
+        "default_format": {
+          "type": "string",
+          "enum": ["xlsx", "json"],
+          "description": "(RESERVED FOR FUTURE USE) Default response export format for Forms commands."
+        },
+        "export": {
+          "type": "object",
+          "description": "(RESERVED FOR FUTURE USE) Forms export polling settings.",
+          "additionalProperties": false,
+          "properties": {
+            "poll_interval_seconds": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "(RESERVED FOR FUTURE USE) Seconds between Forms export polling attempts."
+            },
+            "max_wait_seconds": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "(RESERVED FOR FUTURE USE) Maximum seconds to wait for a Forms export to become ready."
+            }
+          }
+        }
+      }
+    },
+    "oauth_apps": {
+      "type": "object",
+      "description": "Agent-local custom OAuth app catalog entries discovered or added for this data directory.",
+      "additionalProperties": false,
+      "properties": {
+        "catalog": {
+          "type": "object",
+          "description": "Custom OAuth apps keyed by local app id.",
+          "additionalProperties": {
+            "type": "object",
+            "description": "One local OAuth app entry.",
+            "additionalProperties": false,
+            "properties": {
+              "client_id": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Yandex OAuth application client id."
+              },
+              "scopes": {
+                "type": "array",
+                "description": "OAuth scopes granted by this app.",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "One OAuth scope string."
+                },
+                "uniqueItems": true
+              },
+              "name": {
+                "type": "string",
+                "description": "Display name persisted for automatically discovered custom apps."
+              },
+              "app_name": {
+                "type": "string",
+                "description": "Display name used by configured app catalog entries."
+              },
+              "service": {
+                "description": "Service or services this app is intended to cover.",
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "One service name."
+                  },
+                  {
+                    "type": "array",
+                    "description": "Multiple service names.",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "One service name."
+                    },
+                    "uniqueItems": true
+                  }
+                ]
+              },
+              "is_default": {
+                "type": "boolean",
+                "description": "Whether this local app is the default app for its service."
+              },
+              "omit_scope_in_url": {
+                "type": "boolean",
+                "description": "Whether OAuth setup should omit the scope query parameter for this app."
+              }
+            },
+            "required": ["client_id", "scopes"]
+          }
+        }
+      }
+    }
+  }
+}

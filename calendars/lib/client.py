@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+import os
 from pathlib import Path
 import sys
 
@@ -10,9 +11,7 @@ import caldav
 from icalendar import Calendar as iCalendar
 import requests
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from common.api import YandexApiContext, handle_response, yandex_api_method
 from common.config import load_runtime_context
@@ -136,7 +135,13 @@ class YandexCalendarClient:
             end = start + timedelta(days=1)
 
         events = []
-        for event in calendar.date_search(start=start, end=end):
+        for event in calendar.search(
+            start=start,
+            end=end,
+            event=True,
+            expand=bool(end),
+            split_expanded=False,
+        ):
             events.append(self._parse_event(event))
 
         return sorted(events, key=lambda e: e["start"])

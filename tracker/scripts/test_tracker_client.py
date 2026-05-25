@@ -3,20 +3,16 @@
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
-SCRIPTS_DIR = Path(__file__).resolve().parent
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
-if str(SCRIPTS_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS_DIR))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-import tracker_client
+from tracker.scripts import tracker_client
 
 TEST_ORG_ID = "1234567"
 

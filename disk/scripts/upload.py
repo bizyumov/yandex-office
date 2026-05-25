@@ -6,10 +6,14 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import sys
+from pathlib import Path
 
-from download import YandexDisk
-from share import add_common_auth, add_share_options, _build_share_kwargs
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+from disk.scripts.download import YandexDisk
+from disk.scripts.share import add_common_auth, add_share_options, _build_share_kwargs
 
 
 def build_parser() -> argparse.ArgumentParser:

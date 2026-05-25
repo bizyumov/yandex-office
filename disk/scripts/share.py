@@ -6,8 +6,13 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import sys
-from download import YandexDisk
+from pathlib import Path
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+from disk.scripts.download import YandexDisk
 
 
 def _csv_list(value: str | None) -> list[str] | None:

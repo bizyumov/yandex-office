@@ -4,7 +4,7 @@ description: 'Telemost / Телемост — process Yandex Telemost meeting da
 license: MIT
 metadata:
   author: bizyumov
-  version: "2026.05.16"
+  version: "2026.05.19"
 ---
 
 # Yandex Telemost / Телемост
@@ -46,10 +46,11 @@ python3 <full-path-to-yandex-office>/telemost/scripts/conference.py get --accoun
 python3 <full-path-to-yandex-office>/telemost/scripts/conference.py update --account mary --id <conference_id> --waiting-room ADMINS
 
 # Reuse an existing conference when creating a calendar event
-python3 <full-path-to-yandex-office>/calendar/scripts/create_event.py \
+python3 <full-path-to-yandex-office>/calendars/scripts/create_event.py \
   --account mary \
   --summary "Проектный созвон" \
   --start "2026-03-12T10:00:00" \
+  --timezone Europe/Moscow \
   --duration 45 \
   --telemost-conference-id <conference_id>
 
@@ -95,7 +96,11 @@ Supported operations:
 - update conference settings
 - get organization settings
 - update organization settings
-- bind an existing conference to a new calendar event through `python3 <full-path-to-yandex-office>/calendar/scripts/create_event.py --telemost-conference-id ...`
+- bind an existing conference to a new calendar event through `python3 <full-path-to-yandex-office>/calendars/scripts/create_event.py --telemost-conference-id ...`
+
+Conference create/update calls are write operations. They return the normalized
+conference JSON available from the write response and request context; use
+`get` when an explicit read/hydration step is needed.
 
 Optional create/update fields:
 
@@ -270,7 +275,9 @@ OAuth for Telemost recordings.
 - Without managed auth for that account, the API may return `404` for existing Telemost resources.
 - `HEAD` requests are not a reliable availability probe.
 
-Use `yandex-office` managed auth when handling Telemost media links.
+Use `yandex-office` managed auth when handling Telemost media links. Recording
+downloads use the source email account and the same runtime data directory used
+by `process_meeting.py`.
 
 ### Console Output Policy
 

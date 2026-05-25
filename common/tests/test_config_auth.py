@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import sys
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from common.auth import canonical_token_key, resolve_token, TokenResolutionError, VerifiedTokenIdentity
 from common.config import bootstrap_runtime_context, load_runtime_context

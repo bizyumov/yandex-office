@@ -16,7 +16,7 @@ Current release:
 - Mail SMTP capability evidence is refreshed after live SMTP auth/send probes
 - unknown OAuth `client_id` imports query Yandex online client metadata for
   scopes instead of asking agents to describe custom-token permissions; the
-  detailed rules live in `references/managed-auth-extension.md`
+  detailed rules live in `references/yandex-office-extension.md`
 - CAPTCHA JSON during client metadata lookup creates an explicit
   `scopes: ["unresolved"]` agent-local marker that managed auth must resolve
   from Yandex before actual use
@@ -36,7 +36,7 @@ Current release:
 | Skill | Description |
 |-------|-------------|
 | [mail](mail/) | Mail / Почта: generic email fetcher via IMAP XOAUTH2 — saves emails to incoming/ |
-| [calendar](calendar/) | Calendar / Календарь: CalDAV integration for Yandex Calendar — list/create/update events, find slots, Telemost binding |
+| [calendars](calendars/) | Calendar / Календарь: CalDAV integration for Yandex Calendar — list/create/update events, find slots, Telemost binding |
 | [contacts](contacts/) | Contacts / Контакты: CardDAV integration for Yandex Contacts — fuzzy lookup, create/update contacts |
 | [directory](directory/) | Directory / Директория: Yandex 360 Directory API — users, departments, groups, and org-aware identity data |
 | [telemost](telemost/) | Telemost / Телемост: process Telemost emails, manage real conferences, and admin Telemost org defaults |
@@ -221,8 +221,9 @@ Telemost recording OAuth caveat:
 
 Telemost calendar note:
 
-- `python3 <full-path-to-yandex-office>/calendar/scripts/create_event.py` can create a new Telemost conference or bind an existing one with `--telemost-conference-id`
-- existing-conference binding is strict and cannot be combined with new-conference flags
+- `python3 <full-path-to-yandex-office>/calendars/scripts/create_event.py` can create a new Telemost conference, bind an existing one with `--telemost-conference-id`, or reuse an already known join URL with `--telemost-link`.
+- Every create-event call must have an effective time context from local agent config or `--timezone <IANA>` / `--utc-offset <Z|+HH:MM|-HH:MM>`.
+- Existing-conference binding can apply `--telemost-access-level`, `--telemost-waiting-room`, and `--telemost-cohosts` before the Calendar event is written.
 
 Each skill is self-contained and can be used independently.
 
@@ -319,7 +320,7 @@ intended.
 
 ### Managed Auth
 
-Use `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --app <app_id>` to print an approval URL; add `--account <alias>` only as an optional hint when that alias is already known. After authorization, the script verifies the pasted token, stores it under the verified Yandex identity, and adds a local app catalog override only for unknown `client_id` values. Runtime clients select credentials through decorator-declared auth metadata and the config-backed app catalog. Low-level unknown-`client_id` resolution rules live in `references/managed-auth-extension.md`.
+Use `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --app <app_id>` to print an approval URL; add `--account <alias>` only as an optional hint when that alias is already known. After authorization, the script verifies the pasted token, stores it under the verified Yandex identity, and adds a local app catalog override only for unknown `client_id` values. Runtime clients select credentials through decorator-declared auth metadata and the config-backed app catalog. Low-level unknown-`client_id` resolution rules live in `references/yandex-office-extension.md`.
 
 Current-used API methods declare auth directly in code through
 `@yandex_api_method(method_id, public=True | one_of=[...] | all_of=[...])`.

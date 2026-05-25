@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
+import os
 import re
-import sys
 from pathlib import Path
-from typing import Any, Callable
+import sys
+from typing import Any
 
 import requests
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from common.api import (
     BlockedYandexMethodError,
@@ -92,20 +92,11 @@ class YandexTelemostClient:
             return TelemostError("Telemost conference not found", **details)
         return TelemostError("Telemost API request failed", **details)
 
-    def _call_api(
-        self,
-        func: Callable[..., Any],
-        *args: Any,
-        **kwargs: Any,
-    ) -> Any:
-        """Call a decorated API method and adapt failures to TelemostError.
-
-        The decorator owns token dispatch. This helper only preserves the
-        Telemost business exception type for callers that already depend on it.
-        """
-
+    @contextmanager
+    def _telemost_errors(self):
+        """Map central auth/API exceptions while keeping API calls explicit."""
         try:
-            return func(*args, **kwargs)
+            yield
         except YandexApiError as exc:
             raise self._telemost_error(exc) from exc
         except (BlockedYandexMethodError, TokenConfigError) as exc:
@@ -318,20 +309,30 @@ class YandexTelemostClient:
         normalized = {
             "id": conference.get("id"),
             "join_url": conference.get("join_url"),
+            "access_level": conference.get("access_level"),
+            "waiting_room_level": conference.get("waiting_room_level"),
+            "sip_uri_meeting": conference.get("sip_uri_meeting"),
+            "sip_uri_telemost": conference.get("sip_uri_telemost"),
+            "sip_id": conference.get("sip_id"),
+            "live_stream": conference.get("live_stream"),
+            "cohosts": cohosts,
         }
-        for field in (
-            "access_level",
-            "waiting_room_level",
-            "sip_uri_meeting",
-            "sip_uri_telemost",
-            "sip_id",
-        ):
-            if conference.get(field) is not None:
-                normalized[field] = conference.get(field)
-        if conference.get("live_stream") is not None:
-            normalized["live_stream"] = conference.get("live_stream")
-        if cohosts is not None:
-            normalized["cohosts"] = cohosts
+        return normalized
+
+    def _normalize_write_conference(
+        self,
+        conference: dict[str, Any],
+        *,
+        payload: dict[str, Any],
+        cohosts: list[str] | None = None,
+        conference_id: str | None = None,
+    ) -> dict[str, Any]:
+        normalized = self._normalize_conference(conference, cohosts=cohosts)
+        if normalized["id"] is None:
+            normalized["id"] = conference_id
+        for field in ("access_level", "waiting_room_level", "live_stream"):
+            if normalized.get(field) is None and payload.get(field) is not None:
+                normalized[field] = payload[field]
         return normalized
 
     def _cohosts_path(self, conference_id: str) -> str:
@@ -431,35 +432,31 @@ class YandexTelemostClient:
         cohosts: list[str] | None = None,
         live_stream: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
+        normalized_cohosts = self._normalize_cohosts(cohosts or []) or []
         payload = self._conference_payload(
             access_level=access_level,
             waiting_room_level=waiting_room_level,
             live_stream=live_stream,
-            cohosts=cohosts or [],
+            cohosts=normalized_cohosts,
             include_cohosts=True,
         )
-        created = self._call_api(
-            self._api_create_conference,
-            payload,
-        ) or {}
-        conference_id = created.get("id")
-        if not conference_id:
-            return self._normalize_conference(created, cohosts=cohosts or [])
-        return self.get_conference(conference_id)
+        with self._telemost_errors():
+            created = self._api_create_conference(payload) or {}
+        return self._normalize_write_conference(
+            created,
+            payload=payload,
+            cohosts=normalized_cohosts,
+        )
 
     def get_cohosts(self, conference_id: str) -> list[str]:
-        response = self._call_api(
-            self._api_get_cohosts,
-            conference_id,
-        ) or {}
+        with self._telemost_errors():
+            response = self._api_get_cohosts(conference_id) or {}
         cohosts = response.get("cohosts", [])
         return [entry.get("email") for entry in cohosts if isinstance(entry, dict) and entry.get("email")]
 
     def get_conference(self, conference_id: str) -> dict[str, Any]:
-        conference = self._call_api(
-            self._api_get_conference,
-            conference_id,
-        ) or {}
+        with self._telemost_errors():
+            conference = self._api_get_conference(conference_id) or {}
         cohosts = self.get_cohosts(conference_id)
         return self._normalize_conference(conference, cohosts=cohosts)
 
@@ -479,27 +476,30 @@ class YandexTelemostClient:
             cohosts=_UNSET,
             include_cohosts=False,
         )
+        last_response: dict[str, Any] | None = None
         if payload:
-            self._call_api(
-                self._api_patch_conference,
-                conference_id,
-                payload,
-            )
+            with self._telemost_errors():
+                last_response = self._api_patch_conference(conference_id, payload) or {}
+        normalized_cohosts: list[str] | None = None
         if cohosts is not _UNSET and cohosts is not None:
             normalized_cohosts = self._normalize_cohosts(cohosts)
-            self._call_api(
-                self._api_put_cohosts,
-                conference_id,
-                {"cohosts": [{"email": email} for email in normalized_cohosts or []]},
-            )
-        return self.get_conference(conference_id)
+            with self._telemost_errors():
+                self._api_put_cohosts(
+                    conference_id,
+                    {"cohosts": [{"email": email} for email in normalized_cohosts or []]},
+                )
+        response = last_response or {"id": conference_id}
+        return self._normalize_write_conference(
+            response,
+            payload=payload,
+            cohosts=normalized_cohosts,
+            conference_id=conference_id,
+        )
 
     def get_org_settings(self, *, org_id: int | str | None = None) -> dict[str, Any]:
         resolved_org_id = self._resolve_org_id(org_id)
-        settings = self._call_api(
-            self._api_get_org_settings,
-            resolved_org_id,
-        ) or {}
+        with self._telemost_errors():
+            settings = self._api_get_org_settings(resolved_org_id) or {}
         settings["org_id"] = resolved_org_id
         return settings
 
@@ -513,10 +513,7 @@ class YandexTelemostClient:
         payload = self._normalize_org_settings_payload(settings)
         if not payload:
             raise ValueError("Organization settings payload cannot be empty")
-        updated = self._call_api(
-            self._api_put_org_settings,
-            resolved_org_id,
-            payload,
-        ) or {}
+        with self._telemost_errors():
+            updated = self._api_put_org_settings(resolved_org_id, payload) or {}
         updated["org_id"] = resolved_org_id
         return updated
