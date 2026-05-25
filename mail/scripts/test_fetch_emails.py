@@ -113,7 +113,7 @@ def build_fetcher(
         "accounts": accounts
         or [
             {"name": "alex", "email": "user@example.com"},
-            {"name": "work", "email": "work@example.com"},
+            {"name": "beta", "email": "beta@example.test"},
         ],
     }
     fetcher.data_dir = Path("/tmp/yandex-data")
@@ -182,8 +182,8 @@ def test_named_filter_resolution_supports_any_branches() -> None:
             "payment_receipts": {
                 "enabled": True,
                 "any": [
-                    {"sender": "1-ofd.ru"},
-                    {"sender": "taxcom.ru", "since_date": "2026-05-01"},
+                    {"sender": "receipts-a.example"},
+                    {"sender": "receipts-b.example", "since_date": "2026-05-01"},
                 ],
             },
         },
@@ -195,13 +195,13 @@ def test_named_filter_resolution_supports_any_branches() -> None:
         "enabled": True,
         "any": [
             {
-                "sender": "1-ofd.ru",
-                "branch_key": "sha256:e75b486abf384299d869447d554ea9f7084ba6f9e9f4b0da6546101dad818387",
+                "sender": "receipts-a.example",
+                "branch_key": "sha256:1f41d48b64ec678df112ba10117dbc901d7b6d6f12cdb9af992f6bf829ffba2d",
             },
             {
-                "sender": "taxcom.ru",
+                "sender": "receipts-b.example",
                 "since_date": "2026-05-01",
-                "branch_key": "sha256:4d7448eb318fba3340748b35dae9f3175347824e5425c845c8243715f1c478e3",
+                "branch_key": "sha256:d93bde2826287e3d1af6fa08a818d35a04ecc41f18da0bb7f0339e683660b26d",
             },
         ],
     }]
@@ -212,8 +212,8 @@ def test_fetch_account_any_filter_uses_filter_local_branch_state(tmp_path) -> No
         filters={
             "payment_receipts": {
                 "any": [
-                    {"sender": "1-ofd.ru"},
-                    {"sender": "taxcom.ru"},
+                    {"sender": "receipts-a.example"},
+                    {"sender": "receipts-b.example"},
                 ],
             },
         },
@@ -235,7 +235,7 @@ def test_fetch_account_any_filter_uses_filter_local_branch_state(tmp_path) -> No
 
     def fake_process(_conn, uid_bytes, uid, account, filter_, **_kw):
         processed.append((uid, account, filter_))
-        sender = "<noreply@1-ofd.ru>" if uid == 101 else "<check@taxcom.ru>"
+        sender = "<noreply@receipts-a.example>" if uid == 101 else "<check@receipts-b.example>"
         return {
             "imap_uid": uid,
             "account": account,
@@ -251,20 +251,20 @@ def test_fetch_account_any_filter_uses_filter_local_branch_state(tmp_path) -> No
     fetched = fetcher.fetch_account({"name": "alex", "email": "user@example.com"}, fetcher.run_filters[0])
 
     assert fetched == 2
-    assert calls == [(['OR', 'FROM "1-ofd.ru"', 'FROM "taxcom.ru"'], 0, None)]
+    assert calls == [(['OR', 'FROM "receipts-a.example"', 'FROM "receipts-b.example"'], 0, None)]
     assert processed == [(101, "alex", "payment_receipts"), (202, "alex", "payment_receipts")]
     state = json.loads((tmp_path / "state.json").read_text(encoding="utf-8"))
     account_state = state["filters"]["payment_receipts"]["accounts"]["alex"]
     assert account_state["last_uid"] == 202
     assert account_state["last_received_date"] == "2026-05-23"
     assert isinstance(account_state["last_check"], str)
-    assert account_state["sha256:e75b486abf384299d869447d554ea9f7084ba6f9e9f4b0da6546101dad818387"] == 101
-    assert account_state["sha256:0db2a7e96f42dabbf9dc1a21055bbabb9d2aa0f3ede03e6e097e8f496f52dd52"] == 202
+    assert account_state["sha256:1f41d48b64ec678df112ba10117dbc901d7b6d6f12cdb9af992f6bf829ffba2d"] == 101
+    assert account_state["sha256:c296cfc07baf6e2886e4ee48654cd252ac59fb92f2bbdebbb3609f6a469cbaa8"] == 202
 
 
 def test_fetch_account_any_filter_backfills_missing_branch_to_high_water(tmp_path) -> None:
-    first_key = "sha256:e75b486abf384299d869447d554ea9f7084ba6f9e9f4b0da6546101dad818387"
-    second_key = "sha256:0db2a7e96f42dabbf9dc1a21055bbabb9d2aa0f3ede03e6e097e8f496f52dd52"
+    first_key = "sha256:1f41d48b64ec678df112ba10117dbc901d7b6d6f12cdb9af992f6bf829ffba2d"
+    second_key = "sha256:c296cfc07baf6e2886e4ee48654cd252ac59fb92f2bbdebbb3609f6a469cbaa8"
     (tmp_path / "state.json").write_text(
         json.dumps(
             {
@@ -284,8 +284,8 @@ def test_fetch_account_any_filter_backfills_missing_branch_to_high_water(tmp_pat
         filters={
             "payment_receipts": {
                 "any": [
-                    {"sender": "1-ofd.ru"},
-                    {"sender": "taxcom.ru"},
+                    {"sender": "receipts-a.example"},
+                    {"sender": "receipts-b.example"},
                 ],
             },
         },
@@ -309,7 +309,7 @@ def test_fetch_account_any_filter_backfills_missing_branch_to_high_water(tmp_pat
         "account": account,
         "filter": filter_,
         "subject": "Receipt",
-        "sender": "<check@taxcom.ru>",
+        "sender": "<check@receipts-b.example>",
         "timestamp": "2026-05-23T10:00:00Z",
         "attachments": [],
     }
@@ -318,8 +318,8 @@ def test_fetch_account_any_filter_backfills_missing_branch_to_high_water(tmp_pat
 
     assert fetched == 1
     assert calls == [
-        (['FROM "taxcom.ru"'], 0, 1000),
-        (['OR', 'FROM "1-ofd.ru"', 'FROM "taxcom.ru"'], 1000, None),
+        (['FROM "receipts-b.example"'], 0, 1000),
+        (['OR', 'FROM "receipts-a.example"', 'FROM "receipts-b.example"'], 1000, None),
     ]
     state = json.loads((tmp_path / "state.json").read_text(encoding="utf-8"))
     account_state = state["filters"]["payment_receipts"]["accounts"]["alex"]
@@ -335,8 +335,8 @@ def test_fetch_account_any_filter_advances_all_matching_sender_branches(tmp_path
         filters={
             "payment_receipts": {
                 "any": [
-                    {"sender": "1-ofd.ru"},
-                    {"sender": "ofd.ru"},
+                    {"sender": "receipts-a.example"},
+                    {"sender": "example"},
                 ],
             },
         },
@@ -351,7 +351,7 @@ def test_fetch_account_any_filter_advances_all_matching_sender_branches(tmp_path
         "account": account,
         "filter": filter_,
         "subject": "Receipt",
-        "sender": "<noreply@1-ofd.ru>",
+        "sender": "<noreply@receipts-a.example>",
         "timestamp": "2026-05-23T10:00:00Z",
         "attachments": [],
     }
@@ -364,8 +364,8 @@ def test_fetch_account_any_filter_advances_all_matching_sender_branches(tmp_path
     assert account_state["last_uid"] == 101
     assert account_state["last_received_date"] == "2026-05-23"
     assert isinstance(account_state["last_check"], str)
-    assert account_state["sha256:e75b486abf384299d869447d554ea9f7084ba6f9e9f4b0da6546101dad818387"] == 101
-    assert account_state["sha256:9b26153b2c43dd72af051faaac98d47dc7e0c18ecf7ef58c0846668673bc0b58"] == 101
+    assert account_state["sha256:1f41d48b64ec678df112ba10117dbc901d7b6d6f12cdb9af992f6bf829ffba2d"] == 101
+    assert account_state["sha256:6eac6bb2e0d23ae003061aa000da1a2be5a26746eb499786d3a21312c2745d5a"] == 101
 
 
 def test_named_filter_resolution_rejects_non_english_schema_key() -> None:
@@ -960,13 +960,13 @@ def test_fetch_all_respects_global_cap() -> None:
     downloaded = fetcher.fetch_all(num_messages=1, dry_run=False)
 
     assert calls == [("alex", "telemost", 1, False)]
-    assert fetcher.account_counts == {"alex": 1, "work": 0}
+    assert fetcher.account_counts == {"alex": 1, "beta": 0}
     assert fetcher.filter_counts == {"telemost": 1}
     assert downloaded == [{"account": "alex", "filter": "telemost"}]
 
 
 def test_fetch_all_restricts_account_selection() -> None:
-    fetcher = build_fetcher(run_options={"account": "work"})
+    fetcher = build_fetcher(run_options={"account": "beta"})
     calls = []
     fetcher.fetch_account = (
         lambda account_config, run_filter, **kwargs: calls.append((account_config["name"], run_filter["name"])) or 0
@@ -974,7 +974,7 @@ def test_fetch_all_restricts_account_selection() -> None:
 
     fetcher.fetch_all()
 
-    assert calls == [("work", "telemost")]
+    assert calls == [("beta", "telemost")]
 
 
 def test_fetch_all_rejects_unknown_account() -> None:
@@ -999,7 +999,7 @@ def test_main_spills_heavy_pending_output_to_file(monkeypatch, tmp_path, capsys)
             seen_kwargs.update(kwargs)
             self.active_filter = {"name": "telemost"}
             self.run_filters = [{"name": "telemost"}]
-            self.account_counts = {"work": 3}
+            self.account_counts = {"beta": 3}
             self.filter_counts = {"telemost": 2}
             self.data_dir = tmp_path
             self.config = {"mail": {"output": {"max_inline_symbols": 10}}}
@@ -1010,7 +1010,7 @@ def test_main_spills_heavy_pending_output_to_file(monkeypatch, tmp_path, capsys)
             return [
                 {
                     "imap_uid": 1,
-                    "account": "work",
+                    "account": "beta",
                     "sender": "alice@example.com",
                     "subject": "Long enough subject 1",
                     "timestamp": "2026-03-12T10:00:00Z",
@@ -1018,7 +1018,7 @@ def test_main_spills_heavy_pending_output_to_file(monkeypatch, tmp_path, capsys)
                 },
                 {
                     "imap_uid": 2,
-                    "account": "work",
+                    "account": "beta",
                     "sender": "bob@example.com",
                     "subject": "Long enough subject 2",
                     "timestamp": "2026-03-13T10:00:00Z",
@@ -1074,7 +1074,7 @@ def test_main_dry_run_preview_body_includes_body(monkeypatch, capsys) -> None:
             seen_kwargs.update(kwargs)
             self.active_filter = {"name": "telemost"}
             self.run_filters = [{"name": "telemost"}]
-            self.account_counts = {"work": 1}
+            self.account_counts = {"beta": 1}
             self.filter_counts = {"telemost": 1}
             self.config = {"mail": {"output": {"max_inline_symbols": 10000}}}
 
@@ -1083,7 +1083,7 @@ def test_main_dry_run_preview_body_includes_body(monkeypatch, capsys) -> None:
             return [
                 {
                     "imap_uid": 1,
-                    "account": "work",
+                    "account": "beta",
                     "sender": "alice@example.com",
                     "subject": "Preview",
                     "timestamp": "2026-03-12T10:00:00Z",
@@ -1109,7 +1109,7 @@ def test_main_dry_run_preview_body_includes_body(monkeypatch, capsys) -> None:
     assert captured["pending"] == [
         {
             "uid": 1,
-            "account": "work",
+            "account": "beta",
             "sender": "alice@example.com",
             "subject": "Preview",
             "timestamp": "2026-03-12T10:00:00Z",

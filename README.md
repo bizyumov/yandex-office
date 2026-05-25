@@ -237,7 +237,7 @@ Where:
 
 1. `YYYY-MM` is derived from first-seen meeting timestamp.
 2. Meeting folder starts with local date/time prefix `YYYY-MM-DD_HH-MM`.
-3. Date/time prefix is immediately followed by account tag (`alex`, `work`, etc.).
+3. Date/time prefix is immediately followed by account tag (`alex`, `beta`, etc.).
 4. Folder always ends with meeting UID (`_{MEETING_UID}` or `_unknown`).
 5. Folder routing is constrained by same-day wildcard candidate matching.
 

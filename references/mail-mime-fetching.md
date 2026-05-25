@@ -22,9 +22,9 @@ When discussing this workflow, be explicit about whether a schema is proposed, p
 
 - Real attachments should be saved under their decoded original filename, sanitized only for filesystem safety.
 - Do not confuse inline textual bodies with attachments: inline `text/plain` / `text/html` stay body candidates and are represented under top-level `body`.
-- Do not create separate top-level `attachment_details` or `inline_assets` fields. Boris rejected extra entities here: all non-body saved MIME file parts belong in the single top-level `attachments` list.
+- Keep the current schema small: all non-body saved MIME file parts belong in the single top-level `attachments` list; do not add separate top-level `attachment_details` or `inline_assets` fields unless the task explicitly changes the schema.
 - Inline non-text assets (images, QR codes, logos) are not body text/HTML. If saved, include them in `attachments` with `disposition: "inline"` and `content-id` when present.
-- Existing metadata may have legacy `attachments` as a list of strings. Readers/downstream code must accept both legacy string items and new object items. New writer code should write object items.
+- Current reader behavior accepts both `attachments` string items and object items. Current writer behavior should write object items.
 
 ## Metadata
 
@@ -39,7 +39,7 @@ When discussing this workflow, be explicit about whether a schema is proposed, p
   - `disposition`: `attachment`, `inline`, or null/absent;
   - `content-id`: MIME `Content-ID` if present, otherwise null/absent;
   - `part-index`: ordinal index of the MIME part during `msg.walk()` traversal, useful for audit/debug.
-- Legacy string items in `attachments` should be normalized as both `original-filename` and `saved-filename`, with other metadata unknown.
+- String items in `attachments` are accepted as reader input and normalize as both `original-filename` and `saved-filename`, with other metadata unknown.
 - Partial failures should be marked via `partial: true` without losing metadata for successful parts.
 
 Example shape without real filenames or mailbox-specific details:
@@ -78,7 +78,7 @@ Example shape without real filenames or mailbox-specific details:
 - Do not describe proposed metadata as if it already exists in downloaded examples. First verify the current code path and actual `meta.json` output.
 - Do not add new top-level metadata entities for attachment classes unless explicitly requested. For this repo, `body` stays separate and all non-body saved MIME file parts go in `attachments`.
 - Do not move `email_body.txt` / `email_body.html` into `attachments`; they belong under top-level `body`.
-- New `attachments` writer output uses object items with hyphenated keys (`original-filename`, `saved-filename`, `content-type`, `content-id`, `part-index`). Existing legacy `attachments: ["file.ext"]` metadata remains valid reader input.
+- Current `attachments` writer output uses object items with hyphenated keys (`original-filename`, `saved-filename`, `content-type`, `content-id`, `part-index`). String items in `attachments` remain valid reader input.
 - When testing live fetch behavior, prefer exact `--uid` with `--account` and a non-persistent run; verify generated `meta.json`, then remove any test-only incoming directory if it was written into the real data dir.
 
 ## Dry-run and preview-body

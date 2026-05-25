@@ -11,8 +11,8 @@ Use this when a Yandex Mail workflow needs one logical filter made from multiple
       "payment_receipts": {
         "enabled": true,
         "any": [
-          { "sender": "1-ofd.ru" },
-          { "sender": "taxcom.ru" }
+          { "sender": "receipts-a.example" },
+          { "sender": "receipts-b.example" }
         ]
       }
     }
@@ -77,6 +77,6 @@ Treat `any` branch state as a high-water model integrated into the existing acco
 - Do not implement OR branch cursors as a parallel state subsystem. Use `_get_account_state()` and existing `_save_state()` flow; derive branch cursor values by filtering the account bucket for `sha256:` keys.
 - Do not treat `any` as N independent fetch loops when the user expects one logical OR filter. If conditions are OR alternatives for one sender-domain stream, build/evaluate one logical query/result set first, deduplicate by UID once, then apply `--num` to the unified result.
 - Do not use the minimum per-branch cursor as the start UID for an `any` filter. Use the maximum numeric UID as filter high-water; handle newly added branches with bounded backfill to that high-water and `null` for checked/no-match.
-- Do not advance a branch merely because it was included in the unified OR query; advance it only after local metadata verification says that branch matches. If local matcher mirrors IMAP `FROM` substring semantics, `<noreply@1-ofd.ru>` also matches an `ofd.ru` branch; preserve that existing numeric UID on later non-matching messages instead of resetting it to `null`.
+- Do not advance a branch merely because it was included in the unified OR query; advance it only after local metadata verification says that branch matches. If local matcher mirrors IMAP `FROM` substring semantics, `<noreply@receipts-a.example>` also matches an `example` branch; preserve that existing numeric UID on later non-matching messages instead of resetting it to `null`.
 - When testing with `--num 1`, show the actual saved message directory/meta and the state file before starting profiling. If `fetched_total` increments but no new message directory appears, report that discrepancy immediately and inspect cursor/match logic first.
 - After a flawed run pollutes state, reset or surgically remove only the affected filter/account/branch cursor before retesting; otherwise later runs can falsely appear correct or skip legitimate historical messages. When the user points to a prod state file, treat that exact structure as the compatibility contract before changing code: inspect the existing `_get_account_state()` / `_save_state()` flow and extend it, rather than inventing a new storage location or wrapper.

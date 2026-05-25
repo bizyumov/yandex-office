@@ -342,4 +342,4 @@ All public `yandex-office` skill releases use the `YYYY.MM.DD` version format.
 - `pytest -q mail/scripts/test_fetch_emails.py common/tests`
 - `./scripts/test_regression.sh`
 - `python3 -m compileall common scripts mail`
-- live mailbox checks against the real `work` mailbox
+- live mailbox checks against a configured test mailbox

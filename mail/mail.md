@@ -42,7 +42,7 @@ python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --filter forms
 python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --sender "Мария" --subject "Fwd:" --account alex --dry-run --preview-body
 
 # Fetch exactly one message without advancing state
-python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account alex --uid 5131
+python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account alex --uid <uid>
 ```
 
 > Recommended: use `--app mail-readonly` for fetching and `--app mail-smtp`
@@ -117,8 +117,8 @@ For one logical stream with multiple alternative query shapes, use `any`:
       "payment_receipts": {
         "enabled": true,
         "any": [
-          { "sender": "1-ofd.ru" },
-          { "sender": "taxcom.ru", "since_date": "2026-05-01" }
+          { "sender": "receipts-a.example" },
+          { "sender": "receipts-b.example", "since_date": "2026-05-01" }
         ]
       }
     }
@@ -281,7 +281,7 @@ Large dry-run output example:
   "pending_total": 178,
   "pending": [],
   "accounts": {
-    "work": 0
+    "beta": 0
   },
   "output_file": "/path/to/yandex-data/latest-query/mail_dry_run_20260409T183247123456Z.json",
   "output_spilled": true,
