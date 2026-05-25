@@ -307,10 +307,6 @@ def main() -> None:
             account=args.account,
             service=args.service,
             selected_app_id=plan.app_id if plan is not None else None,
-            selected_scopes=plan.scopes if plan is not None else [],
-            permissions_note_provider=lambda: input(
-                "Optional: describe the permissions for this custom token (press Enter to skip): "
-            ).strip() or None,
         )
     except RuntimeError as exc:
         print(f"Error: {exc}", file=sys.stderr)

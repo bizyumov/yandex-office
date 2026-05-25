@@ -54,6 +54,18 @@ class OAuthClientMetadata:
     scopes: list[str]
 
 
+UNRESOLVED_SCOPE = "unresolved"
+YANDEX_OAUTH_CLIENT_INFO_URL = "https://oauth.yandex.com/client/{client_id}/info?format=json"
+
+
+class OAuthClientMetadataCaptchaError(RuntimeError):
+    """Yandex returned CAPTCHA JSON instead of OAuth client metadata."""
+
+    def __init__(self, message: str, *, captcha_page: str | None = None) -> None:
+        super().__init__(message)
+        self.captcha_page = captcha_page
+
+
 class _NoRedirect(HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         # Unknown/non-public client ids redirect to Passport. Treat that as an
@@ -270,13 +282,13 @@ def oauth_app_for_client_id(
         if not isinstance(raw, dict):
             continue
         configured_services = _clean_services(raw.get("service"))
-        if service is not None and service not in configured_services:
-            continue
         if str(raw.get("client_id", "")).strip() != normalized_client_id:
             continue
-        if not configured_services and service is None:
+        if service is not None and configured_services and service not in configured_services:
+            continue
+        if not configured_services:
             return OAuthAppConfig(
-                service="",
+                service=service or "",
                 client_id=normalized_client_id,
                 scopes=_clean_scopes(raw.get("scopes")),
                 app_id=str(app_id),
@@ -284,8 +296,6 @@ def oauth_app_for_client_id(
                 omit_scope_in_url=bool(raw.get("omit_scope_in_url", True)),
                 services=(),
             )
-        if not configured_services:
-            continue
         return configured_oauth_app(config, service or configured_services[0], app_id)
     return None
 
@@ -300,14 +310,12 @@ def fetch_yandex_oauth_client_metadata(
     if not normalized_client_id:
         raise ValueError("client_id must be non-empty")
 
-    info_template = str(
-        config.get("urls", {}).get(
-            "oauth_client_info",
-            "https://oauth.yandex.ru/client/{client_id}/info",
-        )
-    )
+    # Yandex online is the only source of truth for OAuth client scopes.
+    # The config argument is retained for API compatibility; this endpoint is
+    # intentionally not configurable.
+    info_template = YANDEX_OAUTH_CLIENT_INFO_URL
     info_url = info_template.format(client_id=quote(normalized_client_id, safe=""))
-    request = Request(info_url, headers={"Accept": "application/json"})
+    request = Request(info_url)
     opener = build_opener(_NoRedirect)
     try:
         with opener.open(request, timeout=timeout) as response:
@@ -325,6 +333,19 @@ def fetch_yandex_oauth_client_metadata(
 
     if not isinstance(payload, dict):
         raise RuntimeError("Yandex OAuth client metadata returned non-object JSON")
+
+    if str(payload.get("type") or "").strip().lower() == "captcha":
+        captcha = payload.get("captcha")
+        captcha_page = (
+            str(captcha.get("captcha-page") or "").strip()
+            if isinstance(captcha, dict)
+            else ""
+        )
+        detail = f": {captcha_page}" if captcha_page else ""
+        raise OAuthClientMetadataCaptchaError(
+            f"Yandex OAuth client metadata lookup returned captcha JSON{detail}",
+            captcha_page=captcha_page or None,
+        )
 
     response_client_id = str(payload.get("id") or "").strip()
     if response_client_id and response_client_id != normalized_client_id:

@@ -1,13 +1,13 @@
 {
   "probe": "mail",
-  "timestamp": "2026-04-20T10:10:43.769031+00:00",
+  "timestamp": "2026-05-24T18:36:43.218005+00:00",
   "fixture": {
     "id": "mail-method-access-fixture",
     "variables": "<redacted>"
   },
   "rows": [
     {
-      "timestamp": "2026-04-20T10:07:54.140081+00:00",
+      "timestamp": "2026-05-24T18:33:42.978961+00:00",
       "method_id": "mail.imap.authenticate",
       "scope_id": "public",
       "status": "does_not_work",
@@ -23,7 +23,7 @@
       "request_fixture_id": "mail-imap-authenticate"
     },
     {
-      "timestamp": "2026-04-20T10:07:54.764883+00:00",
+      "timestamp": "2026-05-24T18:33:44.041347+00:00",
       "method_id": "mail.imap.authenticate",
       "scope_id": "mail:imap_full",
       "status": "works",
@@ -38,7 +38,7 @@
       "request_fixture_id": "mail-imap-authenticate"
     },
     {
-      "timestamp": "2026-04-20T10:07:55.392037+00:00",
+      "timestamp": "2026-05-24T18:33:44.723876+00:00",
       "method_id": "mail.imap.authenticate",
       "scope_id": "mail:imap_ro",
       "status": "works",
@@ -53,7 +53,7 @@
       "request_fixture_id": "mail-imap-authenticate"
     },
     {
-      "timestamp": "2026-04-20T10:07:56.019926+00:00",
+      "timestamp": "2026-05-24T18:33:45.684904+00:00",
       "method_id": "mail.imap.authenticate",
       "scope_id": "mail:smtp",
       "status": "does_not_work",
@@ -71,7 +71,7 @@
       "request_fixture_id": "mail-imap-authenticate"
     },
     {
-      "timestamp": "2026-04-20T10:07:56.020006+00:00",
+      "timestamp": "2026-05-24T18:33:45.684995+00:00",
       "method_id": "mail.imap.capability",
       "scope_id": "public",
       "status": "does_not_work",
@@ -87,7 +87,7 @@
       "request_fixture_id": "mail-imap-capability"
     },
     {
-      "timestamp": "2026-04-20T10:07:56.848789+00:00",
+      "timestamp": "2026-05-24T18:33:46.917337+00:00",
       "method_id": "mail.imap.capability",
       "scope_id": "mail:imap_full",
       "status": "works",
@@ -103,7 +103,7 @@
       "request_fixture_id": "mail-imap-capability"
     },
     {
-      "timestamp": "2026-04-20T10:07:57.632235+00:00",
+      "timestamp": "2026-05-24T18:33:47.641935+00:00",
       "method_id": "mail.imap.capability",
       "scope_id": "mail:imap_ro",
       "status": "works",
@@ -119,7 +119,7 @@
       "request_fixture_id": "mail-imap-capability"
     },
     {
-      "timestamp": "2026-04-20T10:07:58.256553+00:00",
+      "timestamp": "2026-05-24T18:33:48.235943+00:00",
       "method_id": "mail.imap.capability",
       "scope_id": "mail:smtp",
       "status": "does_not_work",
@@ -137,7 +137,7 @@
       "request_fixture_id": "mail-imap-capability"
     },
     {
-      "timestamp": "2026-04-20T10:07:58.256641+00:00",
+      "timestamp": "2026-05-24T18:33:48.236034+00:00",
       "method_id": "mail.imap.noop",
       "scope_id": "public",
       "status": "does_not_work",
@@ -153,7 +153,7 @@
       "request_fixture_id": "mail-imap-noop"
     },
     {
-      "timestamp": "2026-04-20T10:07:58.896693+00:00",
+      "timestamp": "2026-05-24T18:33:49.298242+00:00",
       "method_id": "mail.imap.noop",
       "scope_id": "mail:imap_full",
       "status": "works",
@@ -169,7 +169,7 @@
       "request_fixture_id": "mail-imap-noop"
     },
     {
-      "timestamp": "2026-04-20T10:07:59.747888+00:00",
+      "timestamp": "2026-05-24T18:33:50.497047+00:00",
       "method_id": "mail.imap.noop",
       "scope_id": "mail:imap_ro",
       "status": "works",
@@ -185,7 +185,7 @@
       "request_fixture_id": "mail-imap-noop"
     },
     {
-      "timestamp": "2026-04-20T10:08:00.435695+00:00",
+      "timestamp": "2026-05-24T18:33:51.484287+00:00",
       "method_id": "mail.imap.noop",
       "scope_id": "mail:smtp",
       "status": "does_not_work",
@@ -203,7 +203,7 @@
       "request_fixture_id": "mail-imap-noop"
     },
     {
-      "timestamp": "2026-04-20T10:08:00.435796+00:00",
+      "timestamp": "2026-05-24T18:33:51.484408+00:00",
       "method_id": "mail.imap.logout",
       "scope_id": "public",
       "status": "does_not_work",
@@ -219,7 +219,7 @@
       "request_fixture_id": "mail-imap-logout"
     },
     {
-      "timestamp": "2026-04-20T10:08:01.148865+00:00",
+      "timestamp": "2026-05-24T18:33:52.133121+00:00",
       "method_id": "mail.imap.logout",
       "scope_id": "mail:imap_full",
       "status": "works",
@@ -235,7 +235,7 @@
       "request_fixture_id": "mail-imap-logout"
     },
     {
-      "timestamp": "2026-04-20T10:08:01.757616+00:00",
+      "timestamp": "2026-05-24T18:33:53.160938+00:00",
       "method_id": "mail.imap.logout",
       "scope_id": "mail:imap_ro",
       "status": "works",
@@ -251,7 +251,7 @@
       "request_fixture_id": "mail-imap-logout"
     },
     {
-      "timestamp": "2026-04-20T10:08:02.314179+00:00",
+      "timestamp": "2026-05-24T18:33:53.744664+00:00",
       "method_id": "mail.imap.logout",
       "scope_id": "mail:smtp",
       "status": "does_not_work",
@@ -269,7 +269,7 @@
       "request_fixture_id": "mail-imap-logout"
     },
     {
-      "timestamp": "2026-04-20T10:08:02.314344+00:00",
+      "timestamp": "2026-05-24T18:33:53.744773+00:00",
       "method_id": "mail.imap.list",
       "scope_id": "public",
       "status": "does_not_work",
@@ -285,7 +285,7 @@
       "request_fixture_id": "mail-imap-list"
     },
     {
-      "timestamp": "2026-04-20T10:08:03.280973+00:00",
+      "timestamp": "2026-05-24T18:33:55.312951+00:00",
       "method_id": "mail.imap.list",
       "scope_id": "mail:imap_full",
       "status": "works",
@@ -301,7 +301,7 @@
       "request_fixture_id": "mail-imap-list"
     },
     {
-      "timestamp": "2026-04-20T10:08:04.006810+00:00",
+      "timestamp": "2026-05-24T18:33:56.594015+00:00",
       "method_id": "mail.imap.list",
       "scope_id": "mail:imap_ro",
       "status": "works",
@@ -317,7 +317,7 @@
       "request_fixture_id": "mail-imap-list"
     },
     {
-      "timestamp": "2026-04-20T10:08:04.668061+00:00",
+      "timestamp": "2026-05-24T18:33:57.140800+00:00",
       "method_id": "mail.imap.list",
       "scope_id": "mail:smtp",
       "status": "does_not_work",
@@ -335,7 +335,7 @@
       "request_fixture_id": "mail-imap-list"
     },
     {
-      "timestamp": "2026-04-20T10:08:04.668141+00:00",
+      "timestamp": "2026-05-24T18:33:57.140897+00:00",
       "method_id": "mail.imap.lsub",
       "scope_id": "public",
       "status": "does_not_work",
@@ -351,7 +351,7 @@
       "request_fixture_id": "mail-imap-lsub"
     },
     {
-      "timestamp": "2026-04-20T10:08:05.395522+00:00",
+      "timestamp": "2026-05-24T18:33:58.140911+00:00",
       "method_id": "mail.imap.lsub",
       "scope_id": "mail:imap_full",
       "status": "works",
@@ -367,7 +367,7 @@
       "request_fixture_id": "mail-imap-lsub"
     },
     {
-      "timestamp": "2026-04-20T10:08:06.431329+00:00",
+      "timestamp": "2026-05-24T18:33:59.372068+00:00",
       "method_id": "mail.imap.lsub",
       "scope_id": "mail:imap_ro",
       "status": "works",
@@ -383,7 +383,7 @@
       "request_fixture_id": "mail-imap-lsub"
     },
     {
-      "timestamp": "2026-04-20T10:08:07.043080+00:00",
+      "timestamp": "2026-05-24T18:34:00.395902+00:00",
       "method_id": "mail.imap.lsub",
       "scope_id": "mail:smtp",
       "status": "does_not_work",
@@ -401,7 +401,7 @@
       "request_fixture_id": "mail-imap-lsub"
     },
     {
-      "timestamp": "2026-04-20T10:08:07.043197+00:00",
+      "timestamp": "2026-05-24T18:34:00.396015+00:00",
       "method_id": "mail.imap.status",
       "scope_id": "public",
       "status": "does_not_work",
@@ -417,7 +417,7 @@
       "request_fixture_id": "mail-imap-status"
     },
     {
-      "timestamp": "2026-04-20T10:08:08.331437+00:00",
+      "timestamp": "2026-05-24T18:34:01.187409+00:00",
       "method_id": "mail.imap.status",
       "scope_id": "mail:imap_full",
       "status": "works",
@@ -433,7 +433,7 @@
       "request_fixture_id": "mail-imap-status"
     },
     {
-      "timestamp": "2026-04-20T10:08:09.061269+00:00",
+      "timestamp": "2026-05-24T18:34:02.498435+00:00",
       "method_id": "mail.imap.status",
       "scope_id": "mail:imap_ro",
       "status": "works",
@@ -449,7 +449,7 @@
       "request_fixture_id": "mail-imap-status"
     },
     {
-      "timestamp": "2026-04-20T10:08:09.729842+00:00",
+      "timestamp": "2026-05-24T18:34:03.123166+00:00",
       "method_id": "mail.imap.status",
       "scope_id": "mail:smtp",
       "status": "does_not_work",
@@ -467,7 +467,7 @@
       "request_fixture_id": "mail-imap-status"
     },
     {
-      "timestamp": "2026-04-20T10:08:09.729937+00:00",
+      "timestamp": "2026-05-24T18:34:03.123302+00:00",
       "method_id": "mail.imap.select",
       "scope_id": "public",
       "status": "does_not_work",
@@ -483,7 +483,7 @@
       "request_fixture_id": "mail-imap-select"
     },
     {
-      "timestamp": "2026-04-20T10:08:10.549556+00:00",
+      "timestamp": "2026-05-24T18:34:04.373311+00:00",
       "method_id": "mail.imap.select",
       "scope_id": "mail:imap_full",
       "status": "works",
@@ -499,7 +499,7 @@
       "request_fixture_id": "mail-imap-select"
     },
     {
-      "timestamp": "2026-04-20T10:08:11.633775+00:00",
+      "timestamp": "2026-05-24T18:34:05.599439+00:00",
       "method_id": "mail.imap.select",
       "scope_id": "mail:imap_ro",
       "status": "works",
@@ -515,7 +515,7 @@
       "request_fixture_id": "mail-imap-select"
     },
     {
-      "timestamp": "2026-04-20T10:08:12.450899+00:00",
+      "timestamp": "2026-05-24T18:34:06.595115+00:00",
       "method_id": "mail.imap.select",
       "scope_id": "mail:smtp",
       "status": "does_not_work",
@@ -533,7 +533,7 @@
       "request_fixture_id": "mail-imap-select"
     },
     {
-      "timestamp": "2026-04-20T10:08:12.450978+00:00",
+      "timestamp": "2026-05-24T18:34:06.595286+00:00",
       "method_id": "mail.imap.examine",
       "scope_id": "public",
       "status": "does_not_work",
@@ -549,7 +549,7 @@
       "request_fixture_id": "mail-imap-examine"
     },
     {
-      "timestamp": "2026-04-20T10:08:13.404482+00:00",
+      "timestamp": "2026-05-24T18:34:07.949306+00:00",
       "method_id": "mail.imap.examine",
       "scope_id": "mail:imap_full",
       "status": "works",
@@ -565,7 +565,7 @@
       "request_fixture_id": "mail-imap-examine"
     },
     {
-      "timestamp": "2026-04-20T10:08:14.223872+00:00",
+      "timestamp": "2026-05-24T18:34:08.807230+00:00",
       "method_id": "mail.imap.examine",
       "scope_id": "mail:imap_ro",
       "status": "works",
@@ -581,7 +581,7 @@
       "request_fixture_id": "mail-imap-examine"
     },
     {
-      "timestamp": "2026-04-20T10:08:14.793018+00:00",
+      "timestamp": "2026-05-24T18:34:10.196333+00:00",
       "method_id": "mail.imap.examine",
       "scope_id": "mail:smtp",
       "status": "does_not_work",
@@ -599,7 +599,7 @@
       "request_fixture_id": "mail-imap-examine"
     },
     {
-      "timestamp": "2026-04-20T10:08:14.793279+00:00",
+      "timestamp": "2026-05-24T18:34:10.196473+00:00",
       "method_id": "mail.imap.check",
       "scope_id": "public",
       "status": "does_not_work",
@@ -615,7 +615,7 @@
       "request_fixture_id": "mail-imap-check"
     },
     {
-      "timestamp": "2026-04-20T10:08:15.693205+00:00",
+      "timestamp": "2026-05-24T18:34:11.580739+00:00",
       "method_id": "mail.imap.check",
       "scope_id": "mail:imap_full",
       "status": "works",
@@ -631,7 +631,7 @@
       "request_fixture_id": "mail-imap-check"
     },
     {
-      "timestamp": "2026-04-20T10:08:16.712524+00:00",
+      "timestamp": "2026-05-24T18:34:12.346010+00:00",
       "method_id": "mail.imap.check",
       "scope_id": "mail:imap_ro",
       "status": "works",
@@ -647,7 +647,7 @@
       "request_fixture_id": "mail-imap-check"
     },
     {
-      "timestamp": "2026-04-20T10:08:17.321610+00:00",
+      "timestamp": "2026-05-24T18:34:12.989149+00:00",
       "method_id": "mail.imap.check",
       "scope_id": "mail:smtp",
       "status": "does_not_work",
@@ -665,7 +665,7 @@
       "request_fixture_id": "mail-imap-check"
     },
     {
-      "timestamp": "2026-04-20T10:08:17.321701+00:00",
+      "timestamp": "2026-05-24T18:34:12.989299+00:00",
       "method_id": "mail.imap.close",
       "scope_id": "public",
       "status": "does_not_work",
@@ -681,7 +681,7 @@
       "request_fixture_id": "mail-imap-close"
     },
     {
-      "timestamp": "2026-04-20T10:08:20.384857+00:00",
+      "timestamp": "2026-05-24T18:34:16.854171+00:00",
       "method_id": "mail.imap.close",
       "scope_id": "mail:imap_full",
       "status": "works",
@@ -697,7 +697,7 @@
       "request_fixture_id": "mail-imap-close"
     },
     {
-      "timestamp": "2026-04-20T10:08:24.104146+00:00",
+      "timestamp": "2026-05-24T18:34:23.375171+00:00",
       "method_id": "mail.imap.close",
       "scope_id": "mail:imap_ro",
       "status": "works",
@@ -713,7 +713,7 @@
       "request_fixture_id": "mail-imap-close"
     },
     {
-      "timestamp": "2026-04-20T10:08:27.100242+00:00",
+      "timestamp": "2026-05-24T18:34:26.569718+00:00",
       "method_id": "mail.imap.close",
       "scope_id": "mail:smtp",
       "status": "does_not_work",
@@ -731,7 +731,7 @@
       "request_fixture_id": "mail-imap-close"
     },
     {
-      "timestamp": "2026-04-20T10:08:27.706222+00:00",
+      "timestamp": "2026-05-24T18:34:28.248918+00:00",
       "method_id": "mail.imap.create",
       "scope_id": "public",
       "status": "does_not_work",
@@ -747,7 +747,7 @@
       "request_fixture_id": "mail-imap-create"
     },
     {
-      "timestamp": "2026-04-20T10:08:28.552031+00:00",
+      "timestamp": "2026-05-24T18:34:29.417413+00:00",
       "method_id": "mail.imap.create",
       "scope_id": "mail:imap_full",
       "status": "works",
@@ -763,7 +763,7 @@
       "request_fixture_id": "mail-imap-create"
     },
     {
-      "timestamp": "2026-04-20T10:08:30.601338+00:00",
+      "timestamp": "2026-05-24T18:34:31.567038+00:00",
       "method_id": "mail.imap.create",
       "scope_id": "mail:imap_ro",
       "status": "works",
@@ -779,7 +779,7 @@
       "request_fixture_id": "mail-imap-create"
     },
     {
-      "timestamp": "2026-04-20T10:08:32.536774+00:00",
+      "timestamp": "2026-05-24T18:34:33.996968+00:00",
       "method_id": "mail.imap.create",
       "scope_id": "mail:smtp",
       "status": "does_not_work",
@@ -797,7 +797,7 @@
       "request_fixture_id": "mail-imap-create"
     },
     {
-      "timestamp": "2026-04-20T10:08:33.116614+00:00",
+      "timestamp": "2026-05-24T18:34:34.722314+00:00",
       "method_id": "mail.imap.delete",
       "scope_id": "public",
       "status": "does_not_work",
@@ -813,7 +813,7 @@
       "request_fixture_id": "mail-imap-delete"
     },
     {
-      "timestamp": "2026-04-20T10:08:34.751546+00:00",
+      "timestamp": "2026-05-24T18:34:36.717549+00:00",
       "method_id": "mail.imap.delete",
       "scope_id": "mail:imap_full",
       "status": "works",
@@ -829,7 +829,7 @@
       "request_fixture_id": "mail-imap-delete"
     },
     {
-      "timestamp": "2026-04-20T10:08:36.722500+00:00",
+      "timestamp": "2026-05-24T18:34:38.088080+00:00",
       "method_id": "mail.imap.delete",
       "scope_id": "mail:imap_ro",
       "status": "works",
@@ -845,7 +845,7 @@
       "request_fixture_id": "mail-imap-delete"
     },
     {
-      "timestamp": "2026-04-20T10:08:38.018616+00:00",
+      "timestamp": "2026-05-24T18:34:40.148780+00:00",
       "method_id": "mail.imap.delete",
       "scope_id": "mail:smtp",
       "status": "does_not_work",
@@ -863,7 +863,7 @@
       "request_fixture_id": "mail-imap-delete"
     },
     {
-      "timestamp": "2026-04-20T10:08:38.018692+00:00",
+      "timestamp": "2026-05-24T18:34:40.148885+00:00",
       "method_id": "mail.imap.rename",
       "scope_id": "public",
       "status": "does_not_work",
@@ -879,7 +879,7 @@
       "request_fixture_id": "mail-imap-rename"
     },
     {
-      "timestamp": "2026-04-20T10:08:39.809757+00:00",
+      "timestamp": "2026-05-24T18:34:42.478251+00:00",
       "method_id": "mail.imap.rename",
       "scope_id": "mail:imap_full",
       "status": "works",
@@ -895,7 +895,7 @@
       "request_fixture_id": "mail-imap-rename"
     },
     {
-      "timestamp": "2026-04-20T10:08:46.818861+00:00",
+      "timestamp": "2026-05-24T18:34:46.330399+00:00",
       "method_id": "mail.imap.rename",
       "scope_id": "mail:imap_ro",
       "status": "works",
@@ -911,7 +911,7 @@
       "request_fixture_id": "mail-imap-rename"
     },
     {
-      "timestamp": "2026-04-20T10:08:49.546664+00:00",
+      "timestamp": "2026-05-24T18:34:49.200821+00:00",
       "method_id": "mail.imap.rename",
       "scope_id": "mail:smtp",
       "status": "does_not_work",
@@ -929,7 +929,7 @@
       "request_fixture_id": "mail-imap-rename"
     },
     {
-      "timestamp": "2026-04-20T10:08:50.743845+00:00",
+      "timestamp": "2026-05-24T18:34:50.946801+00:00",
       "method_id": "mail.imap.subscribe",
       "scope_id": "public",
       "status": "does_not_work",
@@ -945,7 +945,7 @@
       "request_fixture_id": "mail-imap-subscribe"
     },
     {
-      "timestamp": "2026-04-20T10:08:53.058957+00:00",
+      "timestamp": "2026-05-24T18:34:52.353181+00:00",
       "method_id": "mail.imap.subscribe",
       "scope_id": "mail:imap_full",
       "status": "works",
@@ -961,7 +961,7 @@
       "request_fixture_id": "mail-imap-subscribe"
     },
     {
-      "timestamp": "2026-04-20T10:08:56.978238+00:00",
+      "timestamp": "2026-05-24T18:34:55.654046+00:00",
       "method_id": "mail.imap.subscribe",
       "scope_id": "mail:imap_ro",
       "status": "works",
@@ -977,7 +977,7 @@
       "request_fixture_id": "mail-imap-subscribe"
     },
     {
-      "timestamp": "2026-04-20T10:09:00.215002+00:00",
+      "timestamp": "2026-05-24T18:34:58.187202+00:00",
       "method_id": "mail.imap.subscribe",
       "scope_id": "mail:smtp",
       "status": "does_not_work",
@@ -995,7 +995,7 @@
       "request_fixture_id": "mail-imap-subscribe"
     },
     {
-      "timestamp": "2026-04-20T10:09:01.426497+00:00",
+      "timestamp": "2026-05-24T18:34:59.477576+00:00",
       "method_id": "mail.imap.unsubscribe",
       "scope_id": "public",
       "status": "does_not_work",
@@ -1011,7 +1011,7 @@
       "request_fixture_id": "mail-imap-unsubscribe"
     },
     {
-      "timestamp": "2026-04-20T10:09:03.716493+00:00",
+      "timestamp": "2026-05-24T18:35:01.675507+00:00",
       "method_id": "mail.imap.unsubscribe",
       "scope_id": "mail:imap_full",
       "status": "works",
@@ -1027,7 +1027,7 @@
       "request_fixture_id": "mail-imap-unsubscribe"
     },
     {
-      "timestamp": "2026-04-20T10:09:06.599609+00:00",
+      "timestamp": "2026-05-24T18:35:04.699470+00:00",
       "method_id": "mail.imap.unsubscribe",
       "scope_id": "mail:imap_ro",
       "status": "works",
@@ -1043,7 +1043,7 @@
       "request_fixture_id": "mail-imap-unsubscribe"
     },
     {
-      "timestamp": "2026-04-20T10:09:09.726154+00:00",
+      "timestamp": "2026-05-24T18:35:07.099139+00:00",
       "method_id": "mail.imap.unsubscribe",
       "scope_id": "mail:smtp",
       "status": "does_not_work",
@@ -1061,7 +1061,7 @@
       "request_fixture_id": "mail-imap-unsubscribe"
     },
     {
-      "timestamp": "2026-04-20T10:09:10.524509+00:00",
+      "timestamp": "2026-05-24T18:35:07.759529+00:00",
       "method_id": "mail.imap.append",
       "scope_id": "public",
       "status": "does_not_work",
@@ -1077,7 +1077,7 @@
       "request_fixture_id": "mail-imap-append"
     },
     {
-      "timestamp": "2026-04-20T10:09:12.399615+00:00",
+      "timestamp": "2026-05-24T18:35:09.930770+00:00",
       "method_id": "mail.imap.append",
       "scope_id": "mail:imap_full",
       "status": "works",
@@ -1093,7 +1093,7 @@
       "request_fixture_id": "mail-imap-append"
     },
     {
-      "timestamp": "2026-04-20T10:09:15.036760+00:00",
+      "timestamp": "2026-05-24T18:35:13.314368+00:00",
       "method_id": "mail.imap.append",
       "scope_id": "mail:imap_ro",
       "status": "works",
@@ -1109,7 +1109,7 @@
       "request_fixture_id": "mail-imap-append"
     },
     {
-      "timestamp": "2026-04-20T10:09:16.899876+00:00",
+      "timestamp": "2026-05-24T18:35:15.359788+00:00",
       "method_id": "mail.imap.append",
       "scope_id": "mail:smtp",
       "status": "does_not_work",
@@ -1127,7 +1127,7 @@
       "request_fixture_id": "mail-imap-append"
     },
     {
-      "timestamp": "2026-04-20T10:09:17.542523+00:00",
+      "timestamp": "2026-05-24T18:35:15.994538+00:00",
       "method_id": "mail.imap.search",
       "scope_id": "public",
       "status": "does_not_work",
@@ -1143,7 +1143,7 @@
       "request_fixture_id": "mail-imap-search"
     },
     {
-      "timestamp": "2026-04-20T10:09:18.521395+00:00",
+      "timestamp": "2026-05-24T18:35:17.252253+00:00",
       "method_id": "mail.imap.search",
       "scope_id": "mail:imap_full",
       "status": "works",
@@ -1159,7 +1159,7 @@
       "request_fixture_id": "mail-imap-search"
     },
     {
-      "timestamp": "2026-04-20T10:09:19.625434+00:00",
+      "timestamp": "2026-05-24T18:35:18.190753+00:00",
       "method_id": "mail.imap.search",
       "scope_id": "mail:imap_ro",
       "status": "works",
@@ -1175,7 +1175,7 @@
       "request_fixture_id": "mail-imap-search"
     },
     {
-      "timestamp": "2026-04-20T10:09:20.346069+00:00",
+      "timestamp": "2026-05-24T18:35:19.189255+00:00",
       "method_id": "mail.imap.search",
       "scope_id": "mail:smtp",
       "status": "does_not_work",
@@ -1193,7 +1193,7 @@
       "request_fixture_id": "mail-imap-search"
     },
     {
-      "timestamp": "2026-04-20T10:09:20.346266+00:00",
+      "timestamp": "2026-05-24T18:35:19.189347+00:00",
       "method_id": "mail.imap.fetch",
       "scope_id": "public",
       "status": "does_not_work",
@@ -1209,7 +1209,7 @@
       "request_fixture_id": "mail-imap-fetch"
     },
     {
-      "timestamp": "2026-04-20T10:09:21.698753+00:00",
+      "timestamp": "2026-05-24T18:35:20.382238+00:00",
       "method_id": "mail.imap.fetch",
       "scope_id": "mail:imap_full",
       "status": "works",
@@ -1225,7 +1225,7 @@
       "request_fixture_id": "mail-imap-fetch"
     },
     {
-      "timestamp": "2026-04-20T10:09:23.092202+00:00",
+      "timestamp": "2026-05-24T18:35:22.052899+00:00",
       "method_id": "mail.imap.fetch",
       "scope_id": "mail:imap_ro",
       "status": "works",
@@ -1241,7 +1241,7 @@
       "request_fixture_id": "mail-imap-fetch"
     },
     {
-      "timestamp": "2026-04-20T10:09:23.673846+00:00",
+      "timestamp": "2026-05-24T18:35:22.760226+00:00",
       "method_id": "mail.imap.fetch",
       "scope_id": "mail:smtp",
       "status": "does_not_work",
@@ -1259,7 +1259,7 @@
       "request_fixture_id": "mail-imap-fetch"
     },
     {
-      "timestamp": "2026-04-20T10:09:23.673974+00:00",
+      "timestamp": "2026-05-24T18:35:22.760388+00:00",
       "method_id": "mail.imap.store",
       "scope_id": "public",
       "status": "does_not_work",
@@ -1275,7 +1275,7 @@
       "request_fixture_id": "mail-imap-store"
     },
     {
-      "timestamp": "2026-04-20T10:09:27.182586+00:00",
+      "timestamp": "2026-05-24T18:35:25.826788+00:00",
       "method_id": "mail.imap.store",
       "scope_id": "mail:imap_full",
       "status": "works",
@@ -1291,7 +1291,7 @@
       "request_fixture_id": "mail-imap-store"
     },
     {
-      "timestamp": "2026-04-20T10:09:30.967517+00:00",
+      "timestamp": "2026-05-24T18:35:29.894386+00:00",
       "method_id": "mail.imap.store",
       "scope_id": "mail:imap_ro",
       "status": "does_not_work",
@@ -1309,7 +1309,7 @@
       "request_fixture_id": "mail-imap-store"
     },
     {
-      "timestamp": "2026-04-20T10:09:34.171924+00:00",
+      "timestamp": "2026-05-24T18:35:33.301074+00:00",
       "method_id": "mail.imap.store",
       "scope_id": "mail:smtp",
       "status": "does_not_work",
@@ -1327,7 +1327,7 @@
       "request_fixture_id": "mail-imap-store"
     },
     {
-      "timestamp": "2026-04-20T10:09:34.768240+00:00",
+      "timestamp": "2026-05-24T18:35:33.915461+00:00",
       "method_id": "mail.imap.copy",
       "scope_id": "public",
       "status": "does_not_work",
@@ -1343,7 +1343,7 @@
       "request_fixture_id": "mail-imap-copy"
     },
     {
-      "timestamp": "2026-04-20T10:09:38.600249+00:00",
+      "timestamp": "2026-05-24T18:35:37.765011+00:00",
       "method_id": "mail.imap.copy",
       "scope_id": "mail:imap_full",
       "status": "works",
@@ -1359,7 +1359,7 @@
       "request_fixture_id": "mail-imap-copy"
     },
     {
-      "timestamp": "2026-04-20T10:09:44.894046+00:00",
+      "timestamp": "2026-05-24T18:35:43.754473+00:00",
       "method_id": "mail.imap.copy",
       "scope_id": "mail:imap_ro",
       "status": "works",
@@ -1375,7 +1375,7 @@
       "request_fixture_id": "mail-imap-copy"
     },
     {
-      "timestamp": "2026-04-20T10:09:49.618618+00:00",
+      "timestamp": "2026-05-24T18:35:47.840228+00:00",
       "method_id": "mail.imap.copy",
       "scope_id": "mail:smtp",
       "status": "does_not_work",
@@ -1393,7 +1393,7 @@
       "request_fixture_id": "mail-imap-copy"
     },
     {
-      "timestamp": "2026-04-20T10:09:50.879929+00:00",
+      "timestamp": "2026-05-24T18:35:49.040704+00:00",
       "method_id": "mail.imap.expunge",
       "scope_id": "public",
       "status": "does_not_work",
@@ -1409,7 +1409,7 @@
       "request_fixture_id": "mail-imap-expunge"
     },
     {
-      "timestamp": "2026-04-20T10:09:55.085894+00:00",
+      "timestamp": "2026-05-24T18:35:52.803130+00:00",
       "method_id": "mail.imap.expunge",
       "scope_id": "mail:imap_full",
       "status": "works",
@@ -1425,7 +1425,7 @@
       "request_fixture_id": "mail-imap-expunge"
     },
     {
-      "timestamp": "2026-04-20T10:09:59.579015+00:00",
+      "timestamp": "2026-05-24T18:35:57.122837+00:00",
       "method_id": "mail.imap.expunge",
       "scope_id": "mail:imap_ro",
       "status": "works",
@@ -1441,7 +1441,7 @@
       "request_fixture_id": "mail-imap-expunge"
     },
     {
-      "timestamp": "2026-04-20T10:10:02.804739+00:00",
+      "timestamp": "2026-05-24T18:36:00.637016+00:00",
       "method_id": "mail.imap.expunge",
       "scope_id": "mail:smtp",
       "status": "does_not_work",
@@ -1459,7 +1459,7 @@
       "request_fixture_id": "mail-imap-expunge"
     },
     {
-      "timestamp": "2026-04-20T10:10:03.538440+00:00",
+      "timestamp": "2026-05-24T18:36:01.347699+00:00",
       "method_id": "mail.imap.uid.search",
       "scope_id": "public",
       "status": "does_not_work",
@@ -1475,7 +1475,7 @@
       "request_fixture_id": "mail-imap-uid-search"
     },
     {
-      "timestamp": "2026-04-20T10:10:04.598383+00:00",
+      "timestamp": "2026-05-24T18:36:02.322795+00:00",
       "method_id": "mail.imap.uid.search",
       "scope_id": "mail:imap_full",
       "status": "works",
@@ -1491,7 +1491,7 @@
       "request_fixture_id": "mail-imap-uid-search"
     },
     {
-      "timestamp": "2026-04-20T10:10:05.597082+00:00",
+      "timestamp": "2026-05-24T18:36:03.168218+00:00",
       "method_id": "mail.imap.uid.search",
       "scope_id": "mail:imap_ro",
       "status": "works",
@@ -1507,7 +1507,7 @@
       "request_fixture_id": "mail-imap-uid-search"
     },
     {
-      "timestamp": "2026-04-20T10:10:06.242676+00:00",
+      "timestamp": "2026-05-24T18:36:03.830840+00:00",
       "method_id": "mail.imap.uid.search",
       "scope_id": "mail:smtp",
       "status": "does_not_work",
@@ -1525,7 +1525,7 @@
       "request_fixture_id": "mail-imap-uid-search"
     },
     {
-      "timestamp": "2026-04-20T10:10:06.242743+00:00",
+      "timestamp": "2026-05-24T18:36:03.830964+00:00",
       "method_id": "mail.imap.uid.fetch",
       "scope_id": "public",
       "status": "does_not_work",
@@ -1541,7 +1541,7 @@
       "request_fixture_id": "mail-imap-uid-fetch"
     },
     {
-      "timestamp": "2026-04-20T10:10:07.253142+00:00",
+      "timestamp": "2026-05-24T18:36:04.897161+00:00",
       "method_id": "mail.imap.uid.fetch",
       "scope_id": "mail:imap_full",
       "status": "works",
@@ -1557,7 +1557,7 @@
       "request_fixture_id": "mail-imap-uid-fetch"
     },
     {
-      "timestamp": "2026-04-20T10:10:08.358603+00:00",
+      "timestamp": "2026-05-24T18:36:06.097997+00:00",
       "method_id": "mail.imap.uid.fetch",
       "scope_id": "mail:imap_ro",
       "status": "works",
@@ -1573,7 +1573,7 @@
       "request_fixture_id": "mail-imap-uid-fetch"
     },
     {
-      "timestamp": "2026-04-20T10:10:09.039664+00:00",
+      "timestamp": "2026-05-24T18:36:06.791192+00:00",
       "method_id": "mail.imap.uid.fetch",
       "scope_id": "mail:smtp",
       "status": "does_not_work",
@@ -1591,7 +1591,7 @@
       "request_fixture_id": "mail-imap-uid-fetch"
     },
     {
-      "timestamp": "2026-04-20T10:10:09.039783+00:00",
+      "timestamp": "2026-05-24T18:36:06.791351+00:00",
       "method_id": "mail.imap.uid.store",
       "scope_id": "public",
       "status": "does_not_work",
@@ -1607,7 +1607,7 @@
       "request_fixture_id": "mail-imap-uid-store"
     },
     {
-      "timestamp": "2026-04-20T10:10:12.168610+00:00",
+      "timestamp": "2026-05-24T18:36:10.085393+00:00",
       "method_id": "mail.imap.uid.store",
       "scope_id": "mail:imap_full",
       "status": "works",
@@ -1623,7 +1623,7 @@
       "request_fixture_id": "mail-imap-uid-store"
     },
     {
-      "timestamp": "2026-04-20T10:10:16.428858+00:00",
+      "timestamp": "2026-05-24T18:36:13.906090+00:00",
       "method_id": "mail.imap.uid.store",
       "scope_id": "mail:imap_ro",
       "status": "does_not_work",
@@ -1641,7 +1641,7 @@
       "request_fixture_id": "mail-imap-uid-store"
     },
     {
-      "timestamp": "2026-04-20T10:10:19.157783+00:00",
+      "timestamp": "2026-05-24T18:36:16.812059+00:00",
       "method_id": "mail.imap.uid.store",
       "scope_id": "mail:smtp",
       "status": "does_not_work",
@@ -1659,7 +1659,7 @@
       "request_fixture_id": "mail-imap-uid-store"
     },
     {
-      "timestamp": "2026-04-20T10:10:19.912229+00:00",
+      "timestamp": "2026-05-24T18:36:17.451152+00:00",
       "method_id": "mail.imap.uid.copy",
       "scope_id": "public",
       "status": "does_not_work",
@@ -1675,7 +1675,7 @@
       "request_fixture_id": "mail-imap-uid-copy"
     },
     {
-      "timestamp": "2026-04-20T10:10:23.747395+00:00",
+      "timestamp": "2026-05-24T18:36:21.789642+00:00",
       "method_id": "mail.imap.uid.copy",
       "scope_id": "mail:imap_full",
       "status": "works",
@@ -1691,7 +1691,7 @@
       "request_fixture_id": "mail-imap-uid-copy"
     },
     {
-      "timestamp": "2026-04-20T10:10:29.228088+00:00",
+      "timestamp": "2026-05-24T18:36:28.473924+00:00",
       "method_id": "mail.imap.uid.copy",
       "scope_id": "mail:imap_ro",
       "status": "works",
@@ -1707,7 +1707,7 @@
       "request_fixture_id": "mail-imap-uid-copy"
     },
     {
-      "timestamp": "2026-04-20T10:10:33.285070+00:00",
+      "timestamp": "2026-05-24T18:36:32.930730+00:00",
       "method_id": "mail.imap.uid.copy",
       "scope_id": "mail:smtp",
       "status": "does_not_work",
@@ -1725,27 +1725,40 @@
       "request_fixture_id": "mail-imap-uid-copy"
     },
     {
-      "timestamp": "2026-04-20T10:10:35.753678+00:00",
+      "timestamp": "2026-05-24T18:36:34.077389+00:00",
       "method_id": "mail.imap.uid.delete_matching.live_realty",
-      "scope_id": "mail:imap_ro",
+      "scope_id": "public",
       "status": "does_not_work",
       "http": {
-        "status_code": 535,
+        "status_code": 0,
         "ok": false,
         "content_type": "",
         "json_keys": [
-          "description",
-          "error",
-          "matches_before",
-          "target_uid"
+          "error"
         ],
-        "error": "ImapStoreDeletedFailed",
-        "description": "UID command error: BAD [b'[CLIENTBUG] UID STORE Can not store in read-only folder. sc=<redacted>']"
+        "error": "MissingImapAuthContext"
       },
       "request_fixture_id": "mail-imap-uid-delete-matching-live-realty"
     },
     {
-      "timestamp": "2026-04-20T10:10:35.753822+00:00",
+      "timestamp": "2026-05-24T18:36:35.164558+00:00",
+      "method_id": "mail.imap.uid.delete_matching.live_realty",
+      "scope_id": "mail:imap_ro",
+      "status": "does_not_work",
+      "http": {
+        "status_code": 404,
+        "ok": false,
+        "content_type": "",
+        "json_keys": [
+          "error",
+          "imap_status"
+        ],
+        "error": "NoMatchingMessage"
+      },
+      "request_fixture_id": "mail-imap-uid-delete-matching-live-realty"
+    },
+    {
+      "timestamp": "2026-05-24T18:36:35.165237+00:00",
       "method_id": "mail.smtp.authenticate",
       "scope_id": "public",
       "status": "does_not_work",
@@ -1761,61 +1774,58 @@
       "request_fixture_id": "mail-smtp-authenticate"
     },
     {
-      "timestamp": "2026-04-20T10:10:43.767993+00:00",
+      "timestamp": "2026-05-24T18:36:35.811187+00:00",
       "method_id": "mail.smtp.authenticate",
       "scope_id": "mail:imap_full",
-      "status": "unclear_needs_retest",
+      "status": "does_not_work",
       "http": {
-        "status_code": 0,
+        "status_code": 535,
         "ok": false,
         "content_type": "",
         "json_keys": [
           "description",
           "error"
         ],
-        "error": "NetworkUnreachable",
-        "description": "[Errno 101] Network is unreachable"
+        "error": "SmtpAuthFailed",
+        "description": "5.7.8 Error: authentication failed: The token does not have access rights to this service! 1779647795-ZabUmoberiE0"
       },
       "request_fixture_id": "mail-smtp-authenticate"
     },
     {
-      "timestamp": "2026-04-20T10:10:43.768073+00:00",
+      "timestamp": "2026-05-24T18:36:36.228926+00:00",
       "method_id": "mail.smtp.authenticate",
       "scope_id": "mail:imap_ro",
-      "status": "unclear_needs_retest",
+      "status": "does_not_work",
       "http": {
-        "status_code": 0,
+        "status_code": 535,
         "ok": false,
         "content_type": "",
         "json_keys": [
           "description",
           "error"
         ],
-        "error": "NetworkUnreachable",
-        "description": "cached"
+        "error": "SmtpAuthFailed",
+        "description": "5.7.8 Error: authentication failed: The token does not have access rights to this service! 1779647796-ZabeGibgieA0"
       },
       "request_fixture_id": "mail-smtp-authenticate"
     },
     {
-      "timestamp": "2026-04-20T10:10:43.768114+00:00",
+      "timestamp": "2026-05-24T18:36:36.654991+00:00",
       "method_id": "mail.smtp.authenticate",
       "scope_id": "mail:smtp",
-      "status": "unclear_needs_retest",
+      "status": "works",
       "http": {
-        "status_code": 0,
-        "ok": false,
+        "status_code": 235,
+        "ok": true,
         "content_type": "",
         "json_keys": [
-          "description",
-          "error"
-        ],
-        "error": "NetworkUnreachable",
-        "description": "cached"
+          "smtp_status"
+        ]
       },
       "request_fixture_id": "mail-smtp-authenticate"
     },
     {
-      "timestamp": "2026-04-20T10:10:43.768184+00:00",
+      "timestamp": "2026-05-24T18:36:36.655132+00:00",
       "method_id": "mail.smtp.noop",
       "scope_id": "public",
       "status": "does_not_work",
@@ -1831,61 +1841,60 @@
       "request_fixture_id": "mail-smtp-noop"
     },
     {
-      "timestamp": "2026-04-20T10:10:43.768219+00:00",
+      "timestamp": "2026-05-24T18:36:37.094772+00:00",
       "method_id": "mail.smtp.noop",
       "scope_id": "mail:imap_full",
-      "status": "unclear_needs_retest",
+      "status": "does_not_work",
       "http": {
-        "status_code": 0,
+        "status_code": 535,
         "ok": false,
         "content_type": "",
         "json_keys": [
           "description",
           "error"
         ],
-        "error": "NetworkUnreachable",
-        "description": "cached"
+        "error": "SmtpAuthFailed",
+        "description": "5.7.8 Error: authentication failed: The token does not have access rights to this service! 1779647797-aab8IqacR4Y0"
       },
       "request_fixture_id": "mail-smtp-noop"
     },
     {
-      "timestamp": "2026-04-20T10:10:43.768515+00:00",
+      "timestamp": "2026-05-24T18:36:37.515248+00:00",
       "method_id": "mail.smtp.noop",
       "scope_id": "mail:imap_ro",
-      "status": "unclear_needs_retest",
+      "status": "does_not_work",
       "http": {
-        "status_code": 0,
+        "status_code": 535,
         "ok": false,
         "content_type": "",
         "json_keys": [
           "description",
           "error"
         ],
-        "error": "NetworkUnreachable",
-        "description": "cached"
+        "error": "SmtpAuthFailed",
+        "description": "5.7.8 Error: authentication failed: The token does not have access rights to this service! 1779647797-babvPcbfIKo0"
       },
       "request_fixture_id": "mail-smtp-noop"
     },
     {
-      "timestamp": "2026-04-20T10:10:43.768582+00:00",
+      "timestamp": "2026-05-24T18:36:38.187323+00:00",
       "method_id": "mail.smtp.noop",
       "scope_id": "mail:smtp",
-      "status": "unclear_needs_retest",
+      "status": "works",
       "http": {
-        "status_code": 0,
-        "ok": false,
+        "status_code": 250,
+        "ok": true,
         "content_type": "",
         "json_keys": [
           "description",
-          "error"
+          "smtp_status"
         ],
-        "error": "NetworkUnreachable",
-        "description": "cached"
+        "description": "2.0.0 Ok"
       },
       "request_fixture_id": "mail-smtp-noop"
     },
     {
-      "timestamp": "2026-04-20T10:10:43.768619+00:00",
+      "timestamp": "2026-05-24T18:36:38.187490+00:00",
       "method_id": "mail.smtp.rset",
       "scope_id": "public",
       "status": "does_not_work",
@@ -1901,61 +1910,60 @@
       "request_fixture_id": "mail-smtp-rset"
     },
     {
-      "timestamp": "2026-04-20T10:10:43.768652+00:00",
+      "timestamp": "2026-05-24T18:36:38.695299+00:00",
       "method_id": "mail.smtp.rset",
       "scope_id": "mail:imap_full",
-      "status": "unclear_needs_retest",
+      "status": "does_not_work",
       "http": {
-        "status_code": 0,
+        "status_code": 535,
         "ok": false,
         "content_type": "",
         "json_keys": [
           "description",
           "error"
         ],
-        "error": "NetworkUnreachable",
-        "description": "cached"
+        "error": "SmtpAuthFailed",
+        "description": "5.7.8 Error: authentication failed: The token does not have access rights to this service! 1779647798-cabeBVbcASw0"
       },
       "request_fixture_id": "mail-smtp-rset"
     },
     {
-      "timestamp": "2026-04-20T10:10:43.768688+00:00",
+      "timestamp": "2026-05-24T18:36:39.073391+00:00",
       "method_id": "mail.smtp.rset",
       "scope_id": "mail:imap_ro",
-      "status": "unclear_needs_retest",
+      "status": "does_not_work",
       "http": {
-        "status_code": 0,
+        "status_code": 535,
         "ok": false,
         "content_type": "",
         "json_keys": [
           "description",
           "error"
         ],
-        "error": "NetworkUnreachable",
-        "description": "cached"
+        "error": "SmtpAuthFailed",
+        "description": "5.7.8 Error: authentication failed: The token does not have access rights to this service! 1779647799-cabdu3UgdmI0"
       },
       "request_fixture_id": "mail-smtp-rset"
     },
     {
-      "timestamp": "2026-04-20T10:10:43.768712+00:00",
+      "timestamp": "2026-05-24T18:36:39.539918+00:00",
       "method_id": "mail.smtp.rset",
       "scope_id": "mail:smtp",
-      "status": "unclear_needs_retest",
+      "status": "works",
       "http": {
-        "status_code": 0,
-        "ok": false,
+        "status_code": 250,
+        "ok": true,
         "content_type": "",
         "json_keys": [
           "description",
-          "error"
+          "smtp_status"
         ],
-        "error": "NetworkUnreachable",
-        "description": "cached"
+        "description": "2.1.5 Flushed 1779647799-dabh0GUdSGk0"
       },
       "request_fixture_id": "mail-smtp-rset"
     },
     {
-      "timestamp": "2026-04-20T10:10:43.768741+00:00",
+      "timestamp": "2026-05-24T18:36:39.540098+00:00",
       "method_id": "mail.smtp.quit",
       "scope_id": "public",
       "status": "does_not_work",
@@ -1971,61 +1979,60 @@
       "request_fixture_id": "mail-smtp-quit"
     },
     {
-      "timestamp": "2026-04-20T10:10:43.768763+00:00",
+      "timestamp": "2026-05-24T18:36:39.944880+00:00",
       "method_id": "mail.smtp.quit",
       "scope_id": "mail:imap_full",
-      "status": "unclear_needs_retest",
+      "status": "does_not_work",
       "http": {
-        "status_code": 0,
+        "status_code": 535,
         "ok": false,
         "content_type": "",
         "json_keys": [
           "description",
           "error"
         ],
-        "error": "NetworkUnreachable",
-        "description": "cached"
+        "error": "SmtpAuthFailed",
+        "description": "5.7.8 Error: authentication failed: The token does not have access rights to this service! 1779647799-dabk6UbfJSw0"
       },
       "request_fixture_id": "mail-smtp-quit"
     },
     {
-      "timestamp": "2026-04-20T10:10:43.768802+00:00",
+      "timestamp": "2026-05-24T18:36:40.339124+00:00",
       "method_id": "mail.smtp.quit",
       "scope_id": "mail:imap_ro",
-      "status": "unclear_needs_retest",
+      "status": "does_not_work",
       "http": {
-        "status_code": 0,
+        "status_code": 535,
         "ok": false,
         "content_type": "",
         "json_keys": [
           "description",
           "error"
         ],
-        "error": "NetworkUnreachable",
-        "description": "cached"
+        "error": "SmtpAuthFailed",
+        "description": "5.7.8 Error: authentication failed: The token does not have access rights to this service! 1779647800-eabH7nbfUuQ0"
       },
       "request_fixture_id": "mail-smtp-quit"
     },
     {
-      "timestamp": "2026-04-20T10:10:43.768850+00:00",
+      "timestamp": "2026-05-24T18:36:40.962242+00:00",
       "method_id": "mail.smtp.quit",
       "scope_id": "mail:smtp",
-      "status": "unclear_needs_retest",
+      "status": "works",
       "http": {
-        "status_code": 0,
-        "ok": false,
+        "status_code": 221,
+        "ok": true,
         "content_type": "",
         "json_keys": [
           "description",
-          "error"
+          "smtp_status"
         ],
-        "error": "NetworkUnreachable",
-        "description": "cached"
+        "description": "2.0.0 Closing connecton"
       },
       "request_fixture_id": "mail-smtp-quit"
     },
     {
-      "timestamp": "2026-04-20T10:10:43.768904+00:00",
+      "timestamp": "2026-05-24T18:36:40.962350+00:00",
       "method_id": "mail.smtp.send",
       "scope_id": "public",
       "status": "does_not_work",
@@ -2041,56 +2048,53 @@
       "request_fixture_id": "mail-smtp-send"
     },
     {
-      "timestamp": "2026-04-20T10:10:43.768942+00:00",
+      "timestamp": "2026-05-24T18:36:41.384045+00:00",
       "method_id": "mail.smtp.send",
       "scope_id": "mail:imap_full",
-      "status": "unclear_needs_retest",
+      "status": "does_not_work",
       "http": {
-        "status_code": 0,
+        "status_code": 535,
         "ok": false,
         "content_type": "",
         "json_keys": [
           "description",
           "error"
         ],
-        "error": "NetworkUnreachable",
-        "description": "cached"
+        "error": "SmtpAuthFailed",
+        "description": "5.7.8 Error: authentication failed: The token does not have access rights to this service! 1779647801-fabfxCcgR0U0"
       },
       "request_fixture_id": "mail-smtp-send"
     },
     {
-      "timestamp": "2026-04-20T10:10:43.768980+00:00",
+      "timestamp": "2026-05-24T18:36:41.871770+00:00",
       "method_id": "mail.smtp.send",
       "scope_id": "mail:imap_ro",
-      "status": "unclear_needs_retest",
+      "status": "does_not_work",
       "http": {
-        "status_code": 0,
+        "status_code": 535,
         "ok": false,
         "content_type": "",
         "json_keys": [
           "description",
           "error"
         ],
-        "error": "NetworkUnreachable",
-        "description": "cached"
+        "error": "SmtpAuthFailed",
+        "description": "5.7.8 Error: authentication failed: The token does not have access rights to this service! 1779647801-fabEKqacfGk0"
       },
       "request_fixture_id": "mail-smtp-send"
     },
     {
-      "timestamp": "2026-04-20T10:10:43.769016+00:00",
+      "timestamp": "2026-05-24T18:36:43.217934+00:00",
       "method_id": "mail.smtp.send",
       "scope_id": "mail:smtp",
-      "status": "unclear_needs_retest",
+      "status": "works",
       "http": {
-        "status_code": 0,
-        "ok": false,
+        "status_code": 250,
+        "ok": true,
         "content_type": "",
         "json_keys": [
-          "description",
-          "error"
-        ],
-        "error": "NetworkUnreachable",
-        "description": "cached"
+          "smtp_status"
+        ]
       },
       "request_fixture_id": "mail-smtp-send"
     }

@@ -5,23 +5,26 @@ license: MIT
 compatibility: Requires Python 3.10+, network access to imap.yandex.ru and smtp.yandex.com
 metadata:
   author: bizyumov
-  version: "2026.05.22"
+  version: "2026.05.25"
 ---
 
 # Yandex Mail / Почта
 
-Generic email fetcher and sender for Yandex Mail via IMAP/SMTP XOAUTH2. Fetches incoming emails matching configured filters into a structured directory for downstream processing by other skills. Sends emails via SMTP with the same OAuth2 token dispatch.
+Generic email fetcher and sender for Yandex Mail via IMAP/SMTP XOAUTH2. Fetches incoming emails matching configured filters into a structured directory for downstream processing by other skills. Sends emails via SMTP through managed OAuth and the configured SMTP send app/profile.
 
 ## Quick Start
 
 Ask the user to verify that IMAP + OAuth is enabled for the target account first:
 
-- EN: Open Yandex Mail in a browser, go to Settings → Mail clients (direct URL: `https://mail.yandex.ru/#setup/client`), enable `From imap.yandex.ru server via IMAP` and `App passwords and OAuth tokens`, then save.
-- RU: Откройте Яндекс Почту в браузере, перейдите в Настройки → Почтовые программы (прямая ссылка: `https://mail.yandex.ru/#setup/client`), включите `С сервера imap.yandex.ru по протоколу IMAP` и `Пароли приложений и OAuth-токены`, затем сохраните изменения.
+- EN: Open Yandex Mail in a browser, go to Settings → Mail clients (direct URL: `https://mail.yandex.ru/#setup/client`), enable IMAP access and OAuth-token access for mail clients, then save.
+- RU: Откройте Яндекс Почту в браузере, перейдите в Настройки → Почтовые программы (прямая ссылка: `https://mail.yandex.ru/#setup/client`), включите доступ по IMAP и доступ OAuth-токенов для почтовых клиентов, затем сохраните изменения.
 
 ```bash
 # Print an OAuth approval URL; add --account only if alias alex is already known:
 python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --app mail-readonly
+
+# For SMTP sending, authorize the send app/profile:
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --app mail-smtp
 
 # Discover available account aliases before using Mail
 python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --accounts list
@@ -42,9 +45,9 @@ python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --sender "Ма
 python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account alex --uid 5131
 ```
 
-> Recommended: use `--app mail-readonly` for fetching. If Disk access is also
-> needed, the agent runs setup again with `--app disk-read` under user
-> authorization.
+> Recommended: use `--app mail-readonly` for fetching and `--app mail-smtp`
+> for SMTP sending. If Disk access is also needed, the agent runs setup again
+> with `--app disk-read` under user authorization.
 
 ## What It Does
 
@@ -321,7 +324,7 @@ Headers tested with Yandex Mail (smtp.yandex.com) as sender and various clients 
 
 ## Sending Emails
 
-Use `send_email.py` to send emails via Yandex SMTP with the same OAuth2 token dispatch as fetching:
+Use `send_email.py` to send emails via Yandex SMTP with managed OAuth and the configured SMTP send app/profile:
 
 ```bash
 # Send a simple email
@@ -398,7 +401,10 @@ result = sender.send(
 
 ### Auth for Sending
 
-`send_email.py` uses `@yandex_api_method("mail.smtp.send")` with `one_of=["mail:imap_full", "mail:imap_ro"]`. Any token that satisfies these scopes can be used to send. The SMTP XOAUTH2 auth string format is identical to IMAP:
+`send_email.py` uses `@yandex_api_method("mail.smtp.send")` and managed OAuth
+token dispatch. Authorize the configured `mail-smtp` app/profile for SMTP
+sending. IMAP read/readwrite app profiles are not SMTP-send authority. The SMTP
+XOAUTH2 auth string format is:
 
 ```
 user={email}\x01auth=Bearer {token}\x01\x01
@@ -410,9 +416,10 @@ Configuration:
 
 ## Managed Auth
 
-Use `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py` for OAuth intake and refresh, normally with
-`--app mail-readonly` for fetching. For sending, the same token works if the app includes `mail:imap_full` or `mail:imap_ro` scopes.
-Runtime selects eligible credentials through the decorated auth metadata and config-backed OAuth app catalog.
+Use `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py` for OAuth
+intake and refresh, normally with `--app mail-readonly` for fetching and
+`--app mail-smtp` for sending. Runtime selects eligible credentials through the
+decorated auth metadata and config-backed OAuth app catalog.
 
 ## Files
 

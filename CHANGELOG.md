@@ -2,6 +2,46 @@
 
 All public `yandex-office` skill releases use the `YYYY.MM.DD` version format.
 
+## 2026.05.25
+
+### Fixed
+
+- Removed the custom-token permissions prompt from managed OAuth import.
+  Unknown OAuth `client_id` values now create agent-local app definitions only
+  after live Yandex OAuth client metadata returns app scopes and name.
+- Switched live OAuth app metadata lookup to the documented client-info JSON
+  endpoint, `https://oauth.yandex.com/client/{client_id}/info?format=json`, as
+  the only source of truth for unknown `client_id` scopes, using one plain
+  unauthenticated request with no retries or alternate sources.
+- CAPTCHA JSON during unknown-client import now writes an explicit
+  `scopes: ["unresolved"]` agent-local marker with a warning; managed auth must
+  resolve that marker from Yandex before actual API use.
+- Blocked unknown-client token import before token/config writes when live OAuth
+  client metadata fails for non-CAPTCHA reasons or does not include scopes.
+- Restored service-less agent-local OAuth app definitions as valid low-level
+  `client_id` matches during service-specific token import and dispatch.
+- Removed account-password and side-secret SMTP send paths from the documented
+  and implemented Mail send flow.
+- Removed IMAP-scope fallback as SMTP send authority; SMTP send now requires
+  managed coverage from the configured SMTP send app/profile.
+
+### Changed
+
+- Added the `mail-smtp` OAuth app profile for Yandex Mail SMTP send.
+- Refreshed Mail capability evidence for `mail:smtp` SMTP authenticate/session
+  and send behavior after outgoing SMTP ports became available.
+- Updated Mail and release docs to route SMTP send through managed OAuth and
+  keep low-level unknown-`client_id` resolution rules in
+  `references/managed-auth-extension.md`.
+
+### Verification
+
+- `python3 -m py_compile common/oauth_apps.py common/oauth_token_import.py scripts/oauth_setup.py common/tests/test_oauth_setup.py common/tests/test_api_runtime.py common/tests/test_config_auth.py`
+- `python3 -m pytest common/tests/test_oauth_setup.py common/tests/test_api_runtime.py common/tests/test_config_auth.py`
+- live token onboarding through `scripts/oauth_setup.py --from-env`
+- live Mail SMTP auth/send probes and CLI send/reply/header roundtrip checks
+- `git diff --check`
+
 ## 2026.05.16
 
 ### Fixed

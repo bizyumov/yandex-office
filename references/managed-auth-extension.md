@@ -13,6 +13,37 @@ scopes, orders candidates by `good_at`, marks GOOD only after normal return,
 marks BAD only for `403 ForbiddenError`, and blocks before the API call when no
 candidate is eligible.
 
+## Unknown OAuth Client IDs
+
+Token import and dispatch use Yandex as the source of truth for unknown OAuth
+`client_id` scope metadata. After a token is verified and its `client_id` is
+known, if that `client_id` is absent from the merged app catalog or is marked
+with `scopes: ["unresolved"]`, managed auth resolves metadata with exactly one
+plain unauthenticated request to:
+
+`https://oauth.yandex.com/client/{client_id}/info?format=json`
+
+Only the endpoint's JSON `scope` field may populate the app's resolved
+`scopes`. If the response includes an `id`, it must match the requested
+`client_id`. The endpoint's `name` may be used as the local app name.
+
+Forbidden sources for this resolution:
+
+- operator-entered permission descriptions
+- local atomic client registries or cached guesses
+- API360 service application registries
+- OAuth-token-authenticated metadata calls
+- browser profiles, cookies, or CAPTCHA-solving workarounds
+- retries, alternate endpoints, or fallback URLs
+
+CAPTCHA JSON is not scope metadata. During import, CAPTCHA JSON creates or
+updates an agent-local app entry with `scopes: ["unresolved"]` and emits a
+warning. Before a token bound to an unresolved app can satisfy decorated method
+auth, managed auth must resolve the same `client_id` from the same Yandex
+client-info endpoint and replace `["unresolved"]` with the returned scope list.
+Non-CAPTCHA metadata failure blocks unknown-client import or provider use
+without writing a resolved app definition.
+
 Verification sources:
 
 - `capabilities/methods.json`: method inventory, classification, local sources.

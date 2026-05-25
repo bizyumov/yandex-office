@@ -6,7 +6,7 @@ license: MIT
 compatibility: Python 3.10+, per-skill dependencies, network access for Yandex APIs
 metadata:
   author: bizyumov
-  version: "2026.05.16"
+  version: "2026.05.25"
   openclaw:
     emoji: "🟡"
     requires:
@@ -28,20 +28,20 @@ Yandex identity behind an alias. Apps, scopes, and tokens are defined in
 
 - (1-16) Frontmatter
 - (17-25) Opening Model
-- (27-39) Document Map
-- (41-46) Reference Map
-- (48-71) Account-First Workflow
-- (73-104) Account And OAuth Helper
-- (106-131) OAuth App Selector
-- (133-150) Token Handling
-- (152-181) Common Workflows
-- (183-188) Managed Auth Link
-- (190-199) Migration, Versioning, License
+- (27-40) Document Map
+- (42-47) Reference Map
+- (49-72) Account-First Workflow
+- (74-105) Account And OAuth Helper
+- (107-132) OAuth App Selector
+- (134-151) Token Handling
+- (153-176) Full Authorization Workflow
+- (178-210) Common Workflows
+- (212-217) Managed Auth Link
+- (219-228) Migration, Versioning, License
 
 ## Reference Map
 
 - Auth model: `references/yandex-office-auth-principles.md`
-- SMTP send implementation: `references/smtp-xoauth2-send.md`
 - Config and data shape: `references/config-data-and-tests.md`
 - Service overview: `references/yandex-service-reference.md`
 - Low-level auth extension: `references/managed-auth-extension.md`
@@ -109,7 +109,7 @@ Maintenance:
 Use the default/read app unless the user requests a write-capable operation or
 explicitly approves broader access.
 
-- Mail read/fetch: default `mail-readonly`; write-capable `mail-readwrite`.
+- Mail read/fetch: default `mail-readonly`; IMAP mutation/delete: `mail-readwrite`; SMTP send: `mail-smtp`.
 - Disk read/download: default `disk-read`; write-capable `disk-full`.
 - Calendar: `calendar-user`; default app already has operational coverage.
 - Contacts: `contacts-default`; default app already has operational coverage.
@@ -156,11 +156,12 @@ To authorize an account across ALL yandex-office sub-skills with maximum
 permissions, generate OAuth URLs for this set of apps:
 
 1. `office-core` — Mail (read), Disk (full), Calendar, Telemost
-2. `mail-readwrite` — Mail (send + delete via IMAP full)
-3. `contacts-default` — Contacts (read + modify)
-4. `tracker-full` — Tracker (read + write)
-5. `forms-full` — Forms (read + write)
-6. `directory-full` — Directory (all read + write scopes)
+2. `mail-readwrite` — Mail IMAP mutation/delete
+3. `mail-smtp` — Mail SMTP send
+4. `contacts-default` — Contacts (read + modify)
+5. `tracker-full` — Tracker (read + write)
+6. `forms-full` — Forms (read + write)
+7. `directory-full` — Directory (all read + write scopes)
 
 `office-core` alone does NOT cover Contacts, Tracker, Forms, or Directory.
 Each of those requires a separate app authorization.
@@ -176,18 +177,21 @@ interactive token prompt blocks.
 
 ## Common Workflows
 
-Mail (MUST run from workspace CWD, e.g. /opt/hermes/workspaces/mithril — NOT from skill dir):
-- Discover messages from a sender:
-  `python3 <skill>/mail/scripts/fetch_emails.py --account <alias> --sender "<pattern>" --dry-run --num 10`
-- Fetch exactly one message by UID (no state change):
-  `python3 <skill>/mail/scripts/fetch_emails.py --account <alias> --uid <uid>`
-- Read fetched message: check `{data_dir}/incoming/<filter>/<date>_<alias>_uid<N>/email_body.txt` and `meta.json`
+Mail:
+- Check recent mail without persistence:
+  `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --dry-run --num <limit>`
+- Find links without downloading everything:
+  `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --dry-run --extract-links --sender <sender-or-pattern>`
+- Fetch one known message:
+  `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --uid <uid>`
 - Send an email:
-  `python3 <skill>/mail/scripts/send_email.py --account <alias> --to <addr> --subject <subj> --body <text>`
-- Send with CC/BCC/HTML/priority:
-  `python3 <skill>/mail/scripts/send_email.py --account <alias> --to <addr> --cc <addr> --bcc <addr> --subject <subj> --body <html> --content-type html --format json`
+  `python3 <full-path-to-yandex-office>/mail/scripts/send_email.py --account <alias> --to <addr> --subject <subj> --body <text>`
+- Send with CC/BCC/HTML:
+  `python3 <full-path-to-yandex-office>/mail/scripts/send_email.py --account <alias> --to <addr> --cc <addr> --bcc <addr> --subject <subj> --body <html> --content-type html --format json`
+- Backfill from a UID floor without persisting state:
+  use `--from-uid <uid>`. Exact single-message fetch uses `--uid <uid>`.
 - Current Mail CLI uses `--account`; do not write legacy `--mailbox`.
-- Email headers: X-Priority/Importance work. Disposition-Notification-To does NOT trigger read receipts in practice.
+
 Telemost transcripts:
 - Check-only:
   `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --filter telemost --dry-run`
@@ -205,17 +209,6 @@ Disk, Tracker, Contacts, Directory, Forms:
 - Choose default app for read/search.
 - Choose broader/write app only when requested or approved.
 - Open the relevant sub-skill doc and pass `--account <alias>`.
-
-## Pitfalls
-
-- **NEVER use raw `imaplib` or `smtplib` for Yandex Mail operations.** Always use `fetch_emails.py` and `send_email.py` from this skill. Boris stopped me mid-session multiple times for writing raw `imaplib.IMAP4_SSL` / `smtplib.SMTP_SSL` calls instead of using the skill tools. The skill tools handle OAuth2 token dispatch, account resolution, state persistence, and structured output — raw stdlib calls bypass all of that. This is the single most important rule.
-- **Read the skill docs FIRST, then act.** Boris repeatedly had to tell me to stop and read `mail/mail.md` before writing ad-hoc code. The workflow is: (1) read the sub-skill doc, (2) run the documented commands, (3) read the output from the structured directories. Do not improvise.
-- **Do NOT use himalaya or any standalone email CLI.** Boris explicitly rejected himalaya ("Забудь как страшный сон свои Гималайи"). All mail operations — fetch and send — go through this skill's `mail/scripts/` directory.
-- **SMTP auth uses XOAUTH2, not app passwords.** The `send_email.py` script authenticates via `@yandex_api_method("mail.smtp.send")` with the same OAuth2 token dispatch as IMAP. App passwords work for ad-hoc `smtplib` calls but bypass managed auth — do not use them in production.
-- **Testing decorated methods.** `@yandex_api_method` wraps the original function. In unit tests, call `instance._method.__wrapped__(instance, ctx)` to bypass the decorator dispatch and test the SMTP/IMAP logic directly with a real `YandexApiContext` (not a MagicMock — the decorator reads `account`, `data_dir`, `config`, `session` attributes).
-- **The `mail-readwrite` app does NOT include `mail:smtp` scope.** Currently `mail-readwrite` has only `mail:imap_full`. The `send_email.py` works with `one_of=["mail:imap_full", "mail:imap_ro"]` because Yandex SMTP accepts the same tokens as IMAP. If Yandex tightens scope enforcement, a new app entry with `mail:smtp` scope may be needed.
-- **Email headers for importance and read receipt.** Use `X-Priority: 1`, `Importance: high`, `Disposition-Notification-To: <sender>` per RFC 3798 / RFC 4356. These are set on the `MIMEMultipart` message object before sending. Do NOT guess headers — check the RFCs.
-- **Fetch a specific message for header analysis.** Use `--uid <N>` to fetch one message. The body and attachments land in `yandex-data/incoming/<filter>/`. Read `email_body.txt` and `meta.json` from there — do not parse raw IMAP yourself.
 
 ## Managed Auth Link
 

@@ -4,22 +4,24 @@ A collection of [agentskills.io](https://agentskills.io/specification)-compliant
 
 Current release:
 
-- version: `2026.05.16`
+- version: `2026.05.25`
 - version file: `VERSION`
 - cumulative release notes: `CHANGELOG.md`
 
-2026.05.16 completes PR 42 account/Mail/auth work:
+2026.05.25 adds managed Mail SMTP send and tightens managed OAuth import behavior:
 
-- account discovery is via `scripts/oauth_setup.py --accounts list`, which
-  prints managed account aliases only
-- account capability info is explicit: `scripts/oauth_setup.py --account
-  <alias>` prints compact JSON with `alias`, optional `email`, and `apps`
-- OAuth links do not require email: `scripts/oauth_setup.py --app <app_id>`
-  prints the approval URL
-- token import is identity-driven: `scripts/oauth_setup.py --from-env <ENV_VAR>`
-  stores by verified Yandex identity
-- Mail supports `--account`, one-message `--uid`, dry-run `--extract-links`,
-  and non-persistent ad-hoc sender/subject/date searches
+- `mail-smtp` is the configured OAuth app profile for SMTP send
+- Mail SMTP send uses managed OAuth; app-password and IMAP-scope SMTP fallback
+  paths are not production behavior
+- Mail SMTP capability evidence is refreshed after live SMTP auth/send probes
+- unknown OAuth `client_id` imports query Yandex online client metadata for
+  scopes instead of asking agents to describe custom-token permissions; the
+  detailed rules live in `references/managed-auth-extension.md`
+- CAPTCHA JSON during client metadata lookup creates an explicit
+  `scopes: ["unresolved"]` agent-local marker that managed auth must resolve
+  from Yandex before actual use
+- live verification covered fresh token onboarding, CLI SMTP send coverage, and
+  reply/header roundtrip checks
 
 ## Versioning
 
@@ -302,8 +304,9 @@ Default/read apps:
 - `forms-read`: Forms export/read.
 - `directory-read`: Directory lookup/read.
 
-Write-capable variants stay separate: `mail-readwrite`, `disk-full`,
-`tracker-full`, `forms-full`, and `directory-full`.
+Write-capable variants stay separate: `mail-readwrite` for Mail IMAP mutation,
+`disk-full`, `tracker-full`, `forms-full`, and `directory-full`. SMTP sending
+uses `mail-smtp`.
 
 Whole-package OAuth uses `office-core`: Mail read, Disk full, Calendar, and
 Telemost. It does not cover Contacts, Tracker, Forms, or Directory.
@@ -316,7 +319,7 @@ intended.
 
 ### Managed Auth
 
-Use `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --app <app_id>` to print an approval URL; add `--account <alias>` only as an optional hint when that alias is already known. After authorization, the script verifies the pasted token, stores it under the verified Yandex identity, and adds a local app catalog override only for unknown `client_id` values. Runtime clients select credentials through decorator-declared auth metadata and the config-backed app catalog.
+Use `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --app <app_id>` to print an approval URL; add `--account <alias>` only as an optional hint when that alias is already known. After authorization, the script verifies the pasted token, stores it under the verified Yandex identity, and adds a local app catalog override only for unknown `client_id` values. Runtime clients select credentials through decorator-declared auth metadata and the config-backed app catalog. Low-level unknown-`client_id` resolution rules live in `references/managed-auth-extension.md`.
 
 Current-used API methods declare auth directly in code through
 `@yandex_api_method(method_id, public=True | one_of=[...] | all_of=[...])`.

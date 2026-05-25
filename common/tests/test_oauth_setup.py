@@ -11,6 +11,8 @@ if str(ROOT_DIR) not in sys.path:
 
 from common.config import RuntimeContext
 from common.oauth_apps import (
+    OAuthClientMetadataCaptchaError,
+    OAuthClientMetadata,
     OAuthSetupPlan,
     configured_oauth_app,
     default_service_scopes,
@@ -378,7 +380,19 @@ def test_oauth_setup_rejects_service_without_identity(monkeypatch, tmp_path: Pat
         data_dir=data_dir.resolve(),
         agent_config_path=agent_config_path,
         agent_config={"accounts": [{"name": "alex", "email": "user@example.com"}]},
-        config={"accounts": [{"name": "alex", "email": "user@example.com"}]},
+        config={
+            "accounts": [{"name": "alex", "email": "user@example.com"}],
+            "oauth_apps": {
+                "catalog": {
+                    "mail-readonly": {
+                        "service": "mail",
+                        "client_id": "660686ff45f947f2ac6e3f6495a9ec74",
+                        "scopes": ["mail:imap_ro"],
+                        "is_default": True,
+                    },
+                },
+            },
+        },
     )
 
     saved: dict[str, object] = {}
@@ -389,9 +403,12 @@ def test_oauth_setup_rejects_service_without_identity(monkeypatch, tmp_path: Pat
         "plan_oauth_setup",
         lambda *_args, **_kwargs: OAuthSetupPlan(
             service="mail",
-            client_id="client-id",
+            client_id="660686ff45f947f2ac6e3f6495a9ec74",
             scopes=["mail:imap_ro"],
-            auth_url="https://oauth.yandex.ru/authorize?response_type=token&client_id=client-id",
+            auth_url=(
+                "https://oauth.yandex.ru/authorize?response_type=token"
+                "&client_id=660686ff45f947f2ac6e3f6495a9ec74"
+            ),
             mode="configured_app",
             include_scope_in_url=False,
             app_id="mail-readonly",
@@ -434,7 +451,19 @@ def test_oauth_setup_creates_account_from_verified_email(monkeypatch, tmp_path: 
         data_dir=data_dir.resolve(),
         agent_config_path=agent_config_path,
         agent_config={"accounts": []},
-        config={"accounts": []},
+        config={
+            "accounts": [],
+            "oauth_apps": {
+                "catalog": {
+                    "mail-readonly": {
+                        "service": "mail",
+                        "client_id": "660686ff45f947f2ac6e3f6495a9ec74",
+                        "scopes": ["mail:imap_ro"],
+                        "is_default": True,
+                    },
+                },
+            },
+        },
     )
 
     saved: dict[str, object] = {}
@@ -445,9 +474,12 @@ def test_oauth_setup_creates_account_from_verified_email(monkeypatch, tmp_path: 
         "plan_oauth_setup",
         lambda *_args, **_kwargs: OAuthSetupPlan(
             service="mail",
-            client_id="client-id",
+            client_id="660686ff45f947f2ac6e3f6495a9ec74",
             scopes=["mail:imap_ro"],
-            auth_url="https://oauth.yandex.ru/authorize?response_type=token&client_id=client-id",
+            auth_url=(
+                "https://oauth.yandex.ru/authorize?response_type=token"
+                "&client_id=660686ff45f947f2ac6e3f6495a9ec74"
+            ),
             mode="configured_app",
             include_scope_in_url=False,
             app_id="mail-readonly",
@@ -842,7 +874,7 @@ def test_oauth_setup_propagates_multi_service_app_token(monkeypatch, tmp_path: P
     assert "token_meta" not in token_data
 
 
-def test_oauth_setup_accepts_custom_app_without_permissions_note(monkeypatch, tmp_path: Path) -> None:
+def test_oauth_setup_imports_custom_app_from_live_metadata(monkeypatch, tmp_path: Path) -> None:
     workspace = tmp_path / "workspace"
     workspace.mkdir(parents=True, exist_ok=True)
     data_dir = workspace / "yandex-data"
@@ -862,7 +894,6 @@ def test_oauth_setup_accepts_custom_app_without_permissions_note(monkeypatch, tm
     )
 
     saved: dict[str, object] = {}
-    responses = iter(["token-value", ""])
 
     monkeypatch.setattr(oauth_setup, "bootstrap_runtime_context", lambda *_args, **_kwargs: runtime)
     monkeypatch.setattr(
@@ -885,10 +916,23 @@ def test_oauth_setup_accepts_custom_app_without_permissions_note(monkeypatch, tm
         lambda *_args, **_kwargs: verified("user@example.com", "custom-client"),
     )
     monkeypatch.setattr(token_import, "oauth_app_for_client_id", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        token_import,
+        "fetch_yandex_oauth_client_metadata",
+        lambda _config, *, client_id: OAuthClientMetadata(
+            client_id=client_id,
+            app_name="Yandex Live Custom App",
+            scopes=["scope:b", "scope:a"],
+        ),
+    )
     monkeypatch.setattr(token_import, "save_token_file", lambda path, token_data: saved.update(path=path, token_data=token_data))
     monkeypatch.setattr(token_import, "load_token_file", lambda _path: (_ for _ in ()).throw(FileNotFoundError()))
-    monkeypatch.setattr(oauth_setup, "_read_access_token", lambda _prompt="": next(responses))
-    monkeypatch.setattr(builtins, "input", lambda _prompt="": next(responses))
+    monkeypatch.setattr(oauth_setup, "_read_access_token", lambda _prompt="": "token-value")
+    monkeypatch.setattr(
+        builtins,
+        "input",
+        lambda _prompt="": (_ for _ in ()).throw(AssertionError("custom app import must not prompt")),
+    )
     monkeypatch.setattr(sys, "argv", ["oauth_setup.py", "--service", "mail"])
 
     oauth_setup.main()
@@ -897,7 +941,87 @@ def test_oauth_setup_accepts_custom_app_without_permissions_note(monkeypatch, tm
     assert "token_meta" not in saved["token_data"]
     agent_config = json.loads(agent_config_path.read_text(encoding="utf-8"))
     assert "accounts" not in agent_config
-    assert agent_config["oauth_apps"]["catalog"]["custom-custom-client"]["client_id"] == "custom-client"
+    assert agent_config["oauth_apps"]["catalog"]["custom-custom-client"] == {
+        "client_id": "custom-client",
+        "scopes": ["scope:a", "scope:b"],
+        "name": "Yandex Live Custom App",
+        "omit_scope_in_url": False,
+    }
+
+
+def test_managed_import_unknown_client_requires_live_metadata(monkeypatch, tmp_path: Path) -> None:
+    config = {"oauth_apps": {"catalog": {}}}
+    agent_config_path = tmp_path / "config.agent.json"
+    data_dir = tmp_path / "data"
+
+    monkeypatch.setattr(
+        token_import,
+        "verify_token_identity",
+        lambda *_args, **_kwargs: verified("user@example.com", "custom-client"),
+    )
+    monkeypatch.setattr(token_import, "oauth_app_for_client_id", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        token_import,
+        "fetch_yandex_oauth_client_metadata",
+        lambda _config, *, client_id: (_ for _ in ()).throw(RuntimeError("HTTP 302")),
+    )
+
+    try:
+        token_import.import_managed_oauth_token(
+            config=config,
+            data_dir=data_dir,
+            agent_config={},
+            agent_config_path=agent_config_path,
+            token="token-value",
+            service="mail",
+        )
+    except RuntimeError as exc:
+        assert "live OAuth client metadata lookup failed" in str(exc)
+    else:
+        raise AssertionError("unknown client import should fail without live metadata")
+
+    assert not agent_config_path.exists()
+    assert not (data_dir / "auth" / "user.token").exists()
+
+
+def test_managed_import_marks_captcha_client_unresolved(monkeypatch, tmp_path: Path) -> None:
+    config = {"oauth_apps": {"catalog": {}}}
+    agent_config_path = tmp_path / "config.agent.json"
+    data_dir = tmp_path / "data"
+
+    monkeypatch.setattr(
+        token_import,
+        "verify_token_identity",
+        lambda *_args, **_kwargs: verified("user@example.com", "custom-client"),
+    )
+    monkeypatch.setattr(token_import, "oauth_app_for_client_id", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        token_import,
+        "fetch_yandex_oauth_client_metadata",
+        lambda _config, *, client_id: (_ for _ in ()).throw(
+            OAuthClientMetadataCaptchaError("captcha JSON")
+        ),
+    )
+
+    result = token_import.import_managed_oauth_token(
+        config=config,
+        data_dir=data_dir,
+        agent_config={},
+        agent_config_path=agent_config_path,
+        token="token-value",
+        service="mail",
+    )
+
+    assert result.resolved_account == "user"
+    assert result.token_data["token-value"] == {"client_id": "custom-client"}
+    assert any("CAPTCHA JSON" in warning for warning in result.warnings)
+    agent_config = json.loads(agent_config_path.read_text(encoding="utf-8"))
+    assert agent_config["oauth_apps"]["catalog"]["custom-custom-client"] == {
+        "client_id": "custom-client",
+        "scopes": ["unresolved"],
+        "name": "Unresolved Yandex OAuth app custom-c",
+        "omit_scope_in_url": False,
+    }
 
 
 def test_oauth_setup_prints_default_and_other_profiles(
@@ -918,7 +1042,19 @@ def test_oauth_setup_prints_default_and_other_profiles(
         data_dir=data_dir.resolve(),
         agent_config_path=data_dir / "config.agent.json",
         agent_config={"accounts": [{"name": "alex", "email": "user@example.com"}]},
-        config={"accounts": [{"name": "alex", "email": "user@example.com"}]},
+        config={
+            "accounts": [{"name": "alex", "email": "user@example.com"}],
+            "oauth_apps": {
+                "catalog": {
+                    "disk-read": {
+                        "service": "disk",
+                        "client_id": "24f7b757a90749dfb3039bbac2d3c350",
+                        "scopes": ["cloud_api:disk.read"],
+                        "is_default": True,
+                    },
+                },
+            },
+        },
     )
 
     def fake_bootstrap(
@@ -934,7 +1070,7 @@ def test_oauth_setup_prints_default_and_other_profiles(
     def fake_plan(config, *, service, app_id=None, client_id=None, extra_scopes=None):
         return OAuthSetupPlan(
             service=service,
-            client_id="client-id",
+            client_id="24f7b757a90749dfb3039bbac2d3c350",
             scopes=["cloud_api:disk.read"],
             auth_url="https://oauth.yandex.ru/default",
             mode="configured_app",
@@ -1019,7 +1155,19 @@ def test_oauth_setup_uses_data_dir_parent_as_bootstrap_cwd(monkeypatch, tmp_path
         data_dir=data_dir.resolve(),
         agent_config_path=data_dir / "config.agent.json",
         agent_config={"accounts": [{"name": "work", "email": "work@example.com"}]},
-        config={"accounts": [{"name": "work", "email": "work@example.com"}]},
+        config={
+            "accounts": [{"name": "work", "email": "work@example.com"}],
+            "oauth_apps": {
+                "catalog": {
+                    "mail-readonly": {
+                        "service": "mail",
+                        "client_id": "660686ff45f947f2ac6e3f6495a9ec74",
+                        "scopes": ["mail:imap_ro"],
+                        "is_default": True,
+                    },
+                },
+            },
+        },
     )
 
     calls: dict[str, object] = {}
@@ -1044,9 +1192,12 @@ def test_oauth_setup_uses_data_dir_parent_as_bootstrap_cwd(monkeypatch, tmp_path
         "plan_oauth_setup",
         lambda *_args, **_kwargs: OAuthSetupPlan(
             service="mail",
-            client_id="client-id",
+            client_id="660686ff45f947f2ac6e3f6495a9ec74",
             scopes=["mail:imap_ro"],
-            auth_url="https://oauth.yandex.ru/authorize?response_type=token&client_id=client-id",
+            auth_url=(
+                "https://oauth.yandex.ru/authorize?response_type=token"
+                "&client_id=660686ff45f947f2ac6e3f6495a9ec74"
+            ),
             mode="configured_app",
             include_scope_in_url=False,
             app_id="mail-readonly",
@@ -1223,7 +1374,10 @@ def test_oauth_app_for_client_id_returns_service_less_agent_local_app() -> None:
     assert matched.app_id == "custom-cloud"
     assert matched.app_name == "Yandex.Cloud"
     assert matched.scopes == ["cloud:auth"]
-    assert oauth_app_for_client_id(config, "cloud-client", service="disk") is None
+    service_match = oauth_app_for_client_id(config, "cloud-client", service="disk")
+    assert service_match is not None
+    assert service_match.service == "disk"
+    assert service_match.services == ()
 
 
 def test_oauth_client_metadata_lookup_reports_redirect_as_unresolved(monkeypatch) -> None:
@@ -1234,6 +1388,7 @@ def test_oauth_client_metadata_lookup_reports_redirect_as_unresolved(monkeypatch
         def open(self, request, timeout):
             from urllib.error import HTTPError
 
+            assert request.full_url == "https://oauth.yandex.com/client/flying-saucer/info?format=json"
             raise HTTPError(
                 request.full_url,
                 302,
@@ -1251,3 +1406,47 @@ def test_oauth_client_metadata_lookup_reports_redirect_as_unresolved(monkeypatch
         assert "HTTP 302" in str(exc)
     else:
         raise AssertionError("unresolvable client id should fail")
+
+
+def test_oauth_client_metadata_lookup_reports_captcha_json(monkeypatch) -> None:
+    class FakeResponse:
+        def __init__(self, payload: dict[str, object]) -> None:
+            self._payload = payload
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args) -> None:
+            return None
+
+        def read(self):
+            return json.dumps(self._payload).encode("utf-8")
+
+    class FakeNoRedirect:
+        pass
+
+    class FakeOpener:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def open(self, request, timeout):
+            self.calls += 1
+            return FakeResponse(
+                {
+                    "type": "captcha",
+                    "captcha": {"captcha-page": "https://oauth.yandex.com/showcaptcha"},
+                }
+            )
+
+    opener = FakeOpener()
+    monkeypatch.setattr("common.oauth_apps._NoRedirect", FakeNoRedirect)
+    monkeypatch.setattr("common.oauth_apps.build_opener", lambda _handler: opener)
+
+    try:
+        fetch_yandex_oauth_client_metadata({}, client_id="client-id")
+    except OAuthClientMetadataCaptchaError as exc:
+        assert "captcha JSON" in str(exc)
+    else:
+        raise AssertionError("captcha JSON must be unresolved metadata")
+
+    assert opener.calls == 1
