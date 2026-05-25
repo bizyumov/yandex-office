@@ -43,12 +43,6 @@ Yandex identity behind an alias. Apps, scopes, and tokens are defined in
 
 - Auth model: `references/yandex-office-auth-principles.md`
 - Config and data shape: `references/config-data-and-tests.md`
-- Mail OR filters: `references/mail-any-filters.md`
-- Mail MIME/body/attachment semantics: `references/mail-mime-fetching.md`
-- Mail SMTP sending/auth/headers: `references/mail-smtp-send.md`
-- Mail Yandex IMAP SUBJECT ё/е search quirk: `references/mail-yandex-imap-subject-normalization.md`
-- Telemost check vs preview-body modes (counts differ): `references/telemost-preview-vs-pure-dry-run.md`
-- Telemost fetch reliability and timeout traps: `references/telemost-fetch-timeout-and-filter-traps.md`
 - Service overview: `references/yandex-service-reference.md`
 - Extension reference: `references/yandex-office-extension.md`
 
@@ -187,10 +181,6 @@ interactive token prompt blocks.
 ## Common Workflows
 
 Mail:
-- For named filters that combine multiple alternative branches (`mail.filters.<name>.any`), read `references/mail-any-filters.md` before changing config, state, or fetcher logic. Branch cursors live in the normal `state.json` account bucket as `sha256:*` keys, not in `incoming/<filter>/state.json`.
-- For body extraction, attachments, `--dry-run`, or `--preview-body`, read `references/mail-mime-fetching.md` first. Preserve inline `text/plain` / `text/html` body parts; plain dry-run must stay header-only, while `--dry-run --preview-body` may read full RFC822 in memory without writing files or state. Keep `body` separate from `attachments`; do not invent extra top-level attachment metadata entities unless the issue explicitly asks for them.
-- For Russian subject filters containing `ё`/`Ё`, read `references/mail-yandex-imap-subject-normalization.md`: keep config subjects human-exact, but fold `ё→е` for IMAP SUBJECT criteria and local branch matching.
-- For SMTP sending, app-password LOGIN, XOAUTH2 fallback, high-priority headers, read receipts, or `X-Yandex-Spam` observations, read `references/mail-smtp-send.md` first.
 - Check recent mail without persistence:
   `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --dry-run --num <limit>`
 - Preview matching mail body without persistence:
@@ -206,23 +196,12 @@ Mail:
 - Current Mail CLI uses `--account`; do not write legacy `--mailbox`.
 
 Telemost transcripts:
-- Primary check-only run (headers only, minimal side effect):
+- Check-only:
   `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --filter telemost --dry-run`
-  - Canonical base command for sanity checks. Keep it exactly as above for a fast "what is there" check.
-- Exact single-message fetch (most stable for long waits):
-  `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --filter telemost --uid <uid>`
-- Bounded backfill/list fetch:
+- Actual bounded fetch:
   `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --filter telemost --num <limit>`
-- For body text preview (when explicitly requested), add `--preview-body`:
-  `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --filter telemost --dry-run --preview-body --num <limit>`
-  or `--uid <uid>` in the same pattern.
-- If a CLI invocation drops/aborts without output (provider timeout window, 300s no-response, or interrupted run), keep the same command and re-run with smaller scope (`--uid`/`--num`) instead of changing filters.
-  In this agent environment, for potentially long fetches prefer foreground-safe scope and, if needed, background execution with `terminal(background=true, notify_on_complete=true)` and `process(poll)`.
-- **User-specific execution rule:** when a user asks for an unqualified/check-only check, run the minimal single CLI form they requested. Do not append convenience flags (`--data-dir`, `--from-uid`, `--num`, etc.) unless explicitly requested by the user.
 - For "today", use `--since-date <YYYY-MM-DD>`.
-- Filter typo warning: `telemost` only; `telemorest` is invalid.
 - After actual fetch, process via `telemost/telemost.md`.
-
 
 Calendar with Telemost:
 - Resolve account.
