@@ -35,7 +35,7 @@ Current release:
 
 | Skill | Description |
 |-------|-------------|
-| [mail](mail/) | Mail / Почта: generic email fetcher via IMAP XOAUTH2 — saves emails to incoming/ |
+| [mail](mail/) | Mail / Почта: fetch and send email via IMAP/SMTP XOAUTH2 — saves incoming mail and sends through managed SMTP |
 | [calendars](calendars/) | Calendar / Календарь: CalDAV integration for Yandex Calendar — list/create/update events, find slots, Telemost binding |
 | [contacts](contacts/) | Contacts / Контакты: CardDAV integration for Yandex Contacts — fuzzy lookup, create/update contacts |
 | [directory](directory/) | Directory / Директория: Yandex 360 Directory API — users, departments, groups, and org-aware identity data |
