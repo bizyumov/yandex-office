@@ -205,8 +205,8 @@ def test_agent_config_schema_accepts_any_mail_filter_branches() -> None:
                 "payment_receipts": {
                     "enabled": True,
                     "any": [
-                        {"sender": "1-ofd.ru"},
-                        {"sender": "taxcom.ru", "since_date": "2026-05-01"},
+                        {"sender": "receipts-a.example"},
+                        {"sender": "receipts-b.example", "since_date": "2026-05-01"},
                     ],
                 }
             }

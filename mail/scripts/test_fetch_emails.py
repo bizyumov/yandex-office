@@ -509,14 +509,14 @@ def test_search_emails_normalizes_yo_in_subject_for_yandex_imap() -> None:
     fetcher = build_fetcher()
     conn = SearchConn(search_result=b"1", uid_lookup={b"1": 41})
 
-    result = fetcher._search_emails(conn, "gosuslugi.ru", 40, subject="Счёт на оплату")
+    result = fetcher._search_emails(conn, "service.example", 40, subject="Счёт на оплату")
 
     assert result == [(41, b"41")]
     assert conn.search_calls == [
         (
             "UTF-8",
             (
-                b'FROM "gosuslugi.ru"',
+                b'FROM "service.example"',
                 'SUBJECT "Счет на оплату"'.encode("utf-8"),
             ),
         )
