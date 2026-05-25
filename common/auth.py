@@ -308,7 +308,11 @@ def _catalog_scopes(config: dict[str, Any], client_id: str) -> set[str]:
     raw = _catalog_app_for_client_id(config, client_id)
     scopes = raw.get("scopes") if raw is not None else None
     if isinstance(scopes, list):
-        return {str(scope).strip() for scope in scopes if str(scope).strip()}
+        return {
+            str(scope).strip()
+            for scope in scopes
+            if str(scope).strip() and str(scope).strip() != "unresolved"
+        }
     return set()
 
 

@@ -633,6 +633,16 @@
         "forms:read"
       ]
     },
+    "mail.smtp.authenticate": {
+      "one_of": [
+        "mail:smtp"
+      ]
+    },
+    "mail.smtp.send": {
+      "one_of": [
+        "mail:smtp"
+      ]
+    },
     "mail.imap.authenticate": {
       "one_of": [
         "mail:imap_full",
@@ -785,6 +795,21 @@
       "one_of": [
         "mail:imap_full",
         "mail:imap_ro"
+      ]
+    },
+    "mail.smtp.noop": {
+      "one_of": [
+        "mail:smtp"
+      ]
+    },
+    "mail.smtp.rset": {
+      "one_of": [
+        "mail:smtp"
+      ]
+    },
+    "mail.smtp.quit": {
+      "one_of": [
+        "mail:smtp"
       ]
     },
     "telemost.conferences.create.post": {

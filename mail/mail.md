@@ -1,27 +1,30 @@
 ---
 name: mail
-description: Mail / Почта — fetch emails and attachments from Yandex Mail via IMAP with OAuth2 authentication. Downloads new messages into a structured incoming directory for downstream processing by specialized skills. Generic fetcher with no business logic — just saves emails matching configured filters.
+description: Mail / Почта — fetch and send emails via Yandex Mail with OAuth2 authentication. Fetches via IMAP XOAUTH2 into structured directories, sends via SMTP XOAUTH2.
 license: MIT
-compatibility: Requires Python 3.10+, network access to imap.yandex.ru
+compatibility: Requires Python 3.10+, network access to imap.yandex.ru and smtp.yandex.com
 metadata:
   author: bizyumov
-  version: "2026.05.19"
+  version: "2026.05.25"
 ---
 
 # Yandex Mail / Почта
 
-Generic email fetcher for Yandex Mail via IMAP XOAUTH2. Saves incoming emails matching configured filters into a structured directory for downstream processing by other skills.
+Generic email fetcher and sender for Yandex Mail via IMAP/SMTP XOAUTH2. Fetches incoming emails matching configured filters into a structured directory for downstream processing by other skills. Sends emails via SMTP through managed OAuth and the configured SMTP send app/profile.
 
 ## Quick Start
 
 Ask the user to verify that IMAP + OAuth is enabled for the target account first:
 
-- EN: Open Yandex Mail in a browser, go to Settings → Mail clients (direct URL: `https://mail.yandex.ru/#setup/client`), enable `From imap.yandex.ru server via IMAP` and `App passwords and OAuth tokens`, then save.
-- RU: Откройте Яндекс Почту в браузере, перейдите в Настройки → Почтовые программы (прямая ссылка: `https://mail.yandex.ru/#setup/client`), включите `С сервера imap.yandex.ru по протоколу IMAP` и `Пароли приложений и OAuth-токены`, затем сохраните изменения.
+- EN: Open Yandex Mail in a browser, go to Settings → Mail clients (direct URL: `https://mail.yandex.ru/#setup/client`), enable IMAP access and OAuth-token access for mail clients, then save.
+- RU: Откройте Яндекс Почту в браузере, перейдите в Настройки → Почтовые программы (прямая ссылка: `https://mail.yandex.ru/#setup/client`), включите доступ по IMAP и доступ OAuth-токенов для почтовых клиентов, затем сохраните изменения.
 
 ```bash
 # Print an OAuth approval URL; add --account only if alias alex is already known:
 python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --app mail-readonly
+
+# For SMTP sending, authorize the send app/profile:
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --app mail-smtp
 
 # Discover available account aliases before using Mail
 python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --accounts list
@@ -42,9 +45,9 @@ python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --sender "Ма
 python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account alex --uid 5131
 ```
 
-> Recommended: use `--app mail-readonly` for fetching. If Disk access is also
-> needed, the agent runs setup again with `--app disk-read` under user
-> authorization.
+> Recommended: use `--app mail-readonly` for fetching and `--app mail-smtp`
+> for SMTP sending. If Disk access is also needed, the agent runs setup again
+> with `--app disk-read` under user authorization.
 
 ## What It Does
 
@@ -310,14 +313,118 @@ and managed auth accounts. Key fields:
 - `mail.state_file` — shared state file with per-filter account cursors
 - runtime data dir defaults to `./yandex-data`, or `--data-dir` when explicitly passed
 
+## Email Headers — Observed Behavior
+
+Headers tested with Yandex Mail (smtp.yandex.com) as sender and various clients as recipient:
+
+- **X-Priority: 1** — Works. Red exclamation mark shown in Outlook and other clients.
+- **Importance: high** — Works. Clients recognise high importance.
+- **Disposition-Notification-To** — Set correctly, header is preserved through Yandex SMTP relay, but **read receipt notifications are NOT triggered** in receiving clients (tested with Outlook). The header is present in the delivered message but clients do not act on it. Do NOT rely on this for read confirmation.
+- **X-Yandex-Spam** — Yandex adds this header to incoming messages. Empirically: `1` = not spam, `4` = spam. No official documentation from Yandex on the scale.
+
+## Sending Emails
+
+Use `send_email.py` to send emails via Yandex SMTP with managed OAuth and the configured SMTP send app/profile:
+
+```bash
+# Send a simple email
+python3 <full-path-to-yandex-office>/mail/scripts/send_email.py \
+    --account <alias> \
+    --to recipient@example.com \
+    --subject "Hello" \
+    --body "Hi there"
+
+# Send with CC and Reply-To
+python3 <full-path-to-yandex-office>/mail/scripts/send_email.py \
+    --account <alias> \
+    --to recipient@example.com \
+    --cc other@example.com \
+    --reply-to sender@example.com \
+    --subject "Re: Topic" \
+    --body "Reply body"
+
+# Read body from file (multi-line content)
+python3 <full-path-to-yandex-office>/mail/scripts/send_email.py \
+    --account <alias> \
+    --to recipient@example.com \
+    --subject "Report" \
+    --body-file /path/to/report.txt
+
+# HTML body
+python3 <full-path-to-yandex-office>/mail/scripts/send_email.py \
+    --account <alias> \
+    --to recipient@example.com \
+    --subject "HTML Report" \
+    --body "<h1>Hello</h1><p>Content</p>" \
+    --content-type html
+
+# JSON output
+python3 <full-path-to-yandex-office>/mail/scripts/send_email.py \
+    --account <alias> \
+    --to recipient@example.com \
+    --subject "Test" \
+    --body "OK" \
+    --format json
+```
+
+### Python API
+
+```python
+from pathlib import Path
+sys.path.insert(0, str(Path("<full-path-to-yandex-office>")))
+from mail.scripts.send_email import EmailSender
+
+sender = EmailSender()
+result = sender.send(
+    to="recipient@example.com",
+    subject="Hello",
+    body="Hi there",
+    account="alex",
+)
+# result = {"status": "sent", "from": "...", "to": [...], "subject": "...", "message_id": "..."}
+```
+
+### Send CLI Options
+
+- `--account <alias>` — Account alias (required when multiple token files exist)
+- `--to <addr> [<addr> ...]` — Recipient(s), **required**
+- `--subject <text>` — Subject line, **required**
+- `--body <text>` — Email body text (mutually exclusive with `--body-file`)
+- `--body-file <path>` — Read body from file
+- `--cc <addr> [<addr> ...]` — CC recipient(s)
+- `--bcc <addr> [<addr> ...]` — BCC recipient(s) (not included in message headers)
+- `--reply-to <addr>` — Reply-To header
+- `--content-type plain|html` — Body content type (default: `plain`)
+- `--format json|text` — Output format (default: `text`)
+- `--data-dir <path>` — Override data directory
+- `-v / --verbose` — Debug logging
+
+### Auth for Sending
+
+`send_email.py` uses `@yandex_api_method("mail.smtp.send")` and managed OAuth
+token dispatch. Authorize the configured `mail-smtp` app/profile for SMTP
+sending. IMAP read/readwrite app profiles are not SMTP-send authority. The SMTP
+XOAUTH2 auth string format is:
+
+```
+user={email}\x01auth=Bearer {token}\x01\x01
+```
+
+Configuration:
+- `smtp.server` — SMTP server (default: `smtp.yandex.com`)
+- `smtp.port` — SMTP port (default: `465`, SSL)
+
 ## Managed Auth
 
-Use `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py` for OAuth intake and refresh, normally with
-`--app mail-readonly` for fetching. Runtime selects eligible credentials through
-the decorated IMAP auth metadata and config-backed OAuth app catalog.
+Use `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py` for OAuth
+intake and refresh, normally with `--app mail-readonly` for fetching and
+`--app mail-smtp` for sending. Runtime selects eligible credentials through the
+decorated auth metadata and config-backed OAuth app catalog.
 
 ## Files
 
 - `mail/scripts/fetch_emails.py` — Main fetcher (CLI + Python API)
+- `mail/scripts/send_email.py` — Email sender (CLI + Python API)
+- `mail/scripts/test_send_email.py` — Sender regression tests
 - `<full-path-to-yandex-office>/scripts/oauth_setup.py` — Shared bootstrap/account alias/managed auth setup tool for all Yandex sub-skills
 - `mail/scripts/fetch.sh` — Cron-safe shell wrapper with PID lock (passes `--num` and other args through)

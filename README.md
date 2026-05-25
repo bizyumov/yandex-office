@@ -4,29 +4,24 @@ A collection of [agentskills.io](https://agentskills.io/specification)-compliant
 
 Current release:
 
-- version: `2026.05.19`
+- version: `2026.05.25`
 - version file: `VERSION`
 - cumulative release notes: `CHANGELOG.md`
 
-2026.05.19 fixes source-wide import resolution on top of the 2026.05.18 PR #32
-consultation provisioning integration:
+2026.05.25 adds managed Mail SMTP send and tightens managed OAuth import behavior:
 
-- affected source files use direct file-relative `sys.path.insert(...)` import
-  bootstraps; no `PYTHONPATH` re-exec or `importlib.util` loader is used
-- Calendar implementation now lives under `calendars/`, with normal
-  `calendars.lib.client` imports that avoid Python standard-library `calendar`
-  shadowing
-- Calendar Telemost event creation supports local `config.agent.json` time
-  preference plus explicit `--timezone` / `--utc-offset`, event UID reuse,
-  Telemost link reuse, and existing-conference updates before writing the
-  Calendar event
-- Calendar list-events uses the supported `caldav.Calendar.search()` surface for
-  date-range CalDAV REPORT behavior
-- Telemost create/update writes no longer perform implicit post-write reads;
-  `get_conference()` is the explicit read path
-- Telemost processing handles Mail filter output under
-  `incoming/<filter>/<email-dir>/meta.json` and uses the processing runtime
-  data directory for recording downloads
+- `mail-smtp` is the configured OAuth app profile for SMTP send
+- Mail SMTP send uses managed OAuth; app-password and IMAP-scope SMTP fallback
+  paths are not production behavior
+- Mail SMTP capability evidence is refreshed after live SMTP auth/send probes
+- unknown OAuth `client_id` imports query Yandex online client metadata for
+  scopes instead of asking agents to describe custom-token permissions; the
+  detailed rules live in `references/yandex-office-extension.md`
+- CAPTCHA JSON during client metadata lookup creates an explicit
+  `scopes: ["unresolved"]` agent-local marker that managed auth must resolve
+  from Yandex before actual use
+- live verification covered fresh token onboarding, CLI SMTP send coverage, and
+  reply/header roundtrip checks
 
 ## Versioning
 
@@ -40,7 +35,7 @@ consultation provisioning integration:
 
 | Skill | Description |
 |-------|-------------|
-| [mail](mail/) | Mail / Почта: generic email fetcher via IMAP XOAUTH2 — saves emails to incoming/ |
+| [mail](mail/) | Mail / Почта: fetch and send email via IMAP/SMTP XOAUTH2 — saves incoming mail and sends through managed SMTP |
 | [calendars](calendars/) | Calendar / Календарь: CalDAV integration for Yandex Calendar — list/create/update events, find slots, Telemost binding |
 | [contacts](contacts/) | Contacts / Контакты: CardDAV integration for Yandex Contacts — fuzzy lookup, create/update contacts |
 | [directory](directory/) | Directory / Директория: Yandex 360 Directory API — users, departments, groups, and org-aware identity data |
@@ -310,8 +305,9 @@ Default/read apps:
 - `forms-read`: Forms export/read.
 - `directory-read`: Directory lookup/read.
 
-Write-capable variants stay separate: `mail-readwrite`, `disk-full`,
-`tracker-full`, `forms-full`, and `directory-full`.
+Write-capable variants stay separate: `mail-readwrite` for Mail IMAP mutation,
+`disk-full`, `tracker-full`, `forms-full`, and `directory-full`. SMTP sending
+uses `mail-smtp`.
 
 Whole-package OAuth uses `office-core`: Mail read, Disk full, Calendar, and
 Telemost. It does not cover Contacts, Tracker, Forms, or Directory.
@@ -324,7 +320,7 @@ intended.
 
 ### Managed Auth
 
-Use `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --app <app_id>` to print an approval URL; add `--account <alias>` only as an optional hint when that alias is already known. After authorization, the script verifies the pasted token, stores it under the verified Yandex identity, and adds a local app catalog override only for unknown `client_id` values. Runtime clients select credentials through decorator-declared auth metadata and the config-backed app catalog.
+Use `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --app <app_id>` to print an approval URL; add `--account <alias>` only as an optional hint when that alias is already known. After authorization, the script verifies the pasted token, stores it under the verified Yandex identity, and adds a local app catalog override only for unknown `client_id` values. Runtime clients select credentials through decorator-declared auth metadata and the config-backed app catalog. Low-level unknown-`client_id` resolution rules live in `references/yandex-office-extension.md`.
 
 Current-used API methods declare auth directly in code through
 `@yandex_api_method(method_id, public=True | one_of=[...] | all_of=[...])`.

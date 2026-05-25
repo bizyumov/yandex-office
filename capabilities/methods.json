@@ -3072,7 +3072,7 @@
       "http_method": null,
       "path": "SMTP SEND",
       "operation": "Send email via SMTP",
-      "classification": "upstream_available",
+      "classification": "current_used",
       "request_fixture_fields": [
         "to",
         "subject",
@@ -3080,7 +3080,8 @@
       ],
       "success_evidence": "SMTP command returns a 2xx/3xx status.",
       "local_sources": [
-        "capabilities/methods.json"
+        "capabilities/methods.json",
+        "mail/scripts/send_email.py"
       ],
       "upstream_source_ids": [
         "yandex-mail-oauth-docs",

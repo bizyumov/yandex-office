@@ -33,7 +33,11 @@ from common.auth import (
     verify_token_identity,
 )
 from common.config import load_agent_config_payload, save_agent_config_payload
-from common.oauth_apps import fetch_yandex_oauth_client_metadata, upsert_agent_oauth_app
+from common.oauth_apps import (
+    UNRESOLVED_SCOPE,
+    fetch_yandex_oauth_client_metadata,
+    upsert_agent_oauth_app,
+)
 from common.oauth_token_import import import_managed_oauth_token
 
 
@@ -154,7 +158,11 @@ def _clean_scopes(scopes: Any) -> set[str]:
     """Normalize a scope list into a non-empty string set."""
     if not isinstance(scopes, list):
         return set()
-    return {str(scope).strip() for scope in scopes if str(scope).strip()}
+    return {
+        str(scope).strip()
+        for scope in scopes
+        if str(scope).strip() and str(scope).strip() != UNRESOLVED_SCOPE
+    }
 
 
 def _catalog(config: dict[str, Any]) -> dict[str, Any]:
@@ -170,6 +178,16 @@ def _app_for_client_id(config: dict[str, Any], client_id: str) -> dict[str, Any]
         if isinstance(raw, dict) and str(raw.get("client_id", "")).strip() == normalized:
             return raw
     return None
+
+
+def _app_has_unresolved_scopes(app: dict[str, Any] | None) -> bool:
+    """Return true when an app entry is only a deferred Yandex metadata marker."""
+    if app is None:
+        return False
+    scopes = app.get("scopes")
+    return isinstance(scopes, list) and UNRESOLVED_SCOPE in {
+        str(scope).strip() for scope in scopes
+    }
 
 
 def _validate_auth_shape(method_id: str, public: bool, one_of: Any, all_of: Any) -> MethodAuth:
@@ -344,19 +362,23 @@ def _upgrade_missing_client_apps(
     *,
     token_data: dict[str, Any],
 ) -> None:
-    """Promote unknown token client_ids into agent-local app config.
+    """Promote missing or unresolved token client_ids into app config.
 
     GH41 makes token files the account inventory, but app scopes remain
     config-backed. When an already-verified token references a client_id that
-    the merged catalog does not know, the automatic upgrade path verifies the
-    token binding, resolves Yandex's app metadata, persists an agent-local app,
-    and only then allows decorator eligibility to decide whether it can be used.
+    the merged catalog does not know, or whose scopes are still marked
+    ``unresolved``, managed auth verifies the token binding, resolves Yandex's
+    app metadata, persists an agent-local app, and only then allows decorator
+    eligibility to decide whether it can be used.
     """
 
     missing_refs = [
         ref
         for ref in token_refs(token_data)
-        if _app_for_client_id(ctx.config, ref.client_id) is None
+        if (
+            (app := _app_for_client_id(ctx.config, ref.client_id)) is None
+            or _app_has_unresolved_scopes(app)
+        )
     ]
     if not missing_refs:
         return
