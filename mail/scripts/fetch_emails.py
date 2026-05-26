@@ -1187,6 +1187,7 @@ class EmailFetcher:
             logger.info(f"Found {len(matching)} new emails")
 
         if dry_run:
+            pending_before = len(self.downloaded)
             for uid, uid_bytes, _branch_key in matching:
                 try:
                     fetch_query = (
@@ -1239,7 +1240,7 @@ class EmailFetcher:
                     logger.warning(f"Dry-run header fetch failed for UID {uid}: {exc}")
             conn.logout()
             logger.info("Disconnected (dry-run)")
-            return 0
+            return len(self.downloaded) - pending_before
 
         fetched_count = 0
         persist_state = self._should_persist_state(dry_run=dry_run)
@@ -1336,7 +1337,7 @@ class EmailFetcher:
                 self.account_counts[account_config["name"]] += fetched
                 self.filter_counts[filter_name] += fetched
                 if remaining is not None:
-                    remaining -= fetched if not dry_run else 0
+                    remaining -= fetched
 
             if remaining is not None and remaining <= 0:
                 break
@@ -1355,23 +1356,23 @@ def main() -> None:
     )
     parser.add_argument(
         "--filter",
-        help="Named mail filter profile to use for this run",
+        help="Named mail filter to use exactly as configured",
     )
     parser.add_argument(
         "--sender",
-        help="Override the sender criterion for this run only",
+        help="Ad-hoc sender criterion when --filter is not set; ignored with --filter",
     )
     parser.add_argument(
         "--subject",
-        help="Override the subject criterion for this run only",
+        help="Ad-hoc subject criterion when --filter is not set; ignored with --filter",
     )
     parser.add_argument(
         "--since-date",
-        help="Override SINCE search date (YYYY-MM-DD or DD-Mon-YYYY)",
+        help="Ad-hoc SINCE date when --filter is not set; ignored with --filter",
     )
     parser.add_argument(
         "--before-date",
-        help="Add BEFORE search date (YYYY-MM-DD or DD-Mon-YYYY)",
+        help="Ad-hoc BEFORE date when --filter is not set; ignored with --filter",
     )
     parser.add_argument(
         "--account",

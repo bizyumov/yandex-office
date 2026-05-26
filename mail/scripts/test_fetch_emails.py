@@ -438,6 +438,29 @@ def test_cli_overrides_without_filter_do_not_inherit_telemost_filter() -> None:
     }]
 
 
+def test_ad_hoc_latest_search_workflow_does_not_inherit_telemost_filter() -> None:
+    fetcher = build_fetcher(
+        filters={
+            "telemost": {"sender": "keeper@telemost.yandex.ru"},
+        },
+        run_options={
+            "subject": "code",
+            "since_date": "2026-05-26",
+            "preview_body": True,
+        },
+        state={"filters": {"telemost": {"accounts": {"alex": {"last_uid": 777}}}}},
+    )
+
+    assert fetcher.run_filters == [{
+        "name": "default",
+        "enabled": True,
+        "subject": "code",
+        "since_date": "2026-05-26",
+    }]
+    assert fetcher._effective_last_uid("alex", "default") == 1
+    assert fetcher._should_persist_state(dry_run=True) is False
+
+
 def test_bare_run_executes_all_enabled_filters() -> None:
     fetcher = build_fetcher(
         filters={
@@ -600,7 +623,7 @@ def test_fetch_account_dry_run_collects_headers(monkeypatch) -> None:
         dry_run=True,
     )
 
-    assert count == 0
+    assert count == 1
     assert conn.logged_out is True
     assert fetcher._get_last_uid("alex", "telemost") == 10
     assert conn.calls[-1] == (
@@ -649,7 +672,7 @@ def test_fetch_account_dry_run_preview_body_reads_body_without_links(monkeypatch
         dry_run=True,
     )
 
-    assert count == 0
+    assert count == 1
     assert conn.calls[-1] == ("FETCH", (b"11", "(RFC822)"))
     assert fetcher.downloaded == [
         {
@@ -713,6 +736,129 @@ def test_cli_dry_run_includes_headers(monkeypatch, capsys) -> None:
     }
 
 
+def test_main_ad_hoc_code_search_returns_multiple_matches_for_newest_pick(monkeypatch, capsys) -> None:
+    seen_kwargs = {}
+    seen_fetch_args = {}
+
+    class FakeFetcher:
+        def __init__(self, **kwargs):
+            seen_kwargs.update(kwargs)
+            self.active_filter = {"name": "default"}
+            self.run_filters = [{"name": "default", "subject": "code", "since_date": "2026-05-26"}]
+            self.account_counts = {"alex": 2}
+            self.filter_counts = {"default": 2}
+            self.config = {"mail": {"output": {"max_inline_symbols": 10000}}}
+
+        def fetch_all(self, num_messages=None, dry_run=False):
+            seen_fetch_args["num_messages"] = num_messages
+            seen_fetch_args["dry_run"] = dry_run
+            return [
+                {
+                    "imap_uid": 8,
+                    "account": "alex",
+                    "sender": "passport@example.test",
+                    "subject": "code",
+                    "timestamp": "2026-05-26T06:41:00Z",
+                    "filter": "default",
+                    "body": {"text": "old code 21469178"},
+                },
+                {
+                    "imap_uid": 9,
+                    "account": "alex",
+                    "sender": "passport@example.test",
+                    "subject": "code",
+                    "timestamp": "2026-05-26T08:27:00Z",
+                    "filter": "default",
+                    "body": {"text": "new code 99999999"},
+                },
+            ]
+
+        def _should_persist_state(self, *, dry_run=False):
+            return not dry_run
+
+        def _get_output_max_inline_symbols(self):
+            return 10000
+
+    monkeypatch.setattr(mail_fetch, "EmailFetcher", FakeFetcher)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "fetch_emails.py",
+            "--account",
+            "alex",
+            "--subject",
+            "code",
+            "--since-date",
+            "2026-05-26",
+            "--dry-run",
+            "--preview-body",
+            "--num",
+            "5",
+        ],
+    )
+
+    mail_fetch.main()
+
+    payload = json.loads(capsys.readouterr().out)
+    assert seen_kwargs["filter_name"] is None
+    assert seen_kwargs["subject"] == "code"
+    assert seen_kwargs["since_date"] == "2026-05-26"
+    assert seen_kwargs["preview_body"] is True
+    assert seen_fetch_args == {"num_messages": 5, "dry_run": True}
+    assert payload["filter"] == "default"
+    assert payload["filters"] == ["default"]
+    assert payload["persist_state"] is False
+    assert [item["uid"] for item in payload["pending"]] == [8, 9]
+    assert payload["pending"][-1]["body"]["text"] == "new code 99999999"
+
+
+def test_help_describes_criteria_as_ad_hoc_not_named_filter_overrides(monkeypatch, capsys) -> None:
+    monkeypatch.setattr(sys, "argv", ["fetch_emails.py", "--help"])
+
+    with pytest.raises(SystemExit) as excinfo:
+        mail_fetch.main()
+
+    assert excinfo.value.code == 0
+    help_text = capsys.readouterr().out
+    assert "Ad-hoc subject criterion when --filter is not set" in help_text
+    assert "ignored with --filter" in help_text
+    assert "Override the subject criterion" not in help_text
+    assert "Override the sender criterion" not in help_text
+
+
+def test_mail_docs_show_latest_matching_ad_hoc_workflow() -> None:
+    docs = (Path(__file__).resolve().parents[1] / "mail.md").read_text(encoding="utf-8")
+
+    assert '--subject "code" --since-date 2026-05-26 --dry-run --preview-body --num 5' in docs
+    assert "Inspect all returned matches and use the newest relevant message." in docs
+
+
+def test_fetch_account_dry_run_returns_pending_count(monkeypatch) -> None:
+    conn = HeaderConn(
+        "Subject: Code\r\n"
+        "From: passport@example.test\r\n"
+        "Date: Tue, 26 May 2026 08:27:00 +0000\r\n"
+        "\r\n"
+    )
+    fetcher = build_fetcher(run_options={"subject": "code"})
+
+    fetcher._connect_imap = lambda *_: conn
+    fetcher._search_emails = lambda *_args, **_kwargs: [(8, b"8"), (9, b"9")]
+    fetcher._fetch_message_data = (
+        lambda _conn, _uid_bytes, _fetch_query, **_kwargs: ("OK", [(b"1", conn.header_bytes)])
+    )
+
+    count = fetcher.fetch_account(
+        {"name": "alex", "email": "user@example.com"},
+        fetcher.run_filters[0],
+        dry_run=True,
+    )
+
+    assert count == 2
+    assert len(fetcher.downloaded) == 2
+
+
 def test_fetch_account_dry_run_does_not_sleep(monkeypatch) -> None:
     conn = HeaderConn(
         "Subject: Test\r\nFrom: news@example.com\r\nDate: Thu, 12 Mar 2026 10:00:00 +0000\r\n\r\n"
@@ -737,7 +883,7 @@ def test_fetch_account_dry_run_does_not_sleep(monkeypatch) -> None:
         dry_run=True,
     )
 
-    assert count == 0
+    assert count == 2
 
 
 def test_process_email_persists_filter_under_filter_directory(tmp_path) -> None:
@@ -992,6 +1138,39 @@ def test_fetch_all_respects_global_cap() -> None:
     assert fetcher.account_counts == {"alex": 1, "beta": 0}
     assert fetcher.filter_counts == {"telemost": 1}
     assert downloaded == [{"account": "alex", "filter": "telemost"}]
+
+
+def test_fetch_all_dry_run_counts_pending_by_account_filter_and_global_num() -> None:
+    fetcher = build_fetcher(
+        filters={
+            "telemost": {"sender": "keeper@telemost.yandex.ru"},
+            "forms": {"sender": "forms@yandex.ru"},
+        },
+        accounts=[
+            {"name": "alex", "email": "user@example.com"},
+            {"name": "beta", "email": "beta@example.test"},
+        ],
+    )
+    calls = []
+
+    def fake_fetch_account(account_config, run_filter, max_messages=None, dry_run=False):
+        calls.append((account_config["name"], run_filter["name"], max_messages, dry_run))
+        for index in range(max_messages or 0):
+            fetcher.downloaded.append({
+                "account": account_config["name"],
+                "filter": run_filter["name"],
+                "imap_uid": index + 1,
+            })
+        return max_messages or 0
+
+    fetcher.fetch_account = fake_fetch_account
+
+    downloaded = fetcher.fetch_all(num_messages=3, dry_run=True)
+
+    assert calls == [("alex", "telemost", 3, True)]
+    assert len(downloaded) == 3
+    assert fetcher.account_counts == {"alex": 3, "beta": 0}
+    assert fetcher.filter_counts == {"telemost": 3}
 
 
 def test_fetch_all_restricts_account_selection() -> None:

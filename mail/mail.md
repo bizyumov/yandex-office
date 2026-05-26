@@ -32,14 +32,14 @@ python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --accounts list
 # Fetch new emails with all enabled configured filters
 python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py
 
-# Fetch at most N new messages in this run (global cap)
+# Fetch at most N new messages from enabled configured filters in this run
 python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --num 20
 
 # Run one named filter only
 python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --filter forms
 
 # Run an ad-hoc one-off search without touching persistent cursor state
-python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --sender "Мария" --subject "Fwd:" --account alex --dry-run --preview-body
+python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account alex --subject "code" --since-date 2026-05-26 --dry-run --preview-body --num 5
 
 # Fetch exactly one message without advancing state
 python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account alex --uid <uid>
@@ -62,8 +62,8 @@ python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account alex
 
 1. Run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --accounts list`.
 2. Pick only a listed account alias requested by the user.
-3. Run `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --sender "<pattern>" --dry-run`.
-4. If body preview is needed without writing files, add `--preview-body` to the dry-run command.
+3. Run `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --subject "<pattern>" --since-date <YYYY-MM-DD> --dry-run --preview-body --num 5`.
+4. Inspect all returned matches and use the newest relevant message.
 5. If a full saved copy is needed, run `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --uid <uid>`.
 6. Read `email_body.html` or `email_body.txt` from the saved incoming directory.
 
