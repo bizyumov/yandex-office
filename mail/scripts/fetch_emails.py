@@ -345,12 +345,7 @@ class EmailFetcher:
                 raise ValueError(
                     f'Unknown filter "{explicit_filter}". Available filters: {available}'
                 )
-            selected = dict(self.named_filters[explicit_filter])
-            for key in ("sender", "subject", "since_date", "before_date"):
-                override = self.run_options.get(key)
-                if override is not None:
-                    selected[key] = override
-            return [selected]
+            return [dict(self.named_filters[explicit_filter])]
 
         if has_raw_overrides:
             ad_hoc = {"name": AD_HOC_FILTER_NAME, "enabled": True}
@@ -368,9 +363,13 @@ class EmailFetcher:
 
     def _uses_ad_hoc_overrides(self) -> bool:
         """Return true when this invocation should not use stored cursors."""
+        if self.run_options.get("uid") is not None:
+            return True
+        if self.run_options.get("filter") is not None:
+            return False
         return any(
             self.run_options.get(key) is not None
-            for key in ("sender", "subject", "since_date", "before_date", "uid")
+            for key in ("sender", "subject", "since_date", "before_date")
         )
 
     def _should_persist_state(self, *, dry_run: bool) -> bool:

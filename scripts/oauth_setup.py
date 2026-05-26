@@ -20,10 +20,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from common.auth import load_token_file, save_token_file, token_refs
 from common.config import bootstrap_runtime_context, choose_account_alias, find_token_account_by_email
 from common.oauth_apps import (
-    list_service_profiles,
     oauth_app_for_client_id,
     plan_oauth_app_setup,
-    plan_oauth_setup,
 )
 from common.oauth_token_import import import_managed_oauth_token
 
@@ -80,7 +78,6 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Bootstrap Yandex data dir or set up OAuth app managed auth",
     )
-    parser.add_argument("--client-id", help="OAuth ClientID")
     parser.add_argument("--email", help="Yandex email address")
     parser.add_argument(
         "--account",
@@ -92,19 +89,8 @@ def main() -> None:
         help="Manage token-file account aliases",
     )
     parser.add_argument(
-        "--service",
-        help="Compatibility shortcut: choose the configured default OAuth app for a service",
-    )
-    parser.add_argument(
         "--app",
         help="Preconfigured OAuth app id to authorize",
-    )
-    parser.add_argument(
-        "--scope",
-        action="append",
-        dest="scopes",
-        default=[],
-        help="Explicit OAuth scope override",
     )
     parser.add_argument(
         "--data-dir",
@@ -123,10 +109,7 @@ def main() -> None:
             parser.error("--from-env requires an environment variable name")
 
     has_oauth_args = (
-        args.service is not None
-        or args.app is not None
-        or args.client_id is not None
-        or bool(args.scopes)
+        args.app is not None
         or args.from_env is not None
     )
     if args.accounts and (args.email is not None or has_oauth_args):
@@ -169,8 +152,6 @@ def main() -> None:
         return
 
     has_identity_args = any(value is not None for value in (args.email, args.account))
-    if args.app and args.service is None and (args.client_id or args.scopes):
-        parser.error("--app without --service cannot be combined with --client-id or --scope")
 
     if not has_identity_args and not has_oauth_args:
         print(data_dir)
@@ -212,57 +193,22 @@ def main() -> None:
         return
 
     has_oauth_selector = (
-        args.service is not None
-        or args.app is not None
-        or args.client_id is not None
-        or bool(args.scopes)
+        args.app is not None
     )
     plan = None
     if not (args.from_env and not has_oauth_selector):
         try:
-            if args.app and args.service is None:
-                plan = plan_oauth_app_setup(config, app_id=args.app)
-            else:
-                if args.service is None:
-                    parser.error("--service is required for --client-id/--scope flows")
-                plan = plan_oauth_setup(
-                    config,
-                    service=args.service,
-                    app_id=args.app,
-                    client_id=args.client_id,
-                    extra_scopes=args.scopes,
-                )
+            plan = plan_oauth_app_setup(config, app_id=args.app)
         except ValueError as exc:
             print(f"Error: {exc}", file=sys.stderr)
             sys.exit(2)
 
     if not args.from_env:
         display_account = args.account or "<auto>"
-        display_service = args.service or (plan.service if plan is not None else "<verify from token>")
         print("=" * 70)
-        print(f"Yandex OAuth Managed Auth Setup — {display_account}/{display_service}")
+        print(f"Yandex OAuth Managed Auth Setup — {display_account}")
         print("=" * 70)
         print(f"\nAccount: {display_account}")
-        print(f"Service: {display_service}")
-
-        if plan is not None and plan.mode == "configured_app" and args.service is not None:
-            profiles = list_service_profiles(config, args.service)
-            default_profile = next((item for item in profiles if item.is_default), None)
-            other_profiles = [item for item in profiles if not item.is_default]
-            if default_profile is not None:
-                print("\nDefault profile:")
-                print(f"  - {default_profile.app_id}")
-                print(f"  - {default_profile.access_class}")
-                print(f"  - {default_profile.auth_url}")
-            if other_profiles:
-                print("\nOther profiles:")
-                for profile in other_profiles:
-                    print(f"  - {profile.app_id} — {profile.access_class}")
-                    print(f"    {profile.auth_url}")
-                print(
-                    "\nIf you choose another profile, re-run this script with "
-                    f"--app <profile_id> before saving the token."
-                )
 
         print(f"Mode:    {plan.mode if plan is not None else 'env_import'}")
         if plan is not None:
@@ -303,7 +249,6 @@ def main() -> None:
             token=token,
             email=args.email,
             account=args.account,
-            service=args.service,
             selected_app_id=plan.app_id if plan is not None else None,
         )
     except RuntimeError as exc:

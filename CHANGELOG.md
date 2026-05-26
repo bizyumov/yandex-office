@@ -2,6 +2,41 @@
 
 All public `yandex-office` skill releases use the `YYYY.MM.DD` version format.
 
+## 2026.05.26
+
+### Fixed
+
+- Kept named Mail filters authoritative when `--filter NAME` is present:
+  `--sender`, `--subject`, `--since-date`, and `--before-date` are ignored
+  instead of mutating the configured filter or disabling normal cursor
+  persistence.
+- Removed legacy `oauth_setup.py --service`, `--client-id`, and `--scope`
+  planning flags. OAuth URL generation now uses configured `--app` catalog
+  entries, while plain `--from-env` remains the import path for supplied
+  tokens.
+
+### Changed
+
+- Added OR-style Mail filters with `mail.filters.<name>.any`, preserving one
+  logical output directory while tracking stable per-branch `sha256` cursors in
+  normal Mail state.
+- Mail fetch now preserves full MIME body content as `email_body.txt` and/or
+  `email_body.html`, saves attachments and inline file assets, and records
+  body/attachment metadata in `meta.json`.
+- Replaced the old link-extraction dry-run workflow with
+  `--dry-run --preview-body` for in-memory body previews without incoming-file
+  writes.
+
+### Verification
+
+- `python3 -m pytest -q common/tests/test_oauth_setup.py mail/scripts/test_fetch_emails.py`
+- `python3 -m py_compile $(rg --files -g '*.py')`
+- `python3 capabilities/audit-method-auth.py`
+- `python3 capabilities/validate.py`
+- `python3 -m pytest -q`
+- `bash scripts/test_regression.sh`
+- managed-auth live no-match Mail probes with the configured live data directory
+
 ## 2026.05.25
 
 ### Fixed
@@ -23,11 +58,11 @@ All public `yandex-office` skill releases use the `YYYY.MM.DD` version format.
 - Removed account-password and side-secret SMTP send paths from the documented
   and implemented Mail send flow.
 - Removed IMAP-scope fallback as SMTP send authority; SMTP send now requires
-  managed coverage from the configured SMTP send app/profile.
+  managed coverage from the configured SMTP send app.
 
 ### Changed
 
-- Added the `mail-smtp` OAuth app profile for Yandex Mail SMTP send.
+- Added the `mail-smtp` OAuth app for Yandex Mail SMTP send.
 - Refreshed Mail capability evidence for `mail:smtp` SMTP authenticate/session
   and send behavior after outgoing SMTP ports became available.
 - Updated Mail and release docs to route SMTP send through managed OAuth and

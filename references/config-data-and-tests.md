@@ -61,7 +61,7 @@ Config management boundary:
   initializes a local account handle and prints compact account JSON with
   `alias`, optional `email`, and `apps`.
 - `oauth_setup.py --app <app_id>` prints an OAuth link for an
-  `oauth_apps.catalog` profile such as `mail-readonly`; `--account` is an
+  `oauth_apps.catalog` entry such as `mail-readonly`; `--account` is an
   optional hint, not a URL-generation requirement.
 - `oauth_setup.py --from-env <ENV_VAR>` imports a token by verified identity.
 - Edit `{data_dir}/config.agent.json` for local runtime settings such as

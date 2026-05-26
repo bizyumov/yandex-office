@@ -13,13 +13,9 @@ from common.config import RuntimeContext
 from common.oauth_apps import (
     OAuthClientMetadataCaptchaError,
     OAuthClientMetadata,
-    OAuthSetupPlan,
     configured_oauth_app,
-    default_service_scopes,
     fetch_yandex_oauth_client_metadata,
-    list_service_profiles,
     oauth_app_for_client_id,
-    supported_services,
 )
 import common.oauth_token_import as token_import
 import scripts.oauth_setup as oauth_setup
@@ -41,6 +37,27 @@ def test_oauth_setup_access_token_prompt_uses_hidden_input(monkeypatch) -> None:
 
     assert oauth_setup._read_access_token("Paste: ") == "secret-token"
     assert calls["prompt"] == "Paste: "
+
+
+def test_oauth_setup_rejects_removed_planning_flags(monkeypatch, tmp_path: Path, capsys) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir(parents=True, exist_ok=True)
+    monkeypatch.chdir(workspace)
+
+    for argv, expected in (
+        (["--service", "mail"], "unrecognized arguments: --service mail"),
+        (["--client-id", "client"], "unrecognized arguments: --client-id client"),
+        (["--scope", "mail:imap_ro"], "unrecognized arguments: --scope mail:imap_ro"),
+    ):
+        monkeypatch.setattr(sys, "argv", ["oauth_setup.py", *argv])
+        try:
+            oauth_setup.main()
+        except SystemExit as exc:
+            assert exc.code == 2
+        else:
+            raise AssertionError(f"{argv[0]} must not remain a supported CLI flag")
+
+        assert expected in capsys.readouterr().err
 
 
 def test_oauth_setup_bootstraps_from_workspace_cwd(monkeypatch, tmp_path: Path) -> None:
@@ -90,42 +107,6 @@ def test_oauth_setup_bootstraps_from_workspace_cwd(monkeypatch, tmp_path: Path) 
         calls["data_dir_override"] = data_dir_override
         return runtime
 
-    def fake_plan(config, *, service, app_id=None, client_id=None, extra_scopes=None):
-            return OAuthSetupPlan(
-                service=service,
-                client_id="660686ff45f947f2ac6e3f6495a9ec74",
-                scopes=["mail:imap_ro"],
-                auth_url="https://oauth.yandex.ru/authorize?response_type=token&client_id=660686ff45f947f2ac6e3f6495a9ec74",
-                mode="configured_app",
-                include_scope_in_url=False,
-                app_id="mail-readonly",
-            app_name="OpenClaw Yandex Mail Readonly",
-        )
-
-    def fake_profiles(_config, _service):
-        return [
-            type(
-                "Profile",
-                (),
-                {
-                    "app_id": "mail-readonly",
-                    "access_class": "read-only",
-                    "auth_url": "https://oauth.yandex.ru/default",
-                    "is_default": True,
-                },
-            )(),
-            type(
-                "Profile",
-                (),
-                {
-                    "app_id": "mail-readwrite",
-                    "access_class": "write-capable",
-                    "auth_url": "https://oauth.yandex.ru/other",
-                    "is_default": False,
-                },
-            )(),
-        ]
-
     def fake_save(path: Path, token_data: dict) -> None:
         saved["path"] = path
         saved["token_data"] = token_data
@@ -134,8 +115,6 @@ def test_oauth_setup_bootstraps_from_workspace_cwd(monkeypatch, tmp_path: Path) 
         raise FileNotFoundError
 
     monkeypatch.setattr(oauth_setup, "bootstrap_runtime_context", fake_bootstrap)
-    monkeypatch.setattr(oauth_setup, "plan_oauth_setup", fake_plan)
-    monkeypatch.setattr(oauth_setup, "list_service_profiles", fake_profiles)
     monkeypatch.setattr(
         token_import,
         "verify_token_identity",
@@ -154,8 +133,8 @@ def test_oauth_setup_bootstraps_from_workspace_cwd(monkeypatch, tmp_path: Path) 
             "work@example.com",
             "--account",
             "work",
-            "--service",
-            "mail",
+            "--app",
+            "mail-readonly",
         ],
     )
 
@@ -212,7 +191,7 @@ def test_oauth_setup_without_args_bootstraps_only(monkeypatch, tmp_path: Path, c
         raise AssertionError("OAuth planning/saving should not run in bootstrap-only mode")
 
     monkeypatch.setattr(oauth_setup, "bootstrap_runtime_context", fake_bootstrap)
-    monkeypatch.setattr(oauth_setup, "plan_oauth_setup", fail)
+    monkeypatch.setattr(oauth_setup, "plan_oauth_app_setup", fail)
     monkeypatch.setattr(token_import, "save_token_file", fail)
     monkeypatch.setattr(token_import, "load_token_file", fail)
     monkeypatch.chdir(workspace)
@@ -271,7 +250,7 @@ def test_oauth_setup_bootstraps_without_creating_account_without_token(
         raise AssertionError("OAuth planning should not run without OAuth args")
 
     monkeypatch.setattr(oauth_setup, "bootstrap_runtime_context", fake_bootstrap)
-    monkeypatch.setattr(oauth_setup, "plan_oauth_setup", fail_plan)
+    monkeypatch.setattr(oauth_setup, "plan_oauth_app_setup", fail_plan)
     monkeypatch.setattr(oauth_setup, "save_token_file", lambda path, token_data: saved.update(path=path, token_data=token_data))
     monkeypatch.setattr(oauth_setup, "load_token_file", lambda _path: (_ for _ in ()).throw(FileNotFoundError()))
     monkeypatch.chdir(workspace)
@@ -363,7 +342,7 @@ def test_oauth_setup_account_info_lists_apps(monkeypatch, tmp_path: Path, capsys
     )
 
 
-def test_oauth_setup_rejects_service_without_identity(monkeypatch, tmp_path: Path) -> None:
+def test_oauth_setup_app_without_identity_imports_verified_account(monkeypatch, tmp_path: Path) -> None:
     workspace = tmp_path / "workspace"
     workspace.mkdir(parents=True, exist_ok=True)
     monkeypatch.chdir(workspace)
@@ -399,23 +378,6 @@ def test_oauth_setup_rejects_service_without_identity(monkeypatch, tmp_path: Pat
 
     monkeypatch.setattr(oauth_setup, "bootstrap_runtime_context", lambda *_args, **_kwargs: runtime)
     monkeypatch.setattr(
-        oauth_setup,
-        "plan_oauth_setup",
-        lambda *_args, **_kwargs: OAuthSetupPlan(
-            service="mail",
-            client_id="660686ff45f947f2ac6e3f6495a9ec74",
-            scopes=["mail:imap_ro"],
-            auth_url=(
-                "https://oauth.yandex.ru/authorize?response_type=token"
-                "&client_id=660686ff45f947f2ac6e3f6495a9ec74"
-            ),
-            mode="configured_app",
-            include_scope_in_url=False,
-            app_id="mail-readonly",
-            app_name="OpenClaw Yandex Mail Readonly",
-        ),
-    )
-    monkeypatch.setattr(
         token_import,
         "verify_token_identity",
         lambda *_args, **_kwargs: verified("user@example.com", "660686ff45f947f2ac6e3f6495a9ec74"),
@@ -424,7 +386,7 @@ def test_oauth_setup_rejects_service_without_identity(monkeypatch, tmp_path: Pat
     monkeypatch.setattr(token_import, "load_token_file", lambda _path: (_ for _ in ()).throw(FileNotFoundError()))
     monkeypatch.setattr(oauth_setup, "_read_access_token", lambda _prompt="": "token-value")
     monkeypatch.setattr(builtins, "input", lambda _prompt="": "")
-    monkeypatch.setattr(sys, "argv", ["oauth_setup.py", "--service", "mail"])
+    monkeypatch.setattr(sys, "argv", ["oauth_setup.py", "--app", "mail-readonly"])
 
     oauth_setup.main()
 
@@ -470,23 +432,6 @@ def test_oauth_setup_creates_account_from_verified_email(monkeypatch, tmp_path: 
 
     monkeypatch.setattr(oauth_setup, "bootstrap_runtime_context", lambda *_args, **_kwargs: runtime)
     monkeypatch.setattr(
-        oauth_setup,
-        "plan_oauth_setup",
-        lambda *_args, **_kwargs: OAuthSetupPlan(
-            service="mail",
-            client_id="660686ff45f947f2ac6e3f6495a9ec74",
-            scopes=["mail:imap_ro"],
-            auth_url=(
-                "https://oauth.yandex.ru/authorize?response_type=token"
-                "&client_id=660686ff45f947f2ac6e3f6495a9ec74"
-            ),
-            mode="configured_app",
-            include_scope_in_url=False,
-            app_id="mail-readonly",
-            app_name="OpenClaw Yandex Mail Readonly",
-        ),
-    )
-    monkeypatch.setattr(
         token_import,
         "verify_token_identity",
         lambda *_args, **_kwargs: verified("new.user@example.com", "660686ff45f947f2ac6e3f6495a9ec74"),
@@ -495,7 +440,7 @@ def test_oauth_setup_creates_account_from_verified_email(monkeypatch, tmp_path: 
     monkeypatch.setattr(token_import, "load_token_file", lambda _path: (_ for _ in ()).throw(FileNotFoundError()))
     monkeypatch.setattr(oauth_setup, "_read_access_token", lambda _prompt="": "token-value")
     monkeypatch.setattr(builtins, "input", lambda _prompt="": "")
-    monkeypatch.setattr(sys, "argv", ["oauth_setup.py", "--service", "mail"])
+    monkeypatch.setattr(sys, "argv", ["oauth_setup.py", "--app", "mail-readonly"])
 
     oauth_setup.main()
 
@@ -536,25 +481,11 @@ def test_oauth_setup_imports_legacy_yandex_disk_token_from_env(
 
     saved: dict[str, object] = {}
 
-    def fake_plan(config, *, service, app_id=None, client_id=None, extra_scopes=None):
-        assert service == "disk"
-        return OAuthSetupPlan(
-            service="disk",
-            client_id="disk-client",
-            scopes=["cloud_api:disk.read"],
-            auth_url="https://oauth.yandex.ru/authorize?response_type=token&client_id=disk-client",
-            mode="configured_app",
-            include_scope_in_url=False,
-            app_id="disk-read",
-            app_name="Disk Read",
-        )
-
     def fail_input(_prompt=""):
         raise AssertionError("legacy env import must not prompt for access_token")
 
     monkeypatch.setenv("YANDEX_DISK_TOKEN", "legacy-env-token")
     monkeypatch.setattr(oauth_setup, "bootstrap_runtime_context", lambda *_args, **_kwargs: runtime)
-    monkeypatch.setattr(oauth_setup, "plan_oauth_setup", fake_plan)
     monkeypatch.setattr(
         token_import,
         "verify_token_identity",
@@ -622,7 +553,6 @@ def test_oauth_setup_imports_generic_env_token_without_app(
 
     monkeypatch.setenv("YANDEX_ACCESS_TOKEN", "env-token")
     monkeypatch.setattr(oauth_setup, "bootstrap_runtime_context", lambda *_args, **_kwargs: runtime)
-    monkeypatch.setattr(oauth_setup, "plan_oauth_setup", fail_plan)
     monkeypatch.setattr(oauth_setup, "plan_oauth_app_setup", fail_plan)
     monkeypatch.setattr(
         token_import,
@@ -698,24 +628,15 @@ def test_oauth_setup_warns_on_preconfigured_app_mismatch(monkeypatch, tmp_path: 
         agent_config={"accounts": [{"name": "alex", "email": "user@example.com"}]},
         config={"accounts": [{"name": "alex", "email": "user@example.com"}], "oauth_apps": {"catalog": {}}},
     )
+    runtime.config["oauth_apps"]["catalog"]["mail-readonly"] = {
+        "service": "mail",
+        "client_id": "selected-client",
+        "scopes": ["mail:imap_ro"],
+    }
 
     saved: dict[str, object] = {}
 
     monkeypatch.setattr(oauth_setup, "bootstrap_runtime_context", lambda *_args, **_kwargs: runtime)
-    monkeypatch.setattr(
-        oauth_setup,
-        "plan_oauth_setup",
-        lambda *_args, **_kwargs: OAuthSetupPlan(
-            service="mail",
-            client_id="selected-client",
-            scopes=["mail:imap_ro"],
-            auth_url="https://oauth.yandex.ru/authorize?response_type=token&client_id=selected-client",
-            mode="configured_app",
-            include_scope_in_url=False,
-            app_id="mail-readonly",
-            app_name="OpenClaw Yandex Mail Readonly",
-        ),
-    )
     monkeypatch.setattr(
         token_import,
         "verify_token_identity",
@@ -729,7 +650,7 @@ def test_oauth_setup_warns_on_preconfigured_app_mismatch(monkeypatch, tmp_path: 
     monkeypatch.setattr(token_import, "save_token_file", lambda path, token_data: saved.update(path=path, token_data=token_data))
     monkeypatch.setattr(token_import, "load_token_file", lambda _path: (_ for _ in ()).throw(FileNotFoundError()))
     monkeypatch.setattr(oauth_setup, "_read_access_token", lambda _prompt="": "token-value")
-    monkeypatch.setattr(sys, "argv", ["oauth_setup.py", "--service", "mail"])
+    monkeypatch.setattr(sys, "argv", ["oauth_setup.py", "--app", "mail-readonly"])
 
     oauth_setup.main()
 
@@ -837,27 +758,6 @@ def test_oauth_setup_propagates_multi_service_app_token(monkeypatch, tmp_path: P
 
     monkeypatch.setattr(oauth_setup, "bootstrap_runtime_context", lambda *_args, **_kwargs: runtime)
     monkeypatch.setattr(
-        oauth_setup,
-        "plan_oauth_setup",
-        lambda *_args, **_kwargs: OAuthSetupPlan(
-            service="mail",
-            client_id="office-core-client",
-            scopes=[
-                "calendar:all",
-                "cloud_api:disk.read",
-                "cloud_api:disk.write",
-                "mail:imap_ro",
-                "telemost-api:conferences.create",
-                "telemost-api:conferences.read",
-            ],
-            auth_url="https://oauth.yandex.ru/authorize?response_type=token&client_id=office-core-client",
-            mode="configured_app",
-            include_scope_in_url=False,
-            app_id="office-core",
-            app_name="OpenClaw Yandex Office Core",
-        ),
-    )
-    monkeypatch.setattr(
         token_import,
         "verify_token_identity",
         lambda *_args, **_kwargs: verified("user@example.com", "office-core-client"),
@@ -865,7 +765,7 @@ def test_oauth_setup_propagates_multi_service_app_token(monkeypatch, tmp_path: P
     monkeypatch.setattr(token_import, "save_token_file", lambda path, token_data: saved.update(path=path, token_data=token_data))
     monkeypatch.setattr(token_import, "load_token_file", lambda _path: (_ for _ in ()).throw(FileNotFoundError()))
     monkeypatch.setattr(oauth_setup, "_read_access_token", lambda _prompt="": "token-value")
-    monkeypatch.setattr(sys, "argv", ["oauth_setup.py", "--service", "mail", "--app", "office-core"])
+    monkeypatch.setattr(sys, "argv", ["oauth_setup.py", "--app", "office-core"])
 
     oauth_setup.main()
 
@@ -895,21 +795,11 @@ def test_oauth_setup_imports_custom_app_from_live_metadata(monkeypatch, tmp_path
 
     saved: dict[str, object] = {}
 
+    def fail_input(_prompt=""):
+        raise AssertionError("env import must not prompt for access_token")
+
+    monkeypatch.setenv("YANDEX_ACCESS_TOKEN", "token-value")
     monkeypatch.setattr(oauth_setup, "bootstrap_runtime_context", lambda *_args, **_kwargs: runtime)
-    monkeypatch.setattr(
-        oauth_setup,
-        "plan_oauth_setup",
-        lambda *_args, **_kwargs: OAuthSetupPlan(
-            service="mail",
-            client_id="client-id",
-            scopes=["mail:imap_ro"],
-            auth_url="https://oauth.yandex.ru/authorize?response_type=token&client_id=client-id",
-            mode="configured_app",
-            include_scope_in_url=False,
-            app_id="mail-readonly",
-            app_name="OpenClaw Yandex Mail Readonly",
-        ),
-    )
     monkeypatch.setattr(
         token_import,
         "verify_token_identity",
@@ -927,13 +817,13 @@ def test_oauth_setup_imports_custom_app_from_live_metadata(monkeypatch, tmp_path
     )
     monkeypatch.setattr(token_import, "save_token_file", lambda path, token_data: saved.update(path=path, token_data=token_data))
     monkeypatch.setattr(token_import, "load_token_file", lambda _path: (_ for _ in ()).throw(FileNotFoundError()))
-    monkeypatch.setattr(oauth_setup, "_read_access_token", lambda _prompt="": "token-value")
+    monkeypatch.setattr(oauth_setup, "_read_access_token", fail_input)
     monkeypatch.setattr(
         builtins,
         "input",
         lambda _prompt="": (_ for _ in ()).throw(AssertionError("custom app import must not prompt")),
     )
-    monkeypatch.setattr(sys, "argv", ["oauth_setup.py", "--service", "mail"])
+    monkeypatch.setattr(sys, "argv", ["oauth_setup.py", "--from-env", "YANDEX_ACCESS_TOKEN"])
 
     oauth_setup.main()
 
@@ -1024,124 +914,6 @@ def test_managed_import_marks_captcha_client_unresolved(monkeypatch, tmp_path: P
     }
 
 
-def test_oauth_setup_prints_default_and_other_profiles(
-    monkeypatch,
-    tmp_path: Path,
-    capsys,
-) -> None:
-    workspace = tmp_path / "workspace"
-    workspace.mkdir(parents=True, exist_ok=True)
-    data_dir = workspace / "yandex-data"
-    data_dir.mkdir(parents=True, exist_ok=True)
-
-    runtime = RuntimeContext(
-        skill_root=ROOT_DIR,
-        cwd=workspace.resolve(),
-        global_config_path=ROOT_DIR / "config.skill.json",
-        global_config={},
-        data_dir=data_dir.resolve(),
-        agent_config_path=data_dir / "config.agent.json",
-        agent_config={"accounts": [{"name": "alex", "email": "user@example.com"}]},
-        config={
-            "accounts": [{"name": "alex", "email": "user@example.com"}],
-            "oauth_apps": {
-                "catalog": {
-                    "disk-read": {
-                        "service": "disk",
-                        "client_id": "24f7b757a90749dfb3039bbac2d3c350",
-                        "scopes": ["cloud_api:disk.read"],
-                        "is_default": True,
-                    },
-                },
-            },
-        },
-    )
-
-    def fake_bootstrap(
-        start_path: str | Path,
-        *,
-        account: str,
-        email: str,
-        cwd: str | Path | None = None,
-        data_dir_override: str | Path | None = None,
-    ) -> RuntimeContext:
-        return runtime
-
-    def fake_plan(config, *, service, app_id=None, client_id=None, extra_scopes=None):
-        return OAuthSetupPlan(
-            service=service,
-            client_id="24f7b757a90749dfb3039bbac2d3c350",
-            scopes=["cloud_api:disk.read"],
-            auth_url="https://oauth.yandex.ru/default",
-            mode="configured_app",
-            include_scope_in_url=False,
-            app_id="disk-read",
-            app_name="Disk Read",
-        )
-
-    def fake_profiles(_config, _service):
-        return [
-            type(
-                "Profile",
-                (),
-                {
-                    "app_id": "disk-read",
-                    "access_class": "read-only",
-                    "auth_url": "https://oauth.yandex.ru/default",
-                    "is_default": True,
-                },
-            )(),
-            type(
-                "Profile",
-                (),
-                {
-                    "app_id": "disk-full",
-                    "access_class": "write-capable",
-                    "auth_url": "https://oauth.yandex.ru/full",
-                    "is_default": False,
-                },
-            )(),
-        ]
-
-    monkeypatch.setattr(oauth_setup, "bootstrap_runtime_context", fake_bootstrap)
-    monkeypatch.setattr(oauth_setup, "plan_oauth_setup", fake_plan)
-    monkeypatch.setattr(oauth_setup, "list_service_profiles", fake_profiles)
-    monkeypatch.setattr(
-        token_import,
-        "verify_token_identity",
-        lambda *_args, **_kwargs: verified("user@example.com", "24f7b757a90749dfb3039bbac2d3c350"),
-    )
-    monkeypatch.setattr(token_import, "save_token_file", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr(token_import, "load_token_file", lambda _path: (_ for _ in ()).throw(FileNotFoundError()))
-    monkeypatch.setattr(oauth_setup, "_read_access_token", lambda _prompt="": "token-value")
-    monkeypatch.setattr(builtins, "input", lambda _prompt="": "")
-    monkeypatch.chdir(workspace)
-    monkeypatch.setattr(
-        sys,
-        "argv",
-        [
-            "oauth_setup.py",
-            "--email",
-            "user@example.com",
-            "--account",
-            "alex",
-            "--service",
-            "disk",
-        ],
-    )
-
-    oauth_setup.main()
-
-    captured = capsys.readouterr()
-    assert "Default profile:" in captured.out
-    assert "disk-read" in captured.out
-    assert "read-only" in captured.out
-    assert "Other profiles:" in captured.out
-    assert "disk-full" in captured.out
-    assert "write-capable" in captured.out
-    assert "--app <profile_id>" in captured.out
-
-
 def test_oauth_setup_uses_data_dir_parent_as_bootstrap_cwd(monkeypatch, tmp_path: Path) -> None:
     workspace = tmp_path / "workspace"
     data_dir = workspace / "custom-yandex"
@@ -1188,23 +960,6 @@ def test_oauth_setup_uses_data_dir_parent_as_bootstrap_cwd(monkeypatch, tmp_path
 
     monkeypatch.setattr(oauth_setup, "bootstrap_runtime_context", fake_bootstrap)
     monkeypatch.setattr(
-        oauth_setup,
-        "plan_oauth_setup",
-        lambda *_args, **_kwargs: OAuthSetupPlan(
-            service="mail",
-            client_id="660686ff45f947f2ac6e3f6495a9ec74",
-            scopes=["mail:imap_ro"],
-            auth_url=(
-                "https://oauth.yandex.ru/authorize?response_type=token"
-                "&client_id=660686ff45f947f2ac6e3f6495a9ec74"
-            ),
-            mode="configured_app",
-            include_scope_in_url=False,
-            app_id="mail-readonly",
-            app_name="OpenClaw Yandex Mail Readonly",
-        ),
-    )
-    monkeypatch.setattr(
         token_import,
         "verify_token_identity",
         lambda *_args, **_kwargs: verified("work@example.com", "660686ff45f947f2ac6e3f6495a9ec74"),
@@ -1223,8 +978,8 @@ def test_oauth_setup_uses_data_dir_parent_as_bootstrap_cwd(monkeypatch, tmp_path
             "work@example.com",
             "--account",
             "work",
-            "--service",
-            "mail",
+            "--app",
+            "mail-readonly",
             "--data-dir",
             str(data_dir),
         ],
@@ -1234,88 +989,6 @@ def test_oauth_setup_uses_data_dir_parent_as_bootstrap_cwd(monkeypatch, tmp_path
 
     assert calls["cwd"] == ROOT_DIR.resolve()
     assert calls["data_dir_override"] == data_dir.resolve()
-
-
-def test_list_service_profiles_ignores_other_services() -> None:
-    config = {
-        "oauth_apps": {
-            "catalog": {
-                "calendar-user": {
-                    "service": "calendar",
-                    "client_id": "calendar-client",
-                    "scopes": ["calendar:all"],
-                    "is_default": True,
-                },
-                "disk-read": {
-                    "service": "disk",
-                    "client_id": "disk-read-client",
-                    "scopes": ["cloud_api:disk.read"],
-                    "is_default": True,
-                },
-                "disk-full": {
-                    "service": "disk",
-                    "client_id": "disk-full-client",
-                    "scopes": ["cloud_api:disk.read", "cloud_api:disk.write"],
-                },
-            },
-        }
-    }
-
-    profiles = list_service_profiles(config, "disk")
-
-    assert [profile.app_id for profile in profiles] == ["disk-read", "disk-full"]
-    assert profiles[0].is_default is True
-    assert profiles[0].access_class == "read-only"
-    assert profiles[1].access_class == "write-capable"
-
-
-def test_default_service_scopes_use_catalog_defaults() -> None:
-    config = {
-        "oauth_apps": {
-            "catalog": {
-                "disk-read": {
-                    "service": "disk",
-                    "client_id": "disk-read-client",
-                    "scopes": ["cloud_api:disk.read"],
-                    "is_default": True,
-                },
-                "disk-full": {
-                    "service": "disk",
-                    "client_id": "disk-full-client",
-                    "scopes": ["cloud_api:disk.read", "cloud_api:disk.write"],
-                },
-            },
-        }
-    }
-
-    assert default_service_scopes(config, "disk", "default") == ["cloud_api:disk.read"]
-    assert default_service_scopes(config, "disk", "read") == ["cloud_api:disk.read"]
-    assert default_service_scopes(config, "disk", "write") == [
-        "cloud_api:disk.read",
-        "cloud_api:disk.write",
-    ]
-
-
-def test_supported_services_include_catalog_and_auth() -> None:
-    config = {
-        "oauth_apps": {
-            "catalog": {
-                "disk-read": {
-                    "service": "disk",
-                    "client_id": "disk-read-client",
-                    "scopes": ["cloud_api:disk.read"],
-                    "is_default": True,
-                },
-                "forms-read": {
-                    "service": "forms",
-                    "client_id": "forms-read-client",
-                    "scopes": ["forms:read"],
-                },
-            },
-        }
-    }
-
-    assert supported_services(config) == ["auth", "disk", "forms"]
 
 
 def test_catalog_entry_can_span_multiple_services() -> None:
@@ -1337,8 +1010,6 @@ def test_catalog_entry_can_span_multiple_services() -> None:
             },
         }
     }
-
-    assert supported_services(config) == ["auth", "calendar", "disk", "mail", "telemost"]
 
     disk_app = configured_oauth_app(config, "disk", "office-core")
     assert disk_app is not None

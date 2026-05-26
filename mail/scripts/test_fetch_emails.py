@@ -176,6 +176,34 @@ def test_named_filter_resolution_uses_selected_filter() -> None:
     }]
 
 
+def test_named_filter_resolution_ignores_cli_criteria() -> None:
+    fetcher = build_fetcher(
+        filters={
+            "forms": {
+                "sender": "forms@yandex.ru",
+                "subject": "New response",
+                "before_date": "2026-03-30",
+            },
+        },
+        run_options={
+            "filter": "forms",
+            "sender": "override@example.test",
+            "subject": "Override subject",
+            "since_date": "2026-01-01",
+            "before_date": "2026-01-31",
+        },
+    )
+
+    assert fetcher.run_filters == [{
+        "name": "forms",
+        "enabled": True,
+        "sender": "forms@yandex.ru",
+        "subject": "New response",
+        "before_date": "2026-03-30",
+    }]
+    assert fetcher._should_persist_state(dry_run=False) is True
+
+
 def test_named_filter_resolution_supports_any_branches() -> None:
     fetcher = build_fetcher(
         filters={
@@ -459,6 +487,7 @@ def test_cli_overrides_with_explicit_filter_keep_filter_cursor() -> None:
     )
 
     assert fetcher._effective_last_uid("alex", "telemost") == 777
+    assert fetcher._should_persist_state(dry_run=False) is True
 
 
 def test_sender_criteria_handles_email_and_fragment() -> None:

@@ -5,12 +5,12 @@ license: MIT
 compatibility: Requires Python 3.10+, network access to imap.yandex.ru and smtp.yandex.com
 metadata:
   author: bizyumov
-  version: "2026.05.25"
+  version: "2026.05.26"
 ---
 
 # Yandex Mail / Почта
 
-Generic email fetcher and sender for Yandex Mail via IMAP/SMTP XOAUTH2. Fetches incoming emails matching configured filters into a structured directory for downstream processing by other skills. Sends emails via SMTP through managed OAuth and the configured SMTP send app/profile.
+Generic email fetcher and sender for Yandex Mail via IMAP/SMTP XOAUTH2. Fetches incoming emails matching configured filters into a structured directory for downstream processing by other skills. Sends emails via SMTP through managed OAuth and the configured SMTP send app.
 
 ## Quick Start
 
@@ -23,7 +23,7 @@ Ask the user to verify that IMAP + OAuth is enabled for the target account first
 # Print an OAuth approval URL; add --account only if alias alex is already known:
 python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --app mail-readonly
 
-# For SMTP sending, authorize the send app/profile:
+# For SMTP sending, authorize the send app:
 python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --app mail-smtp
 
 # Discover available account aliases before using Mail
@@ -155,7 +155,7 @@ CLI options:
 - `--filter NAME` selects one named filter and keeps persistent state isolated to that filter.
 - `--sender`, `--subject`, `--since-date`, `--before-date` run as one raw ad-hoc filter when used without `--filter`.
 - raw ad-hoc criteria without `--filter` search account history by default instead of inheriting a stored filter cursor.
-- when `--filter NAME` is present, those same flags override that named filter for the current run only.
+- when `--filter NAME` is present, those same criteria flags are ignored; the configured named filter identity, criteria, output path, and state namespace are used as-is.
 - use `--filter NAME` whenever you need one specific configured filter only; bare run means “all enabled filters”, not “one selected filter”
 - `--account NAME` restricts the run to one token-backed account alias.
 - `--from-uid UID` starts from a specific UID floor for a one-off backfill.
@@ -171,7 +171,7 @@ Persistence rules:
 - `--uid` is always treated as non-persistent.
 - Raw CLI filter overrides used without `--filter` are treated as ad-hoc runs and do not advance persistent cursors.
 - Raw CLI filter overrides used without `--filter` also ignore stored filter cursors by default, so one-off lookups do not need `--from-uid 1` just to search account history.
-- Selecting a named filter with `--filter` and no ad-hoc overrides keeps normal persistent behavior.
+- Selecting a named filter with `--filter` keeps normal persistent behavior; criteria flags supplied alongside `--filter` are ignored and do not make the run ad-hoc.
 
 ## Heavy Output Handling
 
@@ -312,11 +312,31 @@ Verbose mode (`-v`) keeps detailed logs in stderr/logger output.
   "subject": "Конспект встречи от 08.02.2026",
   "sender": "Хранитель встреч Телемоста <keeper@telemost.yandex.ru>",
   "timestamp": "2026-02-08T09:27:00Z",
-  "attachments": ["2026-02-08 19:07 (MSK) 5981404294.txt"],
+  "body": {
+    "text": "email_body.txt",
+    "html": "email_body.html"
+  },
+  "attachments": [
+    {
+      "original-filename": "2026-02-08 19:07 (MSK) 5981404294.txt",
+      "saved-filename": "2026-02-08 19:07 (MSK) 5981404294.txt",
+      "content-type": "text/plain",
+      "size": 12345,
+      "disposition": "attachment",
+      "content-id": null,
+      "part-index": 3
+    }
+  ],
   "dir_name": "2026-02-08_alex_uid2550",
   "dir_relpath": "telemost/2026-02-08_alex_uid2550"
 }
 ```
+
+`body.text` and `body.html` appear only when those MIME body parts are saved.
+New writes store `attachments` as metadata objects for saved non-body MIME file
+parts, including inline file assets. Existing legacy metadata may still contain
+`attachments` as a list of saved filename strings; readers and downstream code
+must continue accepting that legacy shape.
 
 No business logic fields — downstream skills (telemost, etc.) enrich meta.json as needed.
 
@@ -353,7 +373,7 @@ Headers tested with Yandex Mail (smtp.yandex.com) as sender and various clients 
 
 ## Sending Emails
 
-Use `send_email.py` to send emails via Yandex SMTP with managed OAuth and the configured SMTP send app/profile:
+Use `send_email.py` to send emails via Yandex SMTP with managed OAuth and the configured SMTP send app:
 
 ```bash
 # Send a simple email
@@ -431,8 +451,8 @@ result = sender.send(
 ### Auth for Sending
 
 `send_email.py` uses `@yandex_api_method("mail.smtp.send")` and managed OAuth
-token dispatch. Authorize the configured `mail-smtp` app/profile for SMTP
-sending. IMAP read/readwrite app profiles are not SMTP-send authority. The SMTP
+token dispatch. Authorize the configured `mail-smtp` app for SMTP sending. IMAP
+read/readwrite apps are not SMTP-send authority. The SMTP
 XOAUTH2 auth string format is:
 
 ```

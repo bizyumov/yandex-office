@@ -6,7 +6,7 @@ license: MIT
 compatibility: Python 3.10+, per-skill dependencies, network access for Yandex APIs
 metadata:
   author: bizyumov
-  version: "2026.05.25"
+  version: "2026.05.26"
   openclaw:
     emoji: "🟡"
     requires:
@@ -26,7 +26,7 @@ Yandex identity behind an alias. Apps, scopes, and tokens are defined in
 
 ## Document Map
 
-- (1-16) Frontmatter
+- (1-16) Frontmatter (metadata version 2026.05.26)
 - (17-25) Opening Model
 - (27-40) Document Map
 - (42-47) Reference Map
