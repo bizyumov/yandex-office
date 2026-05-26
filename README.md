@@ -4,24 +4,20 @@ A collection of [agentskills.io](https://agentskills.io/specification)-compliant
 
 Current release:
 
-- version: `2026.05.25`
+- version: `2026.05.26`
 - version file: `VERSION`
 - cumulative release notes: `CHANGELOG.md`
 
-2026.05.25 adds managed Mail SMTP send and tightens managed OAuth import behavior:
+2026.05.26 adds Mail OR/MIME fetch improvements and simplifies OAuth setup:
 
-- `mail-smtp` is the configured OAuth app profile for SMTP send
-- Mail SMTP send uses managed OAuth; app-password and IMAP-scope SMTP fallback
-  paths are not production behavior
-- Mail SMTP capability evidence is refreshed after live SMTP auth/send probes
-- unknown OAuth `client_id` imports query Yandex online client metadata for
-  scopes instead of asking agents to describe custom-token permissions; the
-  detailed rules live in `references/yandex-office-extension.md`
-- CAPTCHA JSON during client metadata lookup creates an explicit
-  `scopes: ["unresolved"]` agent-local marker that managed auth must resolve
-  from Yandex before actual use
-- live verification covered fresh token onboarding, CLI SMTP send coverage, and
-  reply/header roundtrip checks
+- `mail.filters.<name>.any` supports OR-style branches under one logical
+  output directory with stable per-branch `sha256` cursors
+- Mail fetch preserves full MIME bodies, saved attachments/inline assets, and
+  `meta.json` body/attachment metadata
+- `--filter NAME` keeps the configured named filter authoritative; scalar
+  criteria flags alongside it are ignored
+- OAuth URL generation uses configured `--app` catalog entries, while supplied
+  token import uses `--from-env`
 
 ## Versioning
 
@@ -151,8 +147,9 @@ First account discovery runs `python3 <full-path-to-yandex-office>/scripts/oauth
 - Print an OAuth approval URL: `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --app mail-readonly`; include `--account alex` only as an optional hint when that alias is already known.
 - Import a supplied token: `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --from-env YANDEX_ACCESS_TOKEN`.
 
-Do not ask for email to print an OAuth URL. `--app` is an `oauth_apps.catalog`
-profile; token import verifies identity and stores by verified Yandex identity.
+Do not ask for email to print an OAuth URL. `--app` is an
+`oauth_apps.catalog` key; token import verifies identity and stores by verified
+Yandex identity.
 For whole-package onboarding use `--app office-core`; `--email` and `--account`
 are optional hints and may not match the verified token identity.
 
@@ -237,7 +234,7 @@ Where:
 
 1. `YYYY-MM` is derived from first-seen meeting timestamp.
 2. Meeting folder starts with local date/time prefix `YYYY-MM-DD_HH-MM`.
-3. Date/time prefix is immediately followed by account tag (`alex`, `work`, etc.).
+3. Date/time prefix is immediately followed by account tag (`alex`, `beta`, etc.).
 4. Folder always ends with meeting UID (`_{MEETING_UID}` or `_unknown`).
 5. Folder routing is constrained by same-day wildcard candidate matching.
 
@@ -269,7 +266,6 @@ CWD
      -> local app catalog overrides + service-specific settings
 
 Skill config.skill.json
-  -> oauth_apps.catalog marks the default app with `is_default: true`
   -> oauth_apps.catalog.<app_id> stores app name, client_id, and declared scopes
 
 python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --app mail-readonly
@@ -294,7 +290,7 @@ Do not make raw scopes the primary choice in agent-facing docs or workflows.
 Choose the account, sub-skill, and business task first; managed auth resolves
 tokens and scope coverage internally.
 
-Default/read apps:
+Read-oriented apps:
 
 - `mail-readonly`: Mail fetch/read.
 - `disk-read`: Disk read/download.
@@ -348,11 +344,6 @@ Agents may additionally use these derived categories for remediation:
 Only `403 ForbiddenError` becomes a token-rotation signal. Other provider
 errors pass through with their exact payload and do not update token `good_at`
 or `bad_at`.
-
-Advanced flow:
-
-- pass `--client-id` explicitly
-- optionally add `--scope` overrides for debugging or one-off operator flows
 
 Important:
 

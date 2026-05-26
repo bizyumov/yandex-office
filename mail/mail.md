@@ -5,12 +5,12 @@ license: MIT
 compatibility: Requires Python 3.10+, network access to imap.yandex.ru and smtp.yandex.com
 metadata:
   author: bizyumov
-  version: "2026.05.25"
+  version: "2026.05.26"
 ---
 
 # Yandex Mail / Почта
 
-Generic email fetcher and sender for Yandex Mail via IMAP/SMTP XOAUTH2. Fetches incoming emails matching configured filters into a structured directory for downstream processing by other skills. Sends emails via SMTP through managed OAuth and the configured SMTP send app/profile.
+Generic email fetcher and sender for Yandex Mail via IMAP/SMTP XOAUTH2. Fetches incoming emails matching configured filters into a structured directory for downstream processing by other skills. Sends emails via SMTP through managed OAuth and the configured SMTP send app.
 
 ## Quick Start
 
@@ -23,7 +23,7 @@ Ask the user to verify that IMAP + OAuth is enabled for the target account first
 # Print an OAuth approval URL; add --account only if alias alex is already known:
 python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --app mail-readonly
 
-# For SMTP sending, authorize the send app/profile:
+# For SMTP sending, authorize the send app:
 python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --app mail-smtp
 
 # Discover available account aliases before using Mail
@@ -39,10 +39,10 @@ python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --num 20
 python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --filter forms
 
 # Run an ad-hoc one-off search without touching persistent cursor state
-python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --sender "Мария" --subject "Fwd:" --account alex --dry-run --extract-links
+python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --sender "Мария" --subject "Fwd:" --account alex --dry-run --preview-body
 
 # Fetch exactly one message without advancing state
-python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account alex --uid 5131
+python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account alex --uid <uid>
 ```
 
 > Recommended: use `--app mail-readonly` for fetching and `--app mail-smtp`
@@ -62,9 +62,10 @@ python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account alex
 
 1. Run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --accounts list`.
 2. Pick only a listed account alias requested by the user.
-3. Run `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --sender "<pattern>" --dry-run --extract-links`.
-4. If a full saved copy is needed, run `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --uid <uid>`.
-5. Read `email_body.html` or `email_body.txt` from the saved incoming directory.
+3. Run `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --sender "<pattern>" --dry-run`.
+4. If body preview is needed without writing files, add `--preview-body` to the dry-run command.
+5. If a full saved copy is needed, run `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --uid <uid>`.
+6. Read `email_body.html` or `email_body.txt` from the saved incoming directory.
 
 If the requested account alias is missing, stop. The agent imports that account
 through `yandex-office` under user authorization. Do not use another account as
@@ -107,6 +108,32 @@ Behavior:
 }
 ```
 
+For one logical stream with multiple alternative query shapes, use `any`:
+
+```json
+{
+  "mail": {
+    "filters": {
+      "payment_receipts": {
+        "enabled": true,
+        "any": [
+          { "sender": "receipts-a.example" },
+          { "sender": "receipts-b.example", "since_date": "2026-05-01" }
+        ]
+      }
+    }
+  }
+}
+```
+
+`any` semantics:
+
+- branches are OR'ed under the same logical filter name
+- fields inside one branch keep current AND semantics
+- results are written under the same `incoming/<filter>/` directory
+- each branch gets an independent cursor keyed by `sha256` of canonical compact branch JSON
+- branch cursor state is stored in the normal mail state file (`mail.state_file`, default `state.json`) directly under `filters.<filter>.accounts.<account>` as `sha256:...` keys
+
 Filter key rules:
 
 - filter keys are schema keys, not user-facing labels
@@ -128,12 +155,13 @@ CLI options:
 - `--filter NAME` selects one named filter and keeps persistent state isolated to that filter.
 - `--sender`, `--subject`, `--since-date`, `--before-date` run as one raw ad-hoc filter when used without `--filter`.
 - raw ad-hoc criteria without `--filter` search account history by default instead of inheriting a stored filter cursor.
-- when `--filter NAME` is present, those same flags override that named filter for the current run only.
+- when `--filter NAME` is present, those same criteria flags are ignored; the configured named filter identity, criteria, output path, and state namespace are used as-is.
 - use `--filter NAME` whenever you need one specific configured filter only; bare run means “all enabled filters”, not “one selected filter”
 - `--account NAME` restricts the run to one token-backed account alias.
 - `--from-uid UID` starts from a specific UID floor for a one-off backfill.
 - `--uid UID` fetches exactly one message, skips filter search logic, and implies non-persistence.
-- `--extract-links` with `--dry-run` includes a `links` array by fetching message bodies without writing incoming files.
+- `--preview-body` with `--dry-run` includes a `body` object for matching messages by fetching message bodies into memory without writing incoming files.
+- `--preview-body` is valid only with `--dry-run`; plain dry-run stays header-only.
 - `--no-persist` disables state writes for the run.
 
 Persistence rules:
@@ -143,7 +171,7 @@ Persistence rules:
 - `--uid` is always treated as non-persistent.
 - Raw CLI filter overrides used without `--filter` are treated as ad-hoc runs and do not advance persistent cursors.
 - Raw CLI filter overrides used without `--filter` also ignore stored filter cursors by default, so one-off lookups do not need `--from-uid 1` just to search account history.
-- Selecting a named filter with `--filter` and no ad-hoc overrides keeps normal persistent behavior.
+- Selecting a named filter with `--filter` keeps normal persistent behavior; criteria flags supplied alongside `--filter` are ignored and do not make the run ad-hoc.
 
 ## Heavy Output Handling
 
@@ -253,7 +281,7 @@ Large dry-run output example:
   "pending_total": 178,
   "pending": [],
   "accounts": {
-    "work": 0
+    "beta": 0
   },
   "output_file": "/path/to/yandex-data/latest-query/mail_dry_run_20260409T183247123456Z.json",
   "output_spilled": true,
@@ -284,11 +312,31 @@ Verbose mode (`-v`) keeps detailed logs in stderr/logger output.
   "subject": "Конспект встречи от 08.02.2026",
   "sender": "Хранитель встреч Телемоста <keeper@telemost.yandex.ru>",
   "timestamp": "2026-02-08T09:27:00Z",
-  "attachments": ["2026-02-08 19:07 (MSK) 5981404294.txt"],
+  "body": {
+    "text": "email_body.txt",
+    "html": "email_body.html"
+  },
+  "attachments": [
+    {
+      "original-filename": "2026-02-08 19:07 (MSK) 5981404294.txt",
+      "saved-filename": "2026-02-08 19:07 (MSK) 5981404294.txt",
+      "content-type": "text/plain",
+      "size": 12345,
+      "disposition": "attachment",
+      "content-id": null,
+      "part-index": 3
+    }
+  ],
   "dir_name": "2026-02-08_alex_uid2550",
   "dir_relpath": "telemost/2026-02-08_alex_uid2550"
 }
 ```
+
+`body.text` and `body.html` appear only when those MIME body parts are saved.
+New writes store `attachments` as metadata objects for saved non-body MIME file
+parts, including inline file assets. Existing legacy metadata may still contain
+`attachments` as a list of saved filename strings; readers and downstream code
+must continue accepting that legacy shape.
 
 No business logic fields — downstream skills (telemost, etc.) enrich meta.json as needed.
 
@@ -303,6 +351,7 @@ and managed auth accounts. Key fields:
 - `mail.filters.<name>.sender` — FROM filter criterion
 - `mail.filters.<name>.subject` — SUBJECT filter criterion
 - `mail.filters.<name>.since_date` / `before_date` — optional date bounds for that filter
+- `mail.filters.<name>.any` — OR-style atomic query branches for one logical filter; each branch supports `sender`, `subject`, `since_date`, and `before_date`, and stores cursor state in `mail.state_file` directly under `filters.<filter>.accounts.<account>` as `sha256:...` keys
 - legacy `mail.filters.sender` — still supported and upgraded in-memory into `mail.filters.telemost.sender`
 - `mail.since` — `"on"`/`"off"` toggle for state-driven IMAP `SINCE` filtering
 - `mail.fetch.sleep_seconds` — Global sleep between `_process_email` iterations (seconds, default `0.5`)
@@ -324,7 +373,7 @@ Headers tested with Yandex Mail (smtp.yandex.com) as sender and various clients 
 
 ## Sending Emails
 
-Use `send_email.py` to send emails via Yandex SMTP with managed OAuth and the configured SMTP send app/profile:
+Use `send_email.py` to send emails via Yandex SMTP with managed OAuth and the configured SMTP send app:
 
 ```bash
 # Send a simple email
@@ -402,8 +451,8 @@ result = sender.send(
 ### Auth for Sending
 
 `send_email.py` uses `@yandex_api_method("mail.smtp.send")` and managed OAuth
-token dispatch. Authorize the configured `mail-smtp` app/profile for SMTP
-sending. IMAP read/readwrite app profiles are not SMTP-send authority. The SMTP
+token dispatch. Authorize the configured `mail-smtp` app for SMTP sending. IMAP
+read/readwrite apps are not SMTP-send authority. The SMTP
 XOAUTH2 auth string format is:
 
 ```

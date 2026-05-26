@@ -197,6 +197,25 @@ def test_agent_config_schema_keeps_supported_properties_unreserved() -> None:
         assert "(RESERVED FOR FUTURE USE)" not in description, ".".join(path)
 
 
+def test_agent_config_schema_accepts_any_mail_filter_branches() -> None:
+    schema = json.loads((ROOT / "config.agent.schema.json").read_text(encoding="utf-8"))
+    value = {
+        "mail": {
+            "filters": {
+                "payment_receipts": {
+                    "enabled": True,
+                    "any": [
+                        {"sender": "receipts-a.example"},
+                        {"sender": "receipts-b.example", "since_date": "2026-05-01"},
+                    ],
+                }
+            }
+        }
+    }
+
+    assert _validate(schema, value) == []
+
+
 def test_agent_config_schema_marks_legacy_mail_filters_as_deprecated() -> None:
     schema = json.loads((ROOT / "config.agent.schema.json").read_text(encoding="utf-8"))
 

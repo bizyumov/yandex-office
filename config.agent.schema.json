@@ -58,6 +58,33 @@
                 "enabled": {
                   "type": "boolean",
                   "description": "Whether this named filter participates in bare fetch runs; --filter can still run disabled filters explicitly."
+                },
+                "any": {
+                  "type": "array",
+                  "description": "OR-style list of atomic Mail query branches for one logical filter. Each branch has current AND semantics, and persistent cursor state is tracked per branch.",
+                  "items": {
+                    "type": "object",
+                    "description": "One atomic Mail query branch inside an OR-style logical filter.",
+                    "additionalProperties": false,
+                    "properties": {
+                      "sender": {
+                        "type": "string",
+                        "description": "Literal IMAP FROM substring criterion for this query branch."
+                      },
+                      "subject": {
+                        "type": "string",
+                        "description": "Literal IMAP SUBJECT substring criterion for this query branch."
+                      },
+                      "since_date": {
+                        "type": "string",
+                        "description": "Lower date bound for this query branch, in YYYY-MM-DD form."
+                      },
+                      "before_date": {
+                        "type": "string",
+                        "description": "Upper date bound for this query branch, in YYYY-MM-DD form."
+                      }
+                    }
+                  }
                 }
               }
             }

@@ -6,7 +6,7 @@ license: MIT
 compatibility: Python 3.10+, per-skill dependencies, network access for Yandex APIs
 metadata:
   author: bizyumov
-  version: "2026.05.25"
+  version: "2026.05.26"
   openclaw:
     emoji: "🟡"
     requires:
@@ -26,7 +26,7 @@ Yandex identity behind an alias. Apps, scopes, and tokens are defined in
 
 ## Document Map
 
-- (1-16) Frontmatter
+- (1-16) Frontmatter (metadata version 2026.05.26)
 - (17-25) Opening Model
 - (27-40) Document Map
 - (42-47) Reference Map
@@ -183,8 +183,8 @@ interactive token prompt blocks.
 Mail:
 - Check recent mail without persistence:
   `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --dry-run --num <limit>`
-- Find links without downloading everything:
-  `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --dry-run --extract-links --sender <sender-or-pattern>`
+- Preview matching mail body without persistence:
+  `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --dry-run --preview-body --sender <sender-or-pattern>`
 - Fetch one known message:
   `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --uid <uid>`
 - Send an email:

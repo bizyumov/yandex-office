@@ -61,7 +61,7 @@ Config management boundary:
   initializes a local account handle and prints compact account JSON with
   `alias`, optional `email`, and `apps`.
 - `oauth_setup.py --app <app_id>` prints an OAuth link for an
-  `oauth_apps.catalog` profile such as `mail-readonly`; `--account` is an
+  `oauth_apps.catalog` entry such as `mail-readonly`; `--account` is an
   optional hint, not a URL-generation requirement.
 - `oauth_setup.py --from-env <ENV_VAR>` imports a token by verified identity.
 - Edit `{data_dir}/config.agent.json` for local runtime settings such as
@@ -77,13 +77,14 @@ Mail filter notes:
 - configured entries under `mail.filters` are peer filters such as `telemost` and `forms`
 - legacy top-level keys like `mail.filters.sender` are still upgraded in-memory into `mail.filters.telemost`
 - named filters support `enabled: false`; bare runs execute all enabled filters
+- named filters may use `any: [...]` for OR-style branch filters; each branch supports the same `sender`, `subject`, `since_date`, and `before_date` fields, while branch cursor state is stored in the normal mail state file `{data_dir}/{mail.state_file}` (default `{data_dir}/state.json`) directly in the existing account bucket `filters.<filter>.accounts.<account>` as `sha256:...` keys alongside normal cursor fields such as `last_uid`, `last_check`, and `last_received_date`; do not add a `branches` wrapper or a filter-local state file
 - filter keys must be lowercase English schema keys because they are also used as incoming subdirectory names
 - `default` is reserved for ad-hoc one-off runs and must not be used as a configured filter key
 - `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --filter <name>` runs exactly that named filter, even if it is disabled for bare runs
 - `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias>` selects the token-backed account resolved by `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --accounts list`
 - raw CLI overrides such as `--sender`, `--subject`, `--since-date`, `--before-date`, and `--uid` are treated as ad-hoc, do not advance persistent cursors, and search account history by default when no `--filter` is selected
 - `--uid <n>` fetches exactly one message, skips filter search logic, and requires `--account` when multiple accounts are available
-- `--extract-links` with `--dry-run` includes a `links` array for matching messages without writing incoming files
+- `--preview-body` with `--dry-run` includes a `body` object for matching messages without writing incoming files; without it, dry-run fetches headers only
 - sender and subject filters are literal IMAP substring matches; no extra query language is implemented
 - large dry-run result sets spill into `{data_dir}/latest-query/`; the next spilled run replaces the previous artifact, so copy it elsewhere if you need to keep it
 
