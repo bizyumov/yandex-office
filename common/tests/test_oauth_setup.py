@@ -503,10 +503,9 @@ def test_oauth_setup_imports_legacy_yandex_disk_token_from_env(
     oauth_setup.main()
 
     captured = capsys.readouterr()
-    assert captured.out == "legacy\n"
+    assert captured.out == "diskacct\n"
     assert "YANDEX_DISK_TOKEN" not in captured.out
-    assert 'Provided --account "diskacct"' in captured.err
-    assert saved["path"] == data_dir / "auth" / "legacy.token"
+    assert saved["path"] == data_dir / "auth" / "diskacct.token"
     assert saved["token_data"] == {
         "email": "legacy@example.com",
         "legacy-env-token": {"client_id": "disk-client"},
@@ -622,7 +621,7 @@ def test_oauth_setup_code_flow_complete_tries_registry_in_issue_order(
         data_dir=data_dir.resolve(),
         agent_config_path=data_dir / "config.agent.json",
         agent_config={},
-        config={"oauth_apps": {"catalog": {}}},
+        config={"oauth_apps": {"catalog": {"disk-read": {"service": "disk", "client_id": "disk-client"}}}},
     )
     calls: list[tuple[str, str]] = []
 
@@ -639,7 +638,17 @@ def test_oauth_setup_code_flow_complete_tries_registry_in_issue_order(
 
     def fake_import(**kwargs):
         calls.append(("import", kwargs["selected_app_id"]))
-        return type("ImportResult", (), {"warnings": [], "resolved_account": "user"})()
+        return type(
+            "ImportResult",
+            (),
+            {
+                "warnings": [],
+                "resolved_account": kwargs.get("account") or "user",
+                "identity": verified("user@example.com", "disk-client"),
+                "token_path": data_dir / "auth" / f"{kwargs.get('account') or 'user'}.token",
+                "token_data": {"email": "user@example.com", "disk-access-token": {"client_id": "disk-client"}},
+            },
+        )()
 
     monkeypatch.setattr(oauth_setup, "bootstrap_runtime_context", lambda *_args, **_kwargs: runtime)
     monkeypatch.setattr(oauth_setup, "_exchange_authorization_code_for_token", fake_exchange, raising=False)
@@ -653,7 +662,13 @@ def test_oauth_setup_code_flow_complete_tries_registry_in_issue_order(
     oauth_setup.main()
 
     captured = capsys.readouterr()
-    assert captured.out == "user\n"
+    report = json.loads(captured.out)
+    assert report["status"] == "ok"
+    assert report["operation"] == "code_flow_complete"
+    assert report["saved_account"] == "user"
+    assert report["app_id"] == "disk-read"
+    assert report["apps"] == ["disk-read"]
+    assert report["token_path"].endswith("/auth/user.token")
     assert calls == [
         ("mail-client", "mail-verifier"),
         ("disk-client", "disk-verifier"),
@@ -734,11 +749,43 @@ def test_oauth_setup_imports_generic_env_token_without_app(
     }
 
 
+def test_managed_import_writes_explicit_requested_account_even_when_identity_exists(monkeypatch, tmp_path: Path) -> None:
+    config = {"oauth_apps": {"catalog": {"office-core": {"client_id": "office-client"}}}}
+    data_dir = tmp_path / "data"
+    auth_dir = data_dir / "auth"
+    auth_dir.mkdir(parents=True)
+    (auth_dir / "bdi.token").write_text('{"email":"bdi@example.com"}\n', encoding="utf-8")
+    monkeypatch.setattr(
+        token_import,
+        "verify_token_identity",
+        lambda *_args, **_kwargs: verified("bdi@example.com", "office-client"),
+    )
+
+    result = token_import.import_managed_oauth_token(
+        config=config,
+        data_dir=data_dir,
+        agent_config={},
+        agent_config_path=data_dir / "config.agent.json",
+        token="office-token",
+        account="test",
+        selected_app_id="office-core",
+    )
+
+    assert result.resolved_account == "test"
+    assert result.token_path == auth_dir / "test.token"
+    assert json.loads((auth_dir / "test.token").read_text(encoding="utf-8")) == {
+        "email": "bdi@example.com",
+        "office-token": {"client_id": "office-client"},
+    }
+    assert json.loads((auth_dir / "bdi.token").read_text(encoding="utf-8")) == {"email": "bdi@example.com"}
+    assert 'Writing requested account "test"' in "\n".join(result.warnings)
+
+
 def test_managed_import_issue_48_identity_rules(monkeypatch, tmp_path: Path) -> None:
     config = {"oauth_apps": {"catalog": {"mail": {"client_id": "mail-client"}}}}
     cases = [
         ("example-user", "example-user@yandex.ru", None, "example-user", ""),
-        ("verified@example.com", "wrong@example.com", "manual", "verified", "Provided --email"),
+        ("verified@example.com", "wrong@example.com", "manual", "manual", "Provided --email"),
     ]
     for identity_email, email_arg, account_arg, alias, warning in cases:
         monkeypatch.setattr(

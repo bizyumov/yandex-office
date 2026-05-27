@@ -86,34 +86,32 @@ def import_managed_oauth_token(
     selected_app_id: str | None = None,
     account_context_only: bool = False,
 ) -> ManagedTokenImportResult:
-    """Verify and store a managed OAuth token under the resolved account file."""
+    """Verify and store a managed OAuth token under the requested or resolved account file."""
     identity = verify_token_identity(config, token=token)
 
     warnings: list[str] = []
     if email and not yandex_identity_matches(email, identity.email):
         warnings.append(
             f'Provided --email "{email}" differs from verified token identity '
-            f'"{identity.email}". Writing the token by verified identity.'
+            f'"{identity.email}". Storing verified identity email in the token file.'
         )
 
-    if account_context_only and account:
+    if account:
+        resolved_account = account
+        existing_account = find_token_account_by_email(data_dir, identity.email)
+        if existing_account is not None and existing_account["alias"] != account:
+            warnings.append(
+                f'Provided --account "{account}" differs from existing account '
+                f'"{existing_account["alias"]}" for {identity.email}. Writing requested account "{account}".'
+            )
+    elif account_context_only and account:
         resolved_account = account
     else:
         existing_account = find_token_account_by_email(data_dir, identity.email)
         if existing_account is not None:
             resolved_account = existing_account["alias"]
-            if account and account != resolved_account:
-                warnings.append(
-                    f'Provided --account "{account}" does not match existing account '
-                    f'"{resolved_account}" for {identity.email}. Using "{resolved_account}".'
-                )
         else:
             resolved_account = choose_account_alias(data_dir, identity.email)
-            if account and account != resolved_account:
-                warnings.append(
-                    f'Provided --account "{account}" differs from token-resolved account '
-                    f'"{resolved_account}". Writing "{resolved_account}".'
-                )
 
     matched_app = oauth_app_for_client_id(config, identity.client_id, service=service)
     if selected_app_id and matched_app is not None and matched_app.app_id != selected_app_id:

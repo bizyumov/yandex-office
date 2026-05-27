@@ -150,55 +150,31 @@ paste the short confirmation code, exchange it inside `oauth_setup.py`, then
 import the returned bearer token through managed auth without printing it. A
 direct CLI parameter such as `--code <confirmation-code>` is acceptable for the
 second phase because the code is short-lived and single-use; do not force this
-code through an environment variable. Keep all in-flight screen-code
-transactions in one registry file, `{data_dir}/auth/oauth-code-flow.json`, not
-one file per authorization. For multiple pending links, do not ask the user to
-label codes by app/link/flow; accept bare codes, complete them in the user's
-message order, and have the CLI try pending entries in link issue order. In
-screen-code testing, the human may deliberately send codes in any convenient
-order; do not force a reset or demand exact link order unless they ask for a
-clean-room retest. Treat Yandex `invalid_grant` / `Code has expired` / bad-code
-responses from one pending entry as a non-match and continue trying later
-pending entries; only fail after all pending entries have been tried. If a code
-succeeds but resolves to an existing account alias different from the requested
-alias, report that as an identity-resolution outcome instead of claiming the
-requested alias was authorized. Yandex confirmation codes live for 10 minutes;
-record `created_at`/`expires_at` and print the expiry to the agent. See
-`references/oauth-screen-code-flow.md`.
-
-Warnings print to stderr; stdout is the resolved alias as one line.
-
-Prefer the Yandex screen-code authorization flow over asking the user to paste
-an `access_token`: generate an authorization-code URL with PKCE, have the user
-paste the short confirmation code, exchange it inside `oauth_setup.py`, then
-import the returned bearer token through managed auth without printing it. A
-direct CLI parameter such as `--code <confirmation-code>` is acceptable for the
-second phase because the code is short-lived and single-use; do not force this
 code through an environment variable. See
 `references/oauth-screen-code-flow.md`.
 
 ```bash
 python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account <alias> --app <app_id> --code-flow start
-python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --code-flow complete --code <confirmation-code>
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account <alias> --code-flow complete --code <confirmation-code>
 ```
 
-Warnings print to stderr; stdout is the resolved alias as one line.
+Keep all in-flight screen-code transactions in one registry file,
+`{data_dir}/auth/oauth-code-flow.json`, not one file per authorization. For
+multiple pending links, do not ask the user to label codes by app/link/flow;
+accept bare codes, complete them in the user's message order, and have the CLI
+try pending entries in link issue order. In screen-code testing, the human may
+deliberately send codes in any convenient order; do not force a reset or demand
+exact link order unless they ask for a clean-room retest. Treat Yandex
+`invalid_grant` / `Code has expired` / bad-code responses from one pending
+entry as a non-match and continue trying later pending entries; only fail after
+all pending entries have been tried.
 
-Prefer the Yandex screen-code authorization flow over asking the user to paste
-an `access_token`: generate an authorization-code URL with PKCE, have the user
-paste the short confirmation code, exchange it inside `oauth_setup.py`, then
-import the returned bearer token through managed auth without printing it. A
-direct CLI parameter such as `--code <confirmation-code>` is acceptable for the
-second phase because the code is short-lived and single-use; do not force this
-code through an environment variable. See
-`references/oauth-screen-code-flow.md`.
-
-```bash
-python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account <alias> --app <app_id> --code-flow start
-python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --code-flow complete --code <confirmation-code>
-```
-
-Warnings print to stderr; stdout is the resolved alias as one line.
+When `--account <alias>` is supplied, the token must be written to that exact
+alias. Verified Yandex identity/email is stored inside that alias's token file;
+it must not silently reroute the write to another existing alias. Screen-code
+completion stdout must be a token-safe JSON work report: operation, whether the
+token was processed/saved, requested account, saved account, verified email,
+app id/client id, apps now present, and token path. Warnings print to stderr.
 
 ```bash
 # In a real interactive shell; do not echo the token value.

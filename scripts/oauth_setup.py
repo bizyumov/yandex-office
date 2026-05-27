@@ -328,9 +328,9 @@ def _account_apps(config: dict[str, object], token_data: dict[str, object]) -> l
 
 def _print_account_info(
     alias: str,
-    token_data: dict[str, object],
+    token_data: dict,
     *,
-    config: dict[str, object],
+    config: dict,
 ) -> None:
     """Print compact account summary JSON."""
     info: dict[str, object] = {"alias": alias}
@@ -339,6 +339,31 @@ def _print_account_info(
         info["email"] = email
     info["apps"] = _account_apps(config, token_data)
     print(json.dumps(info, ensure_ascii=False, separators=(",", ":")))
+
+
+def _print_import_report(
+    import_result,
+    *,
+    config: dict,
+    operation: str,
+    requested_account: str | None,
+    selected_app_id: str | None,
+) -> None:
+    """Print a token-import report without exposing token values."""
+    report = {
+        "status": "ok",
+        "operation": operation,
+        "token_processed": True,
+        "token_saved": True,
+        "requested_account": requested_account,
+        "saved_account": import_result.resolved_account,
+        "email": import_result.identity.email,
+        "app_id": selected_app_id,
+        "client_id": import_result.identity.client_id,
+        "apps": _account_apps(config, import_result.token_data),
+        "token_path": str(import_result.token_path),
+    }
+    print(json.dumps(report, ensure_ascii=False, indent=2))
 
 
 def main() -> None:
@@ -497,6 +522,7 @@ def main() -> None:
             code = str(args.code or "").strip()
             import_result = None
             matched_index = None
+            matched_pending = None
             last_error = None
             pending_candidates = _unexpired_pending_code_flows(data_dir)
             if not pending_candidates:
@@ -528,6 +554,7 @@ def main() -> None:
                     selected_app_id=app_id or None,
                 )
                 matched_index = index
+                matched_pending = pending
                 break
             if import_result is None or matched_index is None:
                 detail = f": {last_error}" if last_error else ""
@@ -537,7 +564,13 @@ def main() -> None:
             sys.exit(1)
         _remove_pending_code_flow_at_index(data_dir, index=matched_index)
         _print_warnings(import_result.warnings)
-        print(import_result.resolved_account)
+        _print_import_report(
+            import_result,
+            config=config,
+            operation="code_flow_complete",
+            requested_account=args.account,
+            selected_app_id=str((matched_pending or {}).get("app_id") or "") or None,
+        )
         return
 
     has_oauth_selector = (
