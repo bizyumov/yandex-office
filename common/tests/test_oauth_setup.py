@@ -513,6 +513,151 @@ def test_oauth_setup_imports_legacy_yandex_disk_token_from_env(
     }
 
 
+def test_oauth_setup_code_flow_start_writes_ordered_pending_registry(
+    monkeypatch,
+    tmp_path: Path,
+    capsys,
+) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir(parents=True, exist_ok=True)
+    data_dir = workspace / "yandex-data"
+    data_dir.mkdir(parents=True, exist_ok=True)
+
+    runtime = RuntimeContext(
+        skill_root=ROOT_DIR,
+        cwd=workspace.resolve(),
+        global_config_path=ROOT_DIR / "config.skill.json",
+        global_config={},
+        data_dir=data_dir.resolve(),
+        agent_config_path=data_dir / "config.agent.json",
+        agent_config={},
+        config={
+            "urls": {"oauth": "https://oauth.yandex.ru/authorize"},
+            "oauth_apps": {
+                "catalog": {
+                    "mail-readonly": {
+                        "service": "mail",
+                        "client_id": "mail-client",
+                        "scopes": ["mail:imap_ro"],
+                        "omit_scope_in_url": True,
+                    },
+                    "disk-read": {
+                        "service": "disk",
+                        "client_id": "disk-client",
+                        "scopes": ["cloud_api:disk.read"],
+                        "omit_scope_in_url": True,
+                    },
+                },
+            },
+        },
+    )
+
+    monkeypatch.setattr(oauth_setup, "bootstrap_runtime_context", lambda *_args, **_kwargs: runtime)
+    monkeypatch.setattr(sys, "argv", ["oauth_setup.py", "--app", "mail-readonly", "--code-flow", "start"])
+    oauth_setup.main()
+    monkeypatch.setattr(sys, "argv", ["oauth_setup.py", "--app", "disk-read", "--code-flow", "start"])
+    oauth_setup.main()
+
+    captured = capsys.readouterr()
+    assert "https://oauth.yandex.ru/authorize?" in captured.out
+    assert "response_type=code" in captured.out
+    assert "code_challenge_method=S256" in captured.out
+    assert "access_token" not in captured.out
+    assert "Code lifetime: 10 minutes" in captured.out
+    assert "Expires at:" in captured.out
+    assert "Check order: links are tried in the order printed" in captured.out
+    registry_path = data_dir / "auth" / "oauth-code-flow.json"
+    assert registry_path.exists()
+    registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    pending = registry["pending"]
+    assert [entry["app_id"] for entry in pending] == ["mail-readonly", "disk-read"]
+    assert pending[0]["client_id"] == "mail-client"
+    assert pending[1]["client_id"] == "disk-client"
+    assert pending[0]["created_at"] < pending[1]["created_at"]
+    assert pending[0]["expires_at"] - pending[0]["created_at"] == 600
+
+
+def test_oauth_setup_code_flow_complete_tries_registry_in_issue_order(
+    monkeypatch,
+    tmp_path: Path,
+    capsys,
+) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir(parents=True, exist_ok=True)
+    data_dir = workspace / "yandex-data"
+    registry_path = data_dir / "auth" / "oauth-code-flow.json"
+    registry_path.parent.mkdir(parents=True, exist_ok=True)
+    registry_path.write_text(
+        json.dumps(
+            {
+                "pending": [
+                    {
+                        "app_id": "mail-readonly",
+                        "client_id": "mail-client",
+                        "redirect_uri": "https://oauth.yandex.ru/verification_code",
+                        "code_verifier": "mail-verifier",
+                        "created_at": 1700000000,
+                        "expires_at": 4102444800,
+                    },
+                    {
+                        "app_id": "disk-read",
+                        "client_id": "disk-client",
+                        "redirect_uri": "https://oauth.yandex.ru/verification_code",
+                        "code_verifier": "disk-verifier",
+                        "created_at": 1700000001,
+                        "expires_at": 4102444800,
+                    },
+                ]
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    runtime = RuntimeContext(
+        skill_root=ROOT_DIR,
+        cwd=workspace.resolve(),
+        global_config_path=ROOT_DIR / "config.skill.json",
+        global_config={},
+        data_dir=data_dir.resolve(),
+        agent_config_path=data_dir / "config.agent.json",
+        agent_config={},
+        config={"oauth_apps": {"catalog": {}}},
+    )
+    calls: list[tuple[str, str]] = []
+
+    def fake_exchange(*, code: str, client_id: str, redirect_uri: str, code_verifier: str, config: dict) -> dict:
+        calls.append((client_id, code_verifier))
+        if client_id != "disk-client":
+            raise RuntimeError("bad_verification_code: Invalid code")
+        return {"access_token": "disk-access-token", "token_type": "bearer"}
+
+    def fake_import(**kwargs):
+        calls.append(("import", kwargs["selected_app_id"]))
+        return type("ImportResult", (), {"warnings": [], "resolved_account": "user"})()
+
+    monkeypatch.setattr(oauth_setup, "bootstrap_runtime_context", lambda *_args, **_kwargs: runtime)
+    monkeypatch.setattr(oauth_setup, "_exchange_authorization_code_for_token", fake_exchange, raising=False)
+    monkeypatch.setattr(oauth_setup, "import_managed_oauth_token", fake_import)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["oauth_setup.py", "--code-flow", "complete", "--code", "short-confirmation-code"],
+    )
+
+    oauth_setup.main()
+
+    captured = capsys.readouterr()
+    assert captured.out == "user\n"
+    assert calls == [
+        ("mail-client", "mail-verifier"),
+        ("disk-client", "disk-verifier"),
+        ("import", "disk-read"),
+    ]
+    registry_after = json.loads(registry_path.read_text(encoding="utf-8"))
+    assert [entry["app_id"] for entry in registry_after["pending"]] == ["mail-readonly"]
+
+
 def test_oauth_setup_imports_generic_env_token_without_app(
     monkeypatch,
     tmp_path: Path,

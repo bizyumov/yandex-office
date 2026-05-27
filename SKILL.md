@@ -42,7 +42,10 @@ Yandex identity behind an alias. Apps, scopes, and tokens are defined in
 ## Reference Map
 
 - Auth model: `references/yandex-office-auth-principles.md`
+- OAuth screen-code / PKCE flow: `references/oauth-screen-code-flow.md`
 - Config and data shape: `references/config-data-and-tests.md`
+- Service overview: `references/yandex-service-reference.md`
+- Service overview: `references/yandex-service-reference.md`
 - Service overview: `references/yandex-service-reference.md`
 - Extension reference: `references/yandex-office-extension.md`
 
@@ -138,7 +141,55 @@ For Calendar plus Telemost, acceptable coverage includes `office-core`, or both
 
 The user authorizes OAuth tokens. `yandex-office` verifies and stores them.
 Never put an access token in visible command arguments, final text, logs, or
-artifacts. In non-interactive tool execution, use `--from-env`.
+artifacts. In non-interactive tool execution, use `--from-env` for bearer
+tokens only.
+
+Prefer the Yandex screen-code authorization flow over asking the user to paste
+an `access_token`: generate an authorization-code URL with PKCE, have the user
+paste the short confirmation code, exchange it inside `oauth_setup.py`, then
+import the returned bearer token through managed auth without printing it. A
+direct CLI parameter such as `--code <confirmation-code>` is acceptable for the
+second phase because the code is short-lived and single-use; do not force this
+code through an environment variable. Keep all in-flight screen-code
+transactions in one registry file, `{data_dir}/auth/oauth-code-flow.json`, not
+one file per authorization. For multiple pending links, do not ask the user to
+label codes by app/link/flow; accept bare codes, complete them in the user's
+message order, and have the CLI try pending entries in link issue order. Yandex
+confirmation codes live for 10 minutes; record `created_at`/`expires_at` and
+print the expiry to the agent. See `references/oauth-screen-code-flow.md`.
+
+Warnings print to stderr; stdout is the resolved alias as one line.
+
+Prefer the Yandex screen-code authorization flow over asking the user to paste
+an `access_token`: generate an authorization-code URL with PKCE, have the user
+paste the short confirmation code, exchange it inside `oauth_setup.py`, then
+import the returned bearer token through managed auth without printing it. A
+direct CLI parameter such as `--code <confirmation-code>` is acceptable for the
+second phase because the code is short-lived and single-use; do not force this
+code through an environment variable. See
+`references/oauth-screen-code-flow.md`.
+
+```bash
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account <alias> --app <app_id> --code-flow start
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --code-flow complete --code <confirmation-code>
+```
+
+Warnings print to stderr; stdout is the resolved alias as one line.
+
+Prefer the Yandex screen-code authorization flow over asking the user to paste
+an `access_token`: generate an authorization-code URL with PKCE, have the user
+paste the short confirmation code, exchange it inside `oauth_setup.py`, then
+import the returned bearer token through managed auth without printing it. A
+direct CLI parameter such as `--code <confirmation-code>` is acceptable for the
+second phase because the code is short-lived and single-use; do not force this
+code through an environment variable. See
+`references/oauth-screen-code-flow.md`.
+
+```bash
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account <alias> --app <app_id> --code-flow start
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --code-flow complete --code <confirmation-code>
+```
+
 Warnings print to stderr; stdout is the resolved alias as one line.
 
 ```bash
