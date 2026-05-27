@@ -154,9 +154,17 @@ code through an environment variable. Keep all in-flight screen-code
 transactions in one registry file, `{data_dir}/auth/oauth-code-flow.json`, not
 one file per authorization. For multiple pending links, do not ask the user to
 label codes by app/link/flow; accept bare codes, complete them in the user's
-message order, and have the CLI try pending entries in link issue order. Yandex
-confirmation codes live for 10 minutes; record `created_at`/`expires_at` and
-print the expiry to the agent. See `references/oauth-screen-code-flow.md`.
+message order, and have the CLI try pending entries in link issue order. In
+screen-code testing, the human may deliberately send codes in any convenient
+order; do not force a reset or demand exact link order unless they ask for a
+clean-room retest. Treat Yandex `invalid_grant` / `Code has expired` / bad-code
+responses from one pending entry as a non-match and continue trying later
+pending entries; only fail after all pending entries have been tried. If a code
+succeeds but resolves to an existing account alias different from the requested
+alias, report that as an identity-resolution outcome instead of claiming the
+requested alias was authorized. Yandex confirmation codes live for 10 minutes;
+record `created_at`/`expires_at` and print the expiry to the agent. See
+`references/oauth-screen-code-flow.md`.
 
 Warnings print to stderr; stdout is the resolved alias as one line.
 

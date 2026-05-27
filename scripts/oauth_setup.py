@@ -300,6 +300,18 @@ def _exchange_authorization_code_for_token(
     return payload
 
 
+def _is_retryable_code_flow_mismatch(exc: RuntimeError) -> bool:
+    """Return whether a token-exchange error should try the next pending flow."""
+    message = str(exc)
+    retryable_markers = (
+        "bad_verification_code",
+        "Invalid code",
+        "invalid_grant",
+        "Code has expired",
+    )
+    return any(marker in message for marker in retryable_markers)
+
+
 def _account_apps(config: dict[str, object], token_data: dict[str, object]) -> list[str]:
     """Return configured app labels present in an account token file."""
     apps: set[str] = set()
@@ -500,7 +512,7 @@ def main() -> None:
                         code_verifier=str(pending.get("code_verifier") or ""),
                     )
                 except RuntimeError as exc:
-                    if "bad_verification_code" in str(exc) or "Invalid code" in str(exc):
+                    if _is_retryable_code_flow_mismatch(exc):
                         last_error = exc
                         continue
                     raise

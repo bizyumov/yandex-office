@@ -628,6 +628,11 @@ def test_oauth_setup_code_flow_complete_tries_registry_in_issue_order(
 
     def fake_exchange(*, code: str, client_id: str, redirect_uri: str, code_verifier: str, config: dict) -> dict:
         calls.append((client_id, code_verifier))
+        if client_id == "mail-client":
+            raise RuntimeError(
+                'Yandex authorization-code exchange failed with HTTP 400: '
+                '{"error":"invalid_grant","error_description":"Code has expired"}'
+            )
         if client_id != "disk-client":
             raise RuntimeError("bad_verification_code: Invalid code")
         return {"access_token": "disk-access-token", "token_type": "bearer"}
