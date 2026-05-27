@@ -777,6 +777,41 @@ def test_managed_import_uses_explicit_account_instead_of_deriving_alias_from_ema
     assert not (data_dir / "auth" / "bdi.token").exists()
 
 
+def test_managed_import_uses_existing_account_for_verified_email_even_with_different_account_arg(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    config = {"oauth_apps": {"catalog": {"office-core": {"client_id": "office-client"}}}}
+    data_dir = tmp_path / "data"
+    auth_dir = data_dir / "auth"
+    auth_dir.mkdir(parents=True)
+    (auth_dir / "bdi.token").write_text('{"email":"bdi@example.com"}\n', encoding="utf-8")
+    monkeypatch.setattr(
+        token_import,
+        "verify_token_identity",
+        lambda *_args, **_kwargs: verified("bdi@example.com", "office-client"),
+    )
+
+    result = token_import.import_managed_oauth_token(
+        config=config,
+        data_dir=data_dir,
+        agent_config={},
+        agent_config_path=data_dir / "config.agent.json",
+        token="office-token",
+        account="test",
+        selected_app_id="office-core",
+    )
+
+    assert result.resolved_account == "bdi"
+    assert result.token_path == auth_dir / "bdi.token"
+    assert json.loads((auth_dir / "bdi.token").read_text(encoding="utf-8")) == {
+        "email": "bdi@example.com",
+        "office-token": {"client_id": "office-client"},
+    }
+    assert not (auth_dir / "test.token").exists()
+    assert 'Provided --account "test" does not match existing account "bdi"' in "\n".join(result.warnings)
+
+
 def test_managed_import_issue_48_identity_rules(monkeypatch, tmp_path: Path) -> None:
     config = {"oauth_apps": {"catalog": {"mail": {"client_id": "mail-client"}}}}
     cases = [

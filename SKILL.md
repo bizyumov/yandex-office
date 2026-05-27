@@ -172,13 +172,15 @@ command/output for this flow, do not paraphrase obvious facts back to them;
 inspect the implementation path, name the exact defective branch/assumption,
 then patch and verify it.
 
-When `--account <alias>` is supplied, the token must be written to that exact
-alias. Verified Yandex identity/email is stored inside that alias's token file;
-it must not silently derive a different alias from the verified email.
-Screen-code completion stdout must be a token-safe JSON work report: operation,
-whether the token was processed/saved, requested account, saved account,
-verified email, app id/client id, apps now present, and token path. Warnings
-print to stderr.
+When `--account <alias>` is supplied and no existing token file already uses
+the verified email, write the token to that exact alias. Verified Yandex
+identity/email is stored inside that alias's token file; it must not silently
+derive a different alias from the verified email. If the verified email already
+exists in another account file, keep using that existing account and warn about
+the mismatch. Screen-code completion stdout must be a token-safe JSON work
+report: operation, whether the token was processed/saved, requested account,
+saved account, verified email, app id/client id, apps now present, and token
+path. Warnings print to stderr.
 
 ```bash
 # In a real interactive shell; do not echo the token value.

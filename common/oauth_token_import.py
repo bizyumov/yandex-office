@@ -96,16 +96,18 @@ def import_managed_oauth_token(
             f'"{identity.email}". Storing verified identity email in the token file.'
         )
 
-    if account:
-        resolved_account = account
-    elif account_context_only and account:
+    existing_account = find_token_account_by_email(data_dir, identity.email)
+    if existing_account is not None:
+        resolved_account = existing_account["alias"]
+        if account and account != resolved_account:
+            warnings.append(
+                f'Provided --account "{account}" does not match existing account '
+                f'"{resolved_account}" for {identity.email}. Using "{resolved_account}".'
+            )
+    elif account:
         resolved_account = account
     else:
-        existing_account = find_token_account_by_email(data_dir, identity.email)
-        if existing_account is not None:
-            resolved_account = existing_account["alias"]
-        else:
-            resolved_account = choose_account_alias(data_dir, identity.email)
+        resolved_account = choose_account_alias(data_dir, identity.email)
 
     matched_app = oauth_app_for_client_id(config, identity.client_id, service=service)
     if selected_app_id and matched_app is not None and matched_app.app_id != selected_app_id:
