@@ -43,7 +43,9 @@ Yandex identity behind an alias. Apps, scopes, and tokens are defined in
 
 - Auth model: `references/yandex-office-auth-principles.md`
 - OAuth screen-code / PKCE flow: `references/oauth-screen-code-flow.md`
+- OAuth screen-code testing pitfalls: `references/oauth-screen-code-testing-pitfalls.md`
 - Config and data shape: `references/config-data-and-tests.md`
+- Service overview: `references/yandex-service-reference.md`
 - Service overview: `references/yandex-service-reference.md`
 - Service overview: `references/yandex-service-reference.md`
 - Service overview: `references/yandex-service-reference.md`
@@ -142,7 +144,17 @@ For Calendar plus Telemost, acceptable coverage includes `office-core`, or both
 The user authorizes OAuth tokens. `yandex-office` verifies and stores them.
 Never put an access token in visible command arguments, final text, logs, or
 artifacts. In non-interactive tool execution, use `--from-env` for bearer
-tokens only.
+Warnings print to stderr; stdout is the resolved alias as one line.
+
+For live tests and debugging of screen-code flow, preserve the pending registry
+as evidence. Do not clear `{data_dir}/auth/oauth-code-flow.json`, regenerate
+batches, or delete newly resolved aliases unless the user explicitly asks. When
+reporting a completion attempt, include the exact command, complete non-secret
+stdout/stderr, exit code, registry before/after, and account summaries. If the
+user asks a code to land in a specific alias, pass `--account <alias>` on the
+`--code-flow complete` command and verify the target alias afterwards; also
+report any warning if managed import resolved and wrote a different alias. See
+`references/oauth-screen-code-test-debugging.md`.
 
 Prefer the Yandex screen-code authorization flow over asking the user to paste
 an `access_token`: generate an authorization-code URL with PKCE, have the user
@@ -152,6 +164,8 @@ direct CLI parameter such as `--code <confirmation-code>` is acceptable for the
 second phase because the code is short-lived and single-use; do not force this
 code through an environment variable. See
 `references/oauth-screen-code-flow.md`.
+See also `references/oauth-account-routing-pitfalls.md` before changing managed
+OAuth alias routing or screen-code completion reports.
 
 ```bash
 python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account <alias> --app <app_id> --code-flow start
@@ -160,17 +174,26 @@ python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account <alias> --
 
 Keep all in-flight screen-code transactions in one registry file,
 `{data_dir}/auth/oauth-code-flow.json`, not one file per authorization. For
-multiple pending links, do not ask the user to label codes by app/link/flow;
+For multiple pending links, do not ask the user to label codes by app/link/flow;
 accept bare codes, complete them in the user's message order, and have the CLI
 try pending entries in link issue order. In screen-code testing, the human may
 deliberately send codes in any convenient order; do not force a reset or demand
 exact link order unless they ask for a clean-room retest. Treat Yandex
 `invalid_grant` / `Code has expired` / bad-code responses from one pending
 entry as a non-match and continue trying later pending entries; only fail after
-all pending entries have been tried. When the user provides a concrete failed
-command/output for this flow, do not paraphrase obvious facts back to them;
-inspect the implementation path, name the exact defective branch/assumption,
-then patch and verify it.
+all pending entries have been tried.
+
+When the user sends one or more bare confirmation codes in chat during an active
+screen-code flow, treat that as an instruction to complete the pending OAuth
+flows now. For a batch of codes, run `--code-flow complete` once per code and
+record/report the command, stdout, stderr, and exit code for each code
+separately; do not combine multiple completions in one shell command where a
+later success can mask an earlier non-zero exit. Snapshot the pending registry
+before the batch and after the batch, redacting `code_verifier` and token-like
+fields, and verify the target account summary after successful completions.
+When the user provides a concrete failed command/output for this flow, do not
+paraphrase obvious facts back to them; inspect the implementation path, name the
+exact defective branch/assumption, then patch and verify it.
 
 When `--account <alias>` is supplied and no existing token file already uses
 the verified email, write the token to that exact alias. Verified Yandex
@@ -181,6 +204,16 @@ the mismatch. Screen-code completion stdout must be a token-safe JSON work
 report: operation, whether the token was processed/saved, requested account,
 saved account, verified email, app id/client id, apps now present, and token
 path. Warnings print to stderr.
+
+When debugging OAuth/account-routing bugs, preserve the system invariant before
+patching: first inspect the existing resolution order, then make the smallest
+branch change. Correct order for managed token import is: existing verified-email
+account wins; else explicit `--account`; else derive alias from verified email.
+Do not “fix” by making CLI arguments override existing-account binding globally,
+and do not remove existing mismatch warnings unless the user specifically asks.
+If the user supplies command/output/interpretation, treat it as a bug report:
+inspect the defective branch and patch it; do not restate the obvious or invent
+new helper abstractions for one-off JSON reporting.
 
 ```bash
 # In a real interactive shell; do not echo the token value.
@@ -193,6 +226,20 @@ unset YANDEX_ACCESS_TOKEN
 If the user deliberately sends a token in chat, treat it as current
 user-provided secret input. Do not recover tokens from session logs and do not
 edit token files by hand; use managed import.
+
+## Screen-Code Testing Discipline
+
+When testing `--code-flow` with a human sending short codes, preserve the pending
+registry as evidence. Do not manually clear `{data_dir}/auth/oauth-code-flow.json`
+or delete temporary token accounts until the user explicitly asks or smoke checks
+are complete. Follow the user's account scope exactly: pass `--account <alias>`
+only when they ask for that alias; omit `--account` when they say to complete
+without specifying an account. During debugging, report the full JSON stdout from
+`--code-flow complete` (including `requested_account`, `saved_account`, `app_id`,
+`apps`, and `token_path`) instead of summarizing. A successful `token_saved: true`
+proves import, not product API usability; verify relevant APIs before cleanup
+when the goal is end-to-end authorization testing. See
+`references/oauth-screen-code-testing-pitfalls.md`.
 
 ## Full Authorization Workflow
 

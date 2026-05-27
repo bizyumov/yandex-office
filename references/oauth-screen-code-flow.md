@@ -49,7 +49,17 @@ Do not require importing the confirmation code through an environment variable. 
 - Keep `response_type=token` as a legacy fallback until the code flow is fully rolled out.
 - Future improvement: persist `refresh_token` and expiry metadata, then refresh expired access tokens automatically. Minimal MVP may import only `access_token` into the current managed-token model.
 
-## Operational pitfalls
+## Agent discipline for live authorization tests
+
+When the user is testing screen-code behavior, preserve test state exactly. Do not clear `oauth-code-flow.json`, delete account aliases, regenerate links, or otherwise change registry/history unless explicitly requested. Treat the pending registry as test evidence.
+
+For every submitted code during a test, report the exact command, full stdout/stderr, exit status, and before/after state requested by the user. Do not summarize away JSON results. If a command is run with or without `--account`, state that explicitly; if the user says to omit the account, do not pass `--account`.
+
+`invalid_grant` / `Code has expired` is a Yandex token endpoint response for the specific pending verifier/client attempted. During multi-link tests it is not by itself proof that the human-provided code or every pending link is expired. Verify registry order, local `expires_at`, and whether the CLI continued to later pending entries before explaining the cause.
+
+If a requested target alias differs from the token-resolved identity, report exactly what the CLI returned (`requested_account`, `saved_account`, `email`, `app_id`, `token_path`) and then verify the alias summary. Do not assume `--account <alias>` is a forced write target unless current CLI output proves `saved_account` equals that alias.
+
+## Operational pitfall
 
 Before editing the `yandex-office` repo, create/switch to a feature branch. Do not begin implementation on `main`. If uncommitted edits are already present on `main`, `git switch -c <branch>` carries them to the new branch without committing or losing them.
 
