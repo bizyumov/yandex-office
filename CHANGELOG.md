@@ -2,6 +2,32 @@
 
 All public `yandex-office` skill releases use the `YYYY.MM.DD` version format.
 
+## 2026.05.27
+
+### Added
+
+- Added Yandex OAuth screen-code authorization with PKCE through
+  `oauth_setup.py --code-flow start` and `--code-flow complete`.
+- Stored pending screen-code authorizations in one ordered registry at
+  `{data_dir}/auth/oauth-code-flow.json`.
+
+### Changed
+
+- OAuth completion now prints a token-safe JSON report with requested/saved
+  account, verified email, app/client id, app coverage, and token path.
+- Managed token import uses one routing rule for all OAuth token intake:
+  existing verified-email account wins; otherwise explicit `--account`;
+  otherwise derive an alias from verified email.
+
+### Verification
+
+- `python3 -m pytest -q`
+- `python3 -m py_compile $(rg --files -g '*.py')`
+- `python3 capabilities/audit-method-auth.py`
+- `python3 capabilities/validate.py`
+- `git diff --check`
+- live read-only Mail and Calendar smoke checks with configured token files
+
 ## 2026.05.26
 
 ### Fixed

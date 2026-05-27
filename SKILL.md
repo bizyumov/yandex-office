@@ -6,7 +6,7 @@ license: MIT
 compatibility: Python 3.10+, per-skill dependencies, network access for Yandex APIs
 metadata:
   author: bizyumov
-  version: "2026.05.26"
+  version: "2026.05.27"
   openclaw:
     emoji: "🟡"
     requires:
@@ -26,22 +26,22 @@ Yandex identity behind an alias. Apps, scopes, and tokens are defined in
 
 ## Document Map
 
-- (1-16) Frontmatter (metadata version 2026.05.26)
+- (1-16) Frontmatter (metadata version 2026.05.27)
 - (17-25) Opening Model
-- (27-40) Document Map
-- (42-47) Reference Map
+- (27-39) Document Map
+- (41-47) Reference Map
 - (49-75) Account-First Workflow
 - (77-108) Account And OAuth Helper
 - (110-135) OAuth App Selector
-- (137-154) Token Handling
-- (156-179) Full Authorization Workflow
-- (181-214) Common Workflows
-- (216-221) Extension Reference Link
-- (223-232) Migration, Versioning, License
+- (137-160) Token Handling
+- (162-195) Common Workflows
+- (197-202) Extension Reference Link
+- (204-213) Migration, Versioning, License
 
 ## Reference Map
 
 - Auth model: `references/yandex-office-auth-principles.md`
+- OAuth screen-code / PKCE flow: `references/oauth-screen-code-flow.md`
 - Config and data shape: `references/config-data-and-tests.md`
 - Service overview: `references/yandex-service-reference.md`
 - Extension reference: `references/yandex-office-extension.md`
@@ -84,10 +84,10 @@ onboarding path. The literal alias `list` is valid; discovery uses plural
   `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email>`
 - Save email under a chosen alias:
   `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <alias>`
-- Generate an OAuth URL:
-  `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --app <app_id>`
-- Import an environment token:
-  `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --from-env <ENV_VAR>`
+- Start screen-code OAuth:
+  `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account <alias> --app <app_id> --code-flow start`
+- Complete screen-code OAuth:
+  `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account <alias> --code-flow complete --code <confirmation-code>`
 
 Do not use `--account <alias>` to test whether an alias exists. It creates or
 updates the local account handle. Use it only when that is intended, or after
@@ -127,8 +127,8 @@ OAuth, `--app office-core` is required. Email and account are optional hints and
 may not match the verified token identity if the human authorizes while logged
 into a different Yandex account.
 
-Examples: `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --app office-core`
-or `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <alias> --app office-core`
+Examples: `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account <alias> --app office-core --code-flow start`
+then `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account <alias> --code-flow complete --code <confirmation-code>`
 
 To ensure an account covers a workflow, run `--account <alias>` and read `apps`.
 For Calendar plus Telemost, acceptable coverage includes `office-core`, or both
@@ -138,45 +138,26 @@ For Calendar plus Telemost, acceptable coverage includes `office-core`, or both
 
 The user authorizes OAuth tokens. `yandex-office` verifies and stores them.
 Never put an access token in visible command arguments, final text, logs, or
-artifacts. In non-interactive tool execution, use `--from-env`.
-Warnings print to stderr; stdout is the resolved alias as one line.
+artifacts. Warnings print to stderr; stdout is the resolved alias or a structured
+JSON report, depending on the command.
+
+Prefer the Yandex screen-code flow for new OAuth setup. It creates a PKCE
+authorization URL, stores pending verifier state in
+`{data_dir}/auth/oauth-code-flow.json`, exchanges the short confirmation code,
+and imports the returned bearer token through managed auth without printing it.
 
 ```bash
-# In a real interactive shell; do not echo the token value.
-IFS= read -rsp 'Paste access_token: ' YANDEX_ACCESS_TOKEN; printf '\n'
-export YANDEX_ACCESS_TOKEN
-python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --from-env YANDEX_ACCESS_TOKEN
-unset YANDEX_ACCESS_TOKEN
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account <alias> --app <app_id> --code-flow start
+python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account <alias> --code-flow complete --code <confirmation-code>
 ```
 
-If the user deliberately sends a token in chat, treat it as current
-user-provided secret input. Do not recover tokens from session logs and do not
-edit token files by hand; use managed import.
-
-## Full Authorization Workflow
-
-To authorize an account across ALL yandex-office sub-skills with maximum
-permissions, generate OAuth URLs for this set of apps:
-
-1. `office-core` — Mail (read), Disk (full), Calendar, Telemost
-2. `mail-readwrite` — Mail IMAP mutation/delete
-3. `mail-smtp` — Mail SMTP send
-4. `contacts-default` — Contacts (read + modify)
-5. `tracker-full` — Tracker (read + write)
-6. `forms-full` — Forms (read + write)
-7. `directory-full` — Directory (all read + write scopes)
-
-`office-core` alone does NOT cover Contacts, Tracker, Forms, or Directory.
-Each of those requires a separate app authorization.
-
-Non-interactive URL extraction: `oauth_setup.py` is interactive (prompts for
-token), but the URL is printed to stdout *before* the prompt. Extract with:
-```bash
-python3 <skill>/scripts/oauth_setup.py --account <alias> --app <app_id> 2>&1 | grep "oauth.yandex.ru"
-```
-Do NOT wrap in `timeout` — it causes the process to be blocked/killed before
-output flushes. Plain execution + grep works because the URL prints before the
-interactive token prompt blocks.
+Completion prints token-safe JSON with `requested_account`, `saved_account`,
+`email`, `app_id`, `client_id`, `apps`, and `token_path`. For several pending
+links, run one complete command per code; the CLI tries pending entries in issue
+order and removes only the matched entry. Account routing is unified for all
+managed imports: existing verified-email account wins, else explicit
+`--account`, else derive an alias from verified email. Details live in
+`references/oauth-screen-code-flow.md`.
 
 ## Common Workflows
 

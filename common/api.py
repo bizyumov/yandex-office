@@ -640,7 +640,6 @@ def digest_legacy_disk_token_env(ctx: YandexApiContext) -> None:
         token=token,
         account=ctx.account,
         service="disk",
-        account_context_only=True,
     )
 
 
