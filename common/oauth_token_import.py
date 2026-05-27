@@ -84,7 +84,6 @@ def import_managed_oauth_token(
     account: str | None = None,
     service: str | None = None,
     selected_app_id: str | None = None,
-    account_context_only: bool = False,
 ) -> ManagedTokenImportResult:
     """Verify and store a managed OAuth token under the requested or resolved account file."""
     identity = verify_token_identity(config, token=token)

@@ -1,6 +1,6 @@
 # OAuth screen-code authorization flow
 
-Use this reference when replacing token-paste onboarding for Yandex OAuth apps in `yandex-office`.
+Use this reference for Yandex OAuth screen-code setup in `yandex-office`.
 
 ## Confirmed behavior
 
@@ -21,9 +21,7 @@ A live test against the existing `mail-readonly` app showed that Yandex accepts 
 
 A negative `/token` probe with an invalid code returned `bad_verification_code`, not `client_secret` errors; a valid live code exchanged successfully and verified through `login.yandex.ru/info` with the expected `client_id`.
 
-## CLI design preference
-
-For Telegram/Hermes use, prefer a direct second-phase CLI parameter for the short-lived confirmation code, e.g.:
+## CLI flow
 
 ```bash
 python3 <skill>/scripts/oauth_setup.py --app mail-readonly --code-flow start
@@ -40,31 +38,8 @@ Do not require importing the confirmation code through an environment variable. 
 - Exclude generation-time ties in code: assign each new `created_at` as a strictly increasing timestamp relative to the last registry entry, even when several links are generated in the same second.
 - Yandex confirmation codes live for 10 minutes. Set `expires_at = created_at + 600` and print both the lifetime and expiry timestamp in `--code-flow start` output so the agent knows when the human-provided code will expire.
 - Batch authorization UX: if several links were issued, the user should only paste the short codes. Do not ask them to label codes with app names, flow IDs, or link numbers. Run completion for each code in the order the user supplied it; each completion should try the registry `pending` entries in link issue order and remove only the matched entry after successful import.
-- Test-session UX: when the human says this is a test, accept codes in whatever order they send them. Do not force a clean reset, regenerate links, or demand exact link order unless the human asks for that. If debugging a failed code, narrate the exact state checks and the exact completion command/result.
 - Completion pitfall: one stale pending entry can return Yandex `invalid_grant` / `Code has expired` before the CLI reaches the matching fresh entry. Treat `invalid_grant`, `Code has expired`, `bad_verification_code`, and equivalent invalid-code responses as non-matches for that pending entry; continue through all pending entries and only fail after all candidates have been tried.
 - Alias routing: when `--account <alias>` is supplied and no existing token file already uses the verified Yandex email, write the token to that exact alias. Do not derive another alias from the verified email; store the verified email inside the requested alias's token file. If the verified email already exists in another account file, keep using that existing account and warn about the mismatch.
 - Completion report: successful `--code-flow complete` must print a token-safe JSON report to stdout with at least status, operation, token processed/saved flags, requested account, saved account, verified email, app id/client id, apps present after import, and token path. Do not print only the alias.
-- Debugging posture: if the user sends an exact command, full output, and interpretation, treat it as a bug report. Do not answer with a Captain Obvious restatement; inspect the code path, identify the exact broken assumption or branch, then patch, test, commit, and report the concrete diff/evidence.
-- Implementation hygiene: do not invent helper functions or abstractions for one-off reporting if the file already has a simple established pattern (`json.dumps(...)`, `_print_account_info`, `_print_warnings`). Prefer the smallest local change that fixes the exact broken branch. For alias bugs, test the user's actual failure mode: a new verified email that would derive another alias must still write to the explicit `--account`, and the derived alias file must not be created.
 - Keep `response_type=token` as a legacy fallback until the code flow is fully rolled out.
 - Future improvement: persist `refresh_token` and expiry metadata, then refresh expired access tokens automatically. Minimal MVP may import only `access_token` into the current managed-token model.
-
-## Agent discipline for live authorization tests
-
-When the user is testing screen-code behavior, preserve test state exactly. Do not clear `oauth-code-flow.json`, delete account aliases, regenerate links, or otherwise change registry/history unless explicitly requested. Treat the pending registry as test evidence.
-
-For every submitted code during a test, report the exact command, full stdout/stderr, exit status, and before/after state requested by the user. Do not summarize away JSON results. If a command is run with or without `--account`, state that explicitly; if the user says to omit the account, do not pass `--account`.
-
-`invalid_grant` / `Code has expired` is a Yandex token endpoint response for the specific pending verifier/client attempted. During multi-link tests it is not by itself proof that the human-provided code or every pending link is expired. Verify registry order, local `expires_at`, and whether the CLI continued to later pending entries before explaining the cause.
-
-If a requested target alias differs from the token-resolved identity, report exactly what the CLI returned (`requested_account`, `saved_account`, `email`, `app_id`, `token_path`) and then verify the alias summary. Do not assume `--account <alias>` is a forced write target unless current CLI output proves `saved_account` equals that alias.
-
-## Operational pitfall
-
-Before editing the `yandex-office` repo, create/switch to a feature branch. Do not begin implementation on `main`. If uncommitted edits are already present on `main`, `git switch -c <branch>` carries them to the new branch without committing or losing them.
-
-When testing batch screen-code completion, preserve the pending registry unless the user explicitly asks to reset it. Do not delete or rewrite `{data_dir}/auth/oauth-code-flow.json` during a test run just to recover from errors; the registry order and history are part of the behavior under test.
-
-A Yandex `/token` response like `invalid_grant` / `Code has expired` during completion is not by itself proof that the human's screen code has actually expired. In a multi-link batch, the CLI may be trying the code against a pending entry with the wrong `client_id`/PKCE verifier. The correct behavior is to continue through pending entries for mismatch-like errors and only report failure after all candidates have been tried. For proof, inspect the current registry order and, if needed, add temporary debug logging of `index`, `app_id`, and `client_id` before token exchange; never log `code_verifier`, access tokens, or refresh tokens.
-
-During alias-routing tests, `--account <alias>` is an explicit write target only when the verified Yandex email is not already present in another token file. If the email is already present, the existing account wins and a warning is expected. If the verified Yandex email would merely derive another new local alias, the requested alias must receive the new token. Verify this by checking the JSON report's `saved_account`, `apps`, and `token_path`, then checking the requested alias with `oauth_setup.py --account <alias>`.

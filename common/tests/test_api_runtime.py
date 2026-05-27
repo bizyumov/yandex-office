@@ -453,6 +453,33 @@ def test_digest_legacy_yandex_disk_token_env_ignores_existing_account_token(
     }
 
 
+def test_digest_legacy_yandex_disk_token_env_uses_existing_verified_email_account(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    write_json(
+        tmp_path / "auth" / "existing.token",
+        {
+            "email": "disk@example.com",
+        },
+    )
+    monkeypatch.setenv("YANDEX_DISK_TOKEN", "legacy-env-token")
+    monkeypatch.setattr(
+        api_module,
+        "verify_token_identity",
+        lambda *_args, **_kwargs: VerifiedTokenIdentity(
+            email="disk@example.com",
+            client_id="client-read",
+        ),
+    )
+
+    digest_legacy_disk_token_env(context(tmp_path, account="diskacct"))
+
+    existing = json.loads((tmp_path / "auth" / "existing.token").read_text())
+    assert existing["legacy-env-token"]["client_id"] == "client-read"
+    assert not (tmp_path / "auth" / "diskacct.token").exists()
+
+
 def test_digest_legacy_yandex_disk_token_env_creates_managed_account(
     tmp_path: Path,
     monkeypatch,
