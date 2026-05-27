@@ -167,14 +167,18 @@ deliberately send codes in any convenient order; do not force a reset or demand
 exact link order unless they ask for a clean-room retest. Treat Yandex
 `invalid_grant` / `Code has expired` / bad-code responses from one pending
 entry as a non-match and continue trying later pending entries; only fail after
-all pending entries have been tried.
+all pending entries have been tried. When the user provides a concrete failed
+command/output for this flow, do not paraphrase obvious facts back to them;
+inspect the implementation path, name the exact defective branch/assumption,
+then patch and verify it.
 
 When `--account <alias>` is supplied, the token must be written to that exact
 alias. Verified Yandex identity/email is stored inside that alias's token file;
-it must not silently reroute the write to another existing alias. Screen-code
-completion stdout must be a token-safe JSON work report: operation, whether the
-token was processed/saved, requested account, saved account, verified email,
-app id/client id, apps now present, and token path. Warnings print to stderr.
+it must not silently derive a different alias from the verified email.
+Screen-code completion stdout must be a token-safe JSON work report: operation,
+whether the token was processed/saved, requested account, saved account,
+verified email, app id/client id, apps now present, and token path. Warnings
+print to stderr.
 
 ```bash
 # In a real interactive shell; do not echo the token value.

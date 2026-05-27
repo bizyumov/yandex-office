@@ -749,12 +749,9 @@ def test_oauth_setup_imports_generic_env_token_without_app(
     }
 
 
-def test_managed_import_writes_explicit_requested_account_even_when_identity_exists(monkeypatch, tmp_path: Path) -> None:
+def test_managed_import_uses_explicit_account_instead_of_deriving_alias_from_email(monkeypatch, tmp_path: Path) -> None:
     config = {"oauth_apps": {"catalog": {"office-core": {"client_id": "office-client"}}}}
     data_dir = tmp_path / "data"
-    auth_dir = data_dir / "auth"
-    auth_dir.mkdir(parents=True)
-    (auth_dir / "bdi.token").write_text('{"email":"bdi@example.com"}\n', encoding="utf-8")
     monkeypatch.setattr(
         token_import,
         "verify_token_identity",
@@ -772,13 +769,12 @@ def test_managed_import_writes_explicit_requested_account_even_when_identity_exi
     )
 
     assert result.resolved_account == "test"
-    assert result.token_path == auth_dir / "test.token"
-    assert json.loads((auth_dir / "test.token").read_text(encoding="utf-8")) == {
+    assert result.token_path == data_dir / "auth" / "test.token"
+    assert json.loads((data_dir / "auth" / "test.token").read_text(encoding="utf-8")) == {
         "email": "bdi@example.com",
         "office-token": {"client_id": "office-client"},
     }
-    assert json.loads((auth_dir / "bdi.token").read_text(encoding="utf-8")) == {"email": "bdi@example.com"}
-    assert 'Writing requested account "test"' in "\n".join(result.warnings)
+    assert not (data_dir / "auth" / "bdi.token").exists()
 
 
 def test_managed_import_issue_48_identity_rules(monkeypatch, tmp_path: Path) -> None:

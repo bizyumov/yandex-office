@@ -98,12 +98,6 @@ def import_managed_oauth_token(
 
     if account:
         resolved_account = account
-        existing_account = find_token_account_by_email(data_dir, identity.email)
-        if existing_account is not None and existing_account["alias"] != account:
-            warnings.append(
-                f'Provided --account "{account}" differs from existing account '
-                f'"{existing_account["alias"]}" for {identity.email}. Writing requested account "{account}".'
-            )
     elif account_context_only and account:
         resolved_account = account
     else:
