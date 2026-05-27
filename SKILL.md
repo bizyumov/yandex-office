@@ -44,10 +44,8 @@ Yandex identity behind an alias. Apps, scopes, and tokens are defined in
 - Auth model: `references/yandex-office-auth-principles.md`
 - OAuth screen-code / PKCE flow: `references/oauth-screen-code-flow.md`
 - OAuth screen-code testing pitfalls: `references/oauth-screen-code-testing-pitfalls.md`
+- OAuth account-routing pitfalls: `references/oauth-account-routing-pitfalls.md`
 - Config and data shape: `references/config-data-and-tests.md`
-- Service overview: `references/yandex-service-reference.md`
-- Service overview: `references/yandex-service-reference.md`
-- Service overview: `references/yandex-service-reference.md`
 - Service overview: `references/yandex-service-reference.md`
 - Extension reference: `references/yandex-office-extension.md`
 
@@ -144,7 +142,8 @@ For Calendar plus Telemost, acceptable coverage includes `office-core`, or both
 The user authorizes OAuth tokens. `yandex-office` verifies and stores them.
 Never put an access token in visible command arguments, final text, logs, or
 artifacts. In non-interactive tool execution, use `--from-env` for bearer
-Warnings print to stderr; stdout is the resolved alias as one line.
+tokens only. Warnings print to stderr; stdout is the resolved alias or a
+structured JSON report, depending on the command.
 
 For live tests and debugging of screen-code flow, preserve the pending registry
 as evidence. Do not clear `{data_dir}/auth/oauth-code-flow.json`, regenerate
@@ -174,7 +173,7 @@ python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account <alias> --
 
 Keep all in-flight screen-code transactions in one registry file,
 `{data_dir}/auth/oauth-code-flow.json`, not one file per authorization. For
-For multiple pending links, do not ask the user to label codes by app/link/flow;
+multiple pending links, do not ask the user to label codes by app/link/flow;
 accept bare codes, complete them in the user's message order, and have the CLI
 try pending entries in link issue order. In screen-code testing, the human may
 deliberately send codes in any convenient order; do not force a reset or demand
@@ -232,13 +231,16 @@ edit token files by hand; use managed import.
 When testing `--code-flow` with a human sending short codes, preserve the pending
 registry as evidence. Do not manually clear `{data_dir}/auth/oauth-code-flow.json`
 or delete temporary token accounts until the user explicitly asks or smoke checks
-are complete. Follow the user's account scope exactly: pass `--account <alias>`
-only when they ask for that alias; omit `--account` when they say to complete
-without specifying an account. During debugging, report the full JSON stdout from
-`--code-flow complete` (including `requested_account`, `saved_account`, `app_id`,
-`apps`, and `token_path`) instead of summarizing. A successful `token_saved: true`
-proves import, not product API usability; verify relevant APIs before cleanup
-when the goal is end-to-end authorization testing. See
+are complete. Unit/regression tests are not enough to claim OAuth/auth changes
+are verified: run a live end-to-end screen-code import into a real new/clean
+alias when possible, or explicitly say “live OAuth E2E not tested”. Follow the
+user's account scope exactly: pass `--account <alias>` only when they ask for
+that alias; omit `--account` when they say to complete without specifying an
+account. During debugging, report the full JSON stdout from `--code-flow
+complete` (including `requested_account`, `saved_account`, `app_id`, `apps`, and
+`token_path`) instead of summarizing. A successful `token_saved: true` proves
+import, not product API usability; verify relevant APIs before cleanup when the
+goal is end-to-end authorization testing. See
 `references/oauth-screen-code-testing-pitfalls.md`.
 
 ## Full Authorization Workflow
