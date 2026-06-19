@@ -652,7 +652,7 @@ def download_recordings(
         return []
 
     try:
-        from disk.scripts.download import YandexDisk
+        from disk.lib.client import YandexDisk
     except ImportError:
         logger.warning("disk skill not available — skipping recording downloads")
         return []

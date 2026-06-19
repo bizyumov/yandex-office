@@ -1601,6 +1601,16 @@
       "one_of": [
         "tracker:write"
       ]
+    },
+    "disk.resources.upload.post.disk": {
+      "one_of": [
+        "cloud_api:disk.write"
+      ]
+    },
+    "disk.resources.upload.post.app_folder": {
+      "one_of": [
+        "cloud_api:disk.app_folder"
+      ]
     }
   }
 }

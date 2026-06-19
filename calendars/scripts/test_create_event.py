@@ -146,6 +146,85 @@ def capture_put_data(captured: dict):
     return fake_put
 
 
+class DummyDisk:
+    calls = []
+
+    def __init__(self, account, data_dir=None):
+        self.account = account
+        self.data_dir = data_dir
+
+    def upload_and_publish(self, local_file, remote_path, **kwargs):
+        local_path = Path(local_file)
+        self.calls.append(
+            {
+                "account": self.account,
+                "data_dir": self.data_dir,
+                "local_file": str(local_path),
+                "remote_path": remote_path,
+                "kwargs": kwargs,
+            }
+        )
+        return {
+            "public_url": "https://disk.yandex.ru/d/redacted",
+            "mime_type": "text/plain",
+            "size": local_path.stat().st_size,
+            "path": remote_path,
+        }
+
+
+def test_create_event_attachments_default_to_app_folder(monkeypatch, tmp_path: Path):
+    captured = {}
+    attachment = tmp_path / "agenda.txt"
+    attachment.write_text("agenda\n", encoding="utf-8")
+    DummyDisk.calls = []
+    DummyCalendarClient.put_handler = capture_put_data(captured)
+    monkeypatch.setattr(create_event, "YandexCalendarClient", DummyCalendarClient)
+    monkeypatch.setattr(create_event, "YandexTelemostClient", DummyTelemostClient)
+    monkeypatch.setattr(create_event, "YandexDisk", DummyDisk)
+
+    result = create_event.create_telemost_event(
+        account="acct",
+        summary="Attach default",
+        start_str="2026-03-12T10:00:00",
+        duration_minutes=30,
+        attendees=[],
+        timezone_name="Europe/Moscow",
+        attachments=[str(attachment)],
+    )
+
+    assert result["success"] is True
+    assert DummyDisk.calls[0]["remote_path"].startswith("app:/yandex-calendar-attachments/")
+    assert "ATTACH;FMTTYPE=text/plain;VALUE=URI:https://disk.yandex.ru/d/redacted" in captured["data"]
+
+
+def test_create_event_attachments_accept_configured_disk_fallback(monkeypatch, tmp_path: Path):
+    captured = {}
+    data_dir = tmp_path / "yandex-data"
+    write_agent_config(data_dir, {"calendar": {"attachments": {"remote_dir": "disk:/Calendar Attachments"}}})
+    attachment = tmp_path / "agenda.txt"
+    attachment.write_text("agenda\n", encoding="utf-8")
+    DummyDisk.calls = []
+    DummyCalendarClient.put_handler = capture_put_data(captured)
+    monkeypatch.setattr(create_event, "YandexCalendarClient", DummyCalendarClient)
+    monkeypatch.setattr(create_event, "YandexTelemostClient", DummyTelemostClient)
+    monkeypatch.setattr(create_event, "YandexDisk", DummyDisk)
+
+    result = create_event.create_telemost_event(
+        account="acct",
+        summary="Attach fallback",
+        start_str="2026-03-12T10:00:00",
+        duration_minutes=30,
+        attendees=[],
+        data_dir=str(data_dir),
+        timezone_name="Europe/Moscow",
+        attachments=[str(attachment)],
+    )
+
+    assert result["success"] is True
+    assert DummyDisk.calls[0]["remote_path"].startswith("disk:/Calendar Attachments/")
+    assert DummyDisk.calls[0]["kwargs"]["create_parents"] is True
+
+
 def test_create_telemost_event_uses_real_conference(monkeypatch):
     captured = {}
     DummyTelemostClient.calls = []

@@ -189,8 +189,14 @@ python3 <full-path-to-yandex-office>/calendars/scripts/create_event.py \
 Attachment implementation note:
 
 - Yandex does not expose CalDAV managed attachments for this skill.
-- The script uploads the file to Yandex Disk, publishes a share URL, and writes
-  an `ATTACH;VALUE=URI` property into the VEVENT.
+- Calendar uses the standard Disk published-upload composition: upload through
+  the Disk write workflow, publish through the Disk share workflow, then use the
+  resulting `{fileName, url, size}` handoff to write an `ATTACH;VALUE=URI`
+  property into the VEVENT. This is not a Calendar-specific Disk workflow.
+- Attachment uploads default to `app:/yandex-calendar-attachments` so the
+  workflow can use app-folder scope. Pass `--attachment-remote-dir "disk:/..."`
+  or set `calendar.attachments.remote_dir` only when an operator intentionally
+  chooses a normal Disk fallback.
 - GitHub issue #28 tracks the separate Yandex web Calendar attachment API
   research for native Calendar UI attachment management.
 
