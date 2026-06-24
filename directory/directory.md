@@ -43,7 +43,7 @@ GET /org/{orgId}/users
 - `departmentId` — Filter by department (optional)
 - `groupId` — Filter by group (optional)
 
-**Planned managed-auth CLI shape:**
+**Managed CLI** (implemented — `directory/scripts/list.py`):
 ```bash
 python3 <full-path-to-yandex-office>/directory/scripts/list.py \
   --account mary \
@@ -105,6 +105,13 @@ Returns organizations accessible through managed auth for the selected account a
 ```
 PATCH https://api360.yandex.net/directory/v1/org/{orgId}/users/{userId}
 {"displayName": "Имя Фамилия"}
+```
+
+Via the skill CLI:
+
+```bash
+python3 <full-path-to-yandex-office>/directory/scripts/update_user.py \
+  --account alice --org-id 123456 --user-id 1120000000000001 --display-name "Имя Фамилия"
 ```
 
 Three non-obvious behaviors:
@@ -214,11 +221,10 @@ python3 <full-path-to-yandex-office>/directory/scripts/find_slot.py \
 directory/
 ├── directory.md              # This file
 ├── ISSUE-directory-cache-and-identity.md
-└── scripts/                  # Planned; not present yet
-    ├── search.py
-    ├── list.py
-    ├── find_slot.py
-    └── sync_cache.py
+└── scripts/
+    ├── list.py               # DirectoryApi client + read CLI (orgs/users)
+    ├── update_user.py        # Update user fields incl. displayName
+    └── test_directory.py     # Unit tests (mocked HTTP)
 ```
 
 ---
