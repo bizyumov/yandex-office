@@ -11,6 +11,8 @@ Yandex 360 Directory / Директория API integration for accessing organi
 https://api360.yandex.net/directory/v1
 ```
 
+**⚠️ Host pitfall:** `cloud-api.yandex.net` is the Yandex **Disk** API host, not the Directory API host. Any `/directory/v1/...` request sent there returns `404 Not Found` (no such resource on the Disk host) — which looks like a permission or wrong-ID error but is a wrong-host error. Use `https://api360.yandex.net` only.
+
 ### Authentication
 - Managed OAuth token linked to an app covering `directory:read_users`, `directory:read_departments`, `directory:read_groups`
 - Use managed auth authorized through
@@ -93,6 +95,23 @@ Returns organizations accessible through managed auth for the selected account a
   "timezone": "Europe/Moscow"
 }
 ```
+
+---
+
+## displayName (Public Name)
+
+`displayName` is the user's **public name** — the name shown in the user's public profile. It is distinct from the Directory `name` block (`first`/`last`/`middle`). Set it via the same PATCH endpoint:
+
+```
+PATCH https://api360.yandex.net/directory/v1/org/{orgId}/users/{userId}
+{"displayName": "Имя Фамилия"}
+```
+
+Three non-obvious behaviors:
+
+- **Set-only (cannot be cleared).** `{"displayName": null}` and `{"displayName": ""}` are silently ignored (`HTTP 200`, no change). Yandex auto-generates a neutral placeholder public name, so the field is never truly empty; you can only replace it with another non-empty value.
+- **Moderated by Yandex ID.** Public names are reviewed against the Yandex ID public-data rules. Values containing **brand/company names, official or organizational titles, or trademarks** are auto-rejected and reverted to the placeholder shortly after being set. See [Публичные данные — Яндекс ID](https://yandex.ru/support/id/ru/data/public-data) and [Правила пользования сервисами Яндекса](https://yandex.ru/legal/rules/ru/). Functional/shared (non-person) accounts often have no descriptive name that passes moderation.
+- **Returned only when set.** The `displayName` field is absent from a GET response until a value has been applied.
 
 ---
 
@@ -241,6 +260,7 @@ for u in users:
 **404 Not Found**
 - Cause: Directory user/principal not in this organization
 - Fix: Check email or search across all orgs
+- Cause (also): **wrong API host** — a `/directory/v1/...` request sent to `cloud-api.yandex.net` (the Disk API) returns `404`. Use `https://api360.yandex.net`. An insufficient role or OAuth scope instead returns **`403 Forbidden`** (`"No required scope"`), never `404`.
 
 **Pagination Issues**
 - Wrong: `pageSize=100` → returns 10 (default)
