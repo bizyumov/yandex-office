@@ -519,8 +519,8 @@ class EmailFetcher:
     def _safe_filename(filename: str) -> str:
         """Sanitize attachment filename for local filesystem writes."""
         name = str(filename).strip()
-        # Replace path separators and control chars that break writes.
-        name = re.sub(r"[\\/]+", " - ", name)
+        # Replace Windows-forbidden chars with underscore.
+        name = re.sub(r'[\\/:*?"<>|]', "_", name)
         name = re.sub(r"[\x00-\x1f]+", " ", name)
         name = re.sub(r"\s+", " ", name).strip()
         return name or "attachment.bin"
