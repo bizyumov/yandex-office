@@ -522,7 +522,7 @@ class EmailFetcher:
         # Replace filesystem-forbidden characters: \ / : * ? " < > |
         name = re.sub(r'[\\/:*?"<>|]', "_", name)
         name = re.sub(r"[\x00-\x1f]+", " ", name)
-        name = re.sub(r"\s+", " ").strip()
+        name = re.sub(r"\s+", " ", name).strip()
         return name or "attachment.bin"
 
     @classmethod
