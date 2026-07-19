@@ -519,14 +519,137 @@ def _merge_existing_meta(existing: dict, fresh: dict) -> dict:
     return merged
 
 
-def _append_section(path: Path, separator: str, body: str) -> None:
-    """Append a separated section into an output text file."""
+SECTION_SEPARATOR_RE = re.compile(r"(?m)^=== (?P<header>.*?) ===\s*$")
+NEW_SECTION_KEY_RE = re.compile(
+    r"meeting_uid=(?P<meeting_uid>\S+)\s+"
+    r"start_utc=(?P<start_utc>\S+)\s+"
+    r"type=(?P<section_type>\S+)"
+)
+LEGACY_SECTION_RE = re.compile(
+    r"imap_uid=(?P<imap_uid>\S+)\s+"
+    r"type=(?P<section_type>\S+)"
+    r"(?:\s+start_local=(?P<start_local>\S+))?"
+)
+
+
+def _split_sections(text: str) -> list[tuple[str, str]]:
+    """Split a rendered meeting document into separator/body pairs."""
+    matches = list(SECTION_SEPARATOR_RE.finditer(text))
+    sections = []
+    for index, match in enumerate(matches):
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+        sections.append((match.group(0).strip(), text[match.end():end].strip()))
+    return sections
+
+
+def _section_key(
+    separator: str,
+    body: str,
+    default_meeting_uid: str,
+    legacy_start_by_uid: dict[str, str] | None = None,
+) -> tuple[str, str] | None:
+    """Read a canonical occurrence key from new or legacy section data."""
+    match = NEW_SECTION_KEY_RE.search(separator)
+    if match:
+        return (
+            match.group("meeting_uid"),
+            match.group("start_utc"),
+        )
+
+    legacy = LEGACY_SECTION_RE.search(separator)
+    if not legacy:
+        return None
+    ref_utc = parse_reference_timestamp(body)
+    if ref_utc is None and legacy.group("start_local"):
+        local_dt = _parse_iso_timestamp(legacy.group("start_local"))
+        if local_dt:
+            if local_dt.tzinfo is None:
+                local_dt = local_dt.replace(tzinfo=MSK)
+            ref_utc = local_dt.astimezone(timezone.utc)
+    if ref_utc is None and legacy_start_by_uid:
+        mapped_start = legacy_start_by_uid.get(legacy.group("imap_uid"))
+        if mapped_start:
+            return (
+                default_meeting_uid,
+                mapped_start,
+            )
+    if ref_utc is None:
+        return None
+    return (
+        default_meeting_uid,
+        format_utc(ref_utc),
+    )
+
+
+def _legacy_start_map(path: Path, meeting_uid: str) -> dict[str, str]:
+    """Map legacy IMAP UID separators to occurrence starts from transcript bodies."""
+    if not path.exists():
+        return {}
+    starts = {}
+    for separator, body in _split_sections(path.read_text(encoding="utf-8")):
+        legacy = LEGACY_SECTION_RE.search(separator)
+        if not legacy:
+            continue
+        key = _section_key(separator, body, meeting_uid)
+        if key:
+            starts[legacy.group("imap_uid")] = key[1]
+    return starts
+
+
+def _upsert_section(
+    path: Path,
+    *,
+    meeting_uid: str,
+    start_utc: str,
+    section_type: str,
+    body: str,
+    legacy_start_by_uid: dict[str, str] | None = None,
+) -> None:
+    """Upsert one occurrence section and render all known sections by UTC start."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    prefix = "\n\n" if path.exists() and path.stat().st_size > 0 else ""
-    with path.open("a", encoding="utf-8") as f:
-        f.write(f"{prefix}{separator}\n")
-        if body:
-            f.write(body.rstrip() + "\n")
+    sections = {}
+    if path.exists():
+        for separator, existing_body in _split_sections(path.read_text(encoding="utf-8")):
+            key = _section_key(
+                separator,
+                existing_body,
+                meeting_uid,
+                legacy_start_by_uid,
+            )
+            section_match = (
+                NEW_SECTION_KEY_RE.search(separator)
+                or LEGACY_SECTION_RE.search(separator)
+            )
+            if key is None or section_match is None:
+                raise RuntimeError(
+                    f"Cannot recover occurrence key from existing section in {path}"
+                )
+            sections[key] = (section_match.group("section_type"), existing_body)
+
+    sections[(meeting_uid, start_utc)] = (section_type, body.strip())
+    rendered = "\n\n".join(
+        f"=== meeting_uid={key[0]} start_utc={key[1]} type={sections[key][0]} ===\n{sections[key][1]}"
+        for key in sorted(sections, key=lambda item: (item[1], item[0]))
+    ).rstrip() + "\n"
+    tmp_path = path.with_name(path.name + ".tmp")
+    tmp_path.write_text(rendered, encoding="utf-8")
+    os.replace(tmp_path, path)
+
+
+def _meeting_start_utc(meeting_data: dict) -> str | None:
+    """Resolve the occurrence start as an absolute UTC timestamp."""
+    raw_start = meeting_data.get("meeting_start_local")
+    if not raw_start:
+        for source in meeting_data.get("source_emails", []):
+            raw_start = source.get("meeting_start_local")
+            if raw_start:
+                break
+    local_dt = _parse_iso_timestamp(raw_start)
+    if local_dt is None:
+        return None
+    if local_dt.tzinfo is None:
+        local_dt = local_dt.replace(tzinfo=MSK)
+    return format_utc(local_dt.astimezone(timezone.utc))
 
 
 def process_meeting(
@@ -557,38 +680,54 @@ def process_meeting(
         "reference_utc": None,
     }
 
-    source_email = meeting_data.get("source_emails", [{}])[0] if meeting_data.get("source_emails") else {}
-    source_uid = source_email.get("imap_uid")
-    source_type = source_email.get("email_type", "unknown")
-    source_start = source_email.get("meeting_start_local") or meeting_data.get("meeting_start_local") or "unknown"
+    occurrence_start_utc = _meeting_start_utc(meeting_data)
+    transcript_output = meeting_dir / "transcript.txt"
+    legacy_start_by_uid = _legacy_start_map(transcript_output, meeting_uid)
 
-    # Process transcript (if 'summary' email was received), append into single transcript.txt
+    # Process transcript and deterministically rebuild the same-day document.
     if meeting_data.get("transcript_file"):
         transcript_path = Path(meeting_data["transcript_file"])
         if transcript_path.exists():
             raw_text = transcript_path.read_text(encoding="utf-8")
             transformed, ref_utc, speakers = transform_transcript(raw_text)
-            separator = (
-                f"=== imap_uid={source_uid} type={source_type} "
-                f"start_local={source_start} ==="
+            if ref_utc:
+                occurrence_start_utc = format_utc(ref_utc)
+            if occurrence_start_utc is None:
+                logger.error(f"Missing meeting start for meeting_uid={meeting_uid}")
+                return None
+            _upsert_section(
+                transcript_output,
+                meeting_uid=meeting_uid,
+                start_utc=occurrence_start_utc,
+                section_type="summary",
+                body=transformed,
             )
-            _append_section(meeting_dir / "transcript.txt", separator, transformed)
             result["has_transcript"] = True
             result["speakers"] = speakers
-            result["reference_utc"] = format_utc(ref_utc) if ref_utc else None
+            result["reference_utc"] = occurrence_start_utc
 
-    # Save summary by appending into single summary.txt.
+    # Save summary with the same occurrence key and deterministic rebuild.
+    summary_text = None
     summary_file = meeting_data.get("summary_file")
     if summary_file:
         src = Path(summary_file)
         if src.exists():
             summary_text = src.read_text(encoding="utf-8")
-            separator = f"=== imap_uid={source_uid} type={source_type} ==="
-            _append_section(meeting_dir / "summary.txt", separator, summary_text)
-            result["has_summary"] = True
     elif meeting_data.get("summary"):
-        separator = f"=== imap_uid={source_uid} type={source_type} ==="
-        _append_section(meeting_dir / "summary.txt", separator, meeting_data["summary"])
+        summary_text = meeting_data["summary"]
+
+    if summary_text is not None:
+        if occurrence_start_utc is None:
+            logger.error(f"Missing meeting start for meeting_uid={meeting_uid}")
+            return None
+        _upsert_section(
+            meeting_dir / "summary.txt",
+            meeting_uid=meeting_uid,
+            start_utc=occurrence_start_utc,
+            section_type="summary",
+            body=summary_text,
+            legacy_start_by_uid=legacy_start_by_uid,
+        )
         result["has_summary"] = True
 
     # Build meeting metadata

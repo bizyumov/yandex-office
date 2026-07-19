@@ -269,6 +269,9 @@ Deterministic merge semantics:
 
 - `meeting_uid + start_utc` is the unique occurrence key.
 - Reprocessing the same occurrence replaces the same logical fragment and does not append a duplicate.
+- During rebuild, duplicate sections are removed, including legacy sections whose separators use the old `imap_uid` format.
+- Legacy section identity is recovered from the directory meeting UID and the section transcript start UTC.
+- If a legacy section key cannot be recovered, rebuild fails without overwriting the existing file.
 - All fragments for the same `meeting_uid` and UTC day are rendered into one file.
 - Email arrival order and IMAP UID do not affect the rendered order.
 - A transcript separator contains `meeting_uid`, `start_utc`, and type; IMAP UID remains only in metadata provenance.
