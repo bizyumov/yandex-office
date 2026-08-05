@@ -22,6 +22,7 @@ from telemost.scripts.process_transcript import (
     parse_reference_timestamp,
     transform_transcript,
 )
+import telemost.scripts.process_meeting as process_meeting_module
 from telemost.scripts.process_meeting import (
     archive_dirs,
     build_meeting_output_path,
@@ -295,6 +296,138 @@ def test_partial_meeting():
         assert len(meta["media_links"]) == 0
 
         print(f"  PASS: partial meeting → {meeting_dir.name}/ transcript only, partial=true")
+
+
+def test_section_upsert_is_order_independent_and_idempotent():
+    """Same-day fragments render by UTC start regardless of delivery order or replay."""
+    early = "Встреча проходила 17.07.2026 с 10:00 (MSK).\n\n2026-07-17T07:00:05Z Speaker:\nEarly fragment.\n"
+    late = "Встреча проходила 17.07.2026 с 10:33 (MSK).\n\n2026-07-17T07:33:05Z Speaker:\nLate fragment.\n"
+    variants = []
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        for index, events in enumerate(((early, late), (late, early), (late, early, late))):
+            path = Path(tmpdir) / f"transcript-{index}.txt"
+            for body in events:
+                ref_utc = parse_reference_timestamp(body)
+                assert ref_utc is not None
+                process_meeting_module._upsert_section(
+                    path,
+                    meeting_uid=MEETING_UID,
+                    start_utc=format_utc(ref_utc),
+                    section_type="summary",
+                    body=body,
+                )
+            variants.append(path.read_text(encoding="utf-8"))
+
+    assert variants[0] == variants[1] == variants[2]
+    assert variants[0].count("=== meeting_uid=") == 2
+    assert variants[0].index("start_utc=2026-07-17T07:00:00Z") < variants[0].index("start_utc=2026-07-17T07:33:00Z")
+
+
+def test_section_identity_is_meeting_uid_plus_start_utc_only():
+    """Section type does not create a second occurrence for the same UID and UTC start."""
+    existing = (
+        f"=== meeting_uid={MEETING_UID} start_utc=2026-07-17T07:00:00Z type=legacy ===\n"
+        "Old body.\n"
+    )
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = Path(tmpdir) / "transcript.txt"
+        path.write_text(existing, encoding="utf-8")
+        process_meeting_module._upsert_section(
+            path,
+            meeting_uid=MEETING_UID,
+            start_utc="2026-07-17T07:00:00Z",
+            section_type="summary",
+            body="Current body.",
+        )
+        rendered = path.read_text(encoding="utf-8")
+
+    assert rendered.count("=== meeting_uid=") == 1
+    assert "type=summary" in rendered
+    assert "Current body." in rendered
+    assert "Old body." not in rendered
+
+
+def test_section_upsert_removes_legacy_duplicates():
+    """Rebuild removes duplicate sections written with legacy IMAP separators."""
+    early = "Встреча проходила 17.07.2026 с 10:00 (MSK).\n\n2026-07-17T07:00:05Z Speaker:\nEarly fragment."
+    late = "Встреча проходила 17.07.2026 с 10:33 (MSK).\n\n2026-07-17T07:33:05Z Speaker:\nLate fragment."
+    legacy = (
+        f"=== imap_uid=151 type=summary start_local=2026-07-17T10:33 ===\n{late}\n\n"
+        f"=== imap_uid=152 type=summary start_local=2026-07-17T10:00 ===\n{early}\n\n"
+        f"=== imap_uid=151 type=summary start_local=2026-07-17T10:33 ===\n{late}\n"
+    )
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = Path(tmpdir) / "transcript.txt"
+        path.write_text(legacy, encoding="utf-8")
+        process_meeting_module._upsert_section(
+            path,
+            meeting_uid=MEETING_UID,
+            start_utc="2026-07-17T07:00:00Z",
+            section_type="summary",
+            body=early,
+        )
+        rendered = path.read_text(encoding="utf-8")
+
+    assert rendered.count("=== meeting_uid=") == 2
+    assert "imap_uid=" not in rendered
+    assert rendered.count("Early fragment.") == 1
+    assert rendered.count("Late fragment.") == 1
+
+
+def test_summary_upsert_removes_legacy_duplicates():
+    """Summary rebuild uses transcript-derived starts to remove legacy duplicates."""
+    legacy = (
+        "=== imap_uid=151 type=summary ===\nLate summary.\n\n"
+        "=== imap_uid=152 type=summary ===\nEarly summary.\n\n"
+        "=== imap_uid=151 type=summary ===\nLate summary.\n"
+    )
+    starts = {
+        "151": "2026-07-17T07:33:00Z",
+        "152": "2026-07-17T07:00:00Z",
+    }
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = Path(tmpdir) / "summary.txt"
+        path.write_text(legacy, encoding="utf-8")
+        process_meeting_module._upsert_section(
+            path,
+            meeting_uid=MEETING_UID,
+            start_utc="2026-07-17T07:00:00Z",
+            section_type="summary",
+            body="Early summary.",
+            legacy_start_by_uid=starts,
+        )
+        rendered = path.read_text(encoding="utf-8")
+
+    assert rendered.count("=== meeting_uid=") == 2
+    assert "imap_uid=" not in rendered
+    assert rendered.count("Early summary.") == 1
+    assert rendered.count("Late summary.") == 1
+
+
+def test_upsert_rejects_unkeyed_legacy_section_without_overwrite():
+    """Unknown legacy sections fail closed instead of being silently discarded."""
+    legacy = "=== imap_uid=999 type=summary ===\nUnmapped summary.\n"
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = Path(tmpdir) / "summary.txt"
+        path.write_text(legacy, encoding="utf-8")
+        try:
+            process_meeting_module._upsert_section(
+                path,
+                meeting_uid=MEETING_UID,
+                start_utc="2026-07-17T07:00:00Z",
+                section_type="summary",
+                body="Current summary.",
+            )
+        except RuntimeError:
+            pass
+        else:
+            raise AssertionError("Expected an unresolved legacy section to fail closed")
+        assert path.read_text(encoding="utf-8") == legacy
 
 
 # ── T15c: Integration test — existing meta is merged, not overwritten ──
@@ -619,6 +752,11 @@ def run_all():
         ("T13c", test_transform_no_header),
         ("T14",  test_full_merge),
         ("T15a", test_partial_meeting),
+        ("T15a2", test_section_upsert_is_order_independent_and_idempotent),
+        ("T15a2b", test_section_identity_is_meeting_uid_plus_start_utc_only),
+        ("T15a3", test_section_upsert_removes_legacy_duplicates),
+        ("T15a4", test_summary_upsert_removes_legacy_duplicates),
+        ("T15a5", test_upsert_rejects_unkeyed_legacy_section_without_overwrite),
         ("T15c", test_existing_meta_non_destructive_merge),
         ("T15b", test_standalone_no_uid),
         ("T16a", test_enrich_incoming),
