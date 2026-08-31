@@ -5,9 +5,12 @@ from pathlib import Path
 
 from common.auth import resolve_token
 from common.config import (
+    AUTH_PATH,
+    LEGACY_AUTH_DIR_NAME,
     RuntimeContext,
     bootstrap_runtime_context,
     list_token_accounts,
+    resolve_legacy_auth_path,
 )
 
 
@@ -30,6 +33,16 @@ def runtime_context(tmp_path: Path) -> RuntimeContext:
         agent_config={},
         config={},
     )
+
+
+def test_auth_path_declarations_do_not_embed_runtime_placeholders(tmp_path: Path) -> None:
+    data_dir = tmp_path / "runtime" / "yandex-data"
+
+    assert AUTH_PATH == Path("~/secrets/yandex-office")
+    assert LEGACY_AUTH_DIR_NAME == "auth"
+    assert resolve_legacy_auth_path(data_dir) == data_dir.resolve() / "auth"
+    assert "{" not in str(AUTH_PATH)
+    assert "{" not in LEGACY_AUTH_DIR_NAME
 
 
 def test_runtime_auth_file_uses_standard_user_secrets_directory(
