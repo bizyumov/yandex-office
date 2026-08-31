@@ -6,6 +6,7 @@ import json
 from dataclasses import dataclass
 import re
 from pathlib import Path
+import sys
 from typing import Any
 
 
@@ -14,6 +15,60 @@ LEGACY_GLOBAL_CONFIG_NAME = "config.json"
 AGENT_CONFIG_NAME = "config.agent.json"
 AGENT_CONFIG_TEMPLATE_NAME = "config.agent.example.json"
 DEFAULT_DATA_DIR = "yandex-data"
+AUTH_PATH = "~/secrets/yandex-office"
+LEGACY_AUTH_PATH = "{data_dir}/auth"
+LEGACY_AUTH_MIGRATION_WARNING = (
+    "WARNING: Legacy Yandex Office credentials were found and successfully moved "
+    "to ~/secrets/yandex-office."
+)
+
+
+def resolve_auth_path() -> Path:
+    """Return the canonical per-user directory for managed OAuth secrets."""
+    return Path(AUTH_PATH).expanduser()
+
+
+def resolve_legacy_auth_path(data_dir: str | Path) -> Path:
+    """Return the legacy runtime-data auth directory."""
+    return Path(LEGACY_AUTH_PATH.format(data_dir=Path(data_dir).resolve()))
+
+
+def _ensure_auth_path() -> Path:
+    """Create the canonical secret directory with owner-only permissions."""
+    auth_path = resolve_auth_path()
+    auth_path.mkdir(parents=True, exist_ok=True, mode=0o700)
+    auth_path.chmod(0o700)
+    return auth_path
+
+
+def resolve_auth_file(data_dir: str | Path, filename: str) -> Path:
+    """Resolve a canonical secret file and migrate its legacy counterpart once."""
+    safe_name = str(filename).strip()
+    if not safe_name or Path(safe_name).name != safe_name:
+        raise ValueError("Auth filename must be a plain filename")
+
+    canonical_path = _ensure_auth_path() / safe_name
+    if canonical_path.exists():
+        return canonical_path
+
+    legacy_path = resolve_legacy_auth_path(data_dir) / safe_name
+    if not legacy_path.exists():
+        return canonical_path
+
+    legacy_path.chmod(0o600)
+    legacy_path.replace(canonical_path)
+    print(LEGACY_AUTH_MIGRATION_WARNING, file=sys.stderr)
+    return canonical_path
+
+
+def list_auth_token_paths(data_dir: str | Path) -> list[Path]:
+    """Return canonical token paths after migrating missing legacy counterparts."""
+    canonical_dir = _ensure_auth_path()
+    legacy_dir = resolve_legacy_auth_path(data_dir)
+    if legacy_dir.exists():
+        for legacy_path in sorted(legacy_dir.glob("*.token")):
+            resolve_auth_file(data_dir, legacy_path.name)
+    return sorted(canonical_dir.glob("*.token"))
 
 
 @dataclass(frozen=True)
@@ -35,7 +90,7 @@ class RuntimeContext:
 
     def auth_file(self, account: str) -> Path:
         """Return the token file path for an account alias."""
-        return self.path("auth", f"{account}.token")
+        return resolve_auth_file(self.data_dir, f"{account}.token")
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -55,11 +110,8 @@ def _write_json(path: Path, payload: dict[str, Any]) -> None:
 
 def list_token_accounts(data_dir: str | Path) -> list[dict[str, Any]]:
     """Return account rows derived from managed auth token files."""
-    auth_dir = Path(data_dir).resolve() / "auth"
-    if not auth_dir.exists():
-        return []
     accounts: list[dict[str, Any]] = []
-    for token_path in sorted(auth_dir.glob("*.token")):
+    for token_path in list_auth_token_paths(data_dir):
         try:
             payload = _read_json(token_path)
         except json.JSONDecodeError:
@@ -131,8 +183,7 @@ def choose_account_alias(
     preferred_name: str | None = None,
 ) -> str:
     """Choose an unused token-file alias for an email address."""
-    auth_dir = Path(data_dir).resolve() / "auth"
-    used_names = {path.stem for path in auth_dir.glob("*.token")} if auth_dir.exists() else set()
+    used_names = {path.stem for path in list_auth_token_paths(data_dir)}
     base_name = _suggest_account_name(email, preferred_name)
     resolved_name = base_name
     suffix = 2
@@ -237,7 +288,7 @@ def bootstrap_runtime_context(
     _ensure_external_data_dir(skill_root, data_dir)
 
     data_dir.mkdir(parents=True, exist_ok=True)
-    for name in ("auth", "incoming", "meetings"):
+    for name in ("incoming", "meetings"):
         (data_dir / name).mkdir(parents=True, exist_ok=True)
 
     agent_config_path = data_dir / AGENT_CONFIG_NAME

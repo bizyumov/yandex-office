@@ -10,6 +10,8 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
+from common.config import resolve_auth_file
+
 
 class TokenResolutionError(RuntimeError):
     """Structured token resolution failure."""
@@ -375,8 +377,7 @@ def resolve_token(
     if skill == "search":
         raise ValueError("search does not use token-file auth")
 
-    data_path = Path(data_dir).resolve()
-    token_path = data_path / "auth" / f"{account}.token"
+    token_path = resolve_auth_file(data_dir, f"{account}.token")
     token_data = load_prepared_token_file(
         token_path,
         config,

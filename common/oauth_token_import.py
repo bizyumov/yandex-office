@@ -20,6 +20,7 @@ from common.auth import (
 from common.config import (
     choose_account_alias,
     find_token_account_by_email,
+    resolve_auth_file,
     yandex_identity_matches,
 )
 from common.oauth_apps import (
@@ -165,7 +166,7 @@ def import_managed_oauth_token(
                 f'Created agent-local OAuth app "{app_id}" for client_id {identity.client_id}.'
             )
 
-    token_path = Path(data_dir) / "auth" / f"{resolved_account}.token"
+    token_path = resolve_auth_file(data_dir, f"{resolved_account}.token")
     try:
         token_data = load_token_file(token_path)
     except FileNotFoundError:

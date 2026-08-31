@@ -32,7 +32,12 @@ from common.auth import (
     token_refs,
     verify_token_identity,
 )
-from common.config import load_agent_config_payload, save_agent_config_payload
+from common.config import (
+    list_auth_token_paths,
+    load_agent_config_payload,
+    resolve_auth_file,
+    save_agent_config_payload,
+)
 from common.oauth_apps import (
     UNRESOLVED_SCOPE,
     fetch_yandex_oauth_client_metadata,
@@ -590,8 +595,7 @@ def _resolve_account_alias(ctx: YandexApiContext, method_id: str) -> str:
     if ctx.account:
         return ctx.account
 
-    auth_dir = ctx.data_dir / "auth"
-    token_paths = sorted(auth_dir.glob("*.token")) if auth_dir.exists() else []
+    token_paths = list_auth_token_paths(ctx.data_dir)
     if len(token_paths) == 1:
         return token_paths[0].stem
     if not token_paths:
@@ -618,11 +622,10 @@ def digest_legacy_disk_token_env(ctx: YandexApiContext) -> None:
     if not token:
         return
 
-    auth_dir = ctx.data_dir / "auth"
     token_paths = (
-        [auth_dir / f"{ctx.account}.token"]
+        [resolve_auth_file(ctx.data_dir, f"{ctx.account}.token")]
         if ctx.account
-        else sorted(auth_dir.glob("*.token")) if auth_dir.exists() else []
+        else list_auth_token_paths(ctx.data_dir)
     )
     for token_path in token_paths:
         try:
@@ -676,7 +679,7 @@ def _dispatch_yandex_api(
             pass
 
     account = _resolve_account_alias(ctx, auth.method_id)
-    token_path = ctx.data_dir / "auth" / f"{account}.token"
+    token_path = resolve_auth_file(ctx.data_dir, f"{account}.token")
     token_data = _load_token_data_for_dispatch(
         ctx,
         account=account,

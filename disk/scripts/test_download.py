@@ -17,6 +17,19 @@ from disk.scripts import download, share, upload
 from disk.scripts.download import YandexDisk, API_BASE
 
 
+def canonical_token(account: str) -> Path:
+    return Path.home() / "secrets" / "yandex-office" / f"{account}.token"
+
+
+def write_legacy_token(tmp_path: Path, account: str, payload: dict) -> Path:
+    """Create a legacy auth token that managed auth migrates on first use."""
+
+    legacy_path = tmp_path / "auth" / f"{account}.token"
+    legacy_path.parent.mkdir(parents=True, exist_ok=True)
+    legacy_path.write_text(json.dumps(payload), encoding="utf-8")
+    return legacy_path
+
+
 def disk_with_account(
     tmp_path: Path,
     *,
@@ -27,17 +40,15 @@ def disk_with_account(
 ) -> tuple[YandexDisk, Path]:
     """Create a Disk client backed by a real token-file entry."""
 
-    token_path = tmp_path / "auth" / f"{account}.token"
-    token_path.parent.mkdir(parents=True, exist_ok=True)
-    token_path.write_text(
-        json.dumps(
-            {
-                "email": f"{account}@example.com",
-                token: {"client_id": client_id},
-            }
-        ),
-        encoding="utf-8",
+    write_legacy_token(
+        tmp_path,
+        account,
+        {
+            "email": f"{account}@example.com",
+            token: {"client_id": client_id},
+        },
     )
+    token_path = canonical_token(account)
     disk = YandexDisk(account=account, data_dir=str(tmp_path))
     disk._config["oauth_apps"] = {
         "catalog": {
@@ -269,17 +280,15 @@ def test_get_resource_meta_mocked(tmp_path):
 
 def test_get_resource_meta_uses_account_token_dispatch(tmp_path):
     """Account-backed Disk calls use decorator scopes and persist token health."""
-    token_path = tmp_path / "auth" / "acct.token"
-    token_path.parent.mkdir(parents=True)
-    token_path.write_text(
-        json.dumps(
-            {
-                "email": "acct@example.com",
-                "read-token": {"client_id": "disk-read-client"},
-            }
-        ),
-        encoding="utf-8",
+    write_legacy_token(
+        tmp_path,
+        "acct",
+        {
+            "email": "acct@example.com",
+            "read-token": {"client_id": "disk-read-client"},
+        },
     )
+    token_path = canonical_token("acct")
     disk = YandexDisk(account="acct", data_dir=str(tmp_path))
     disk._config["oauth_apps"] = {
         "catalog": {
@@ -512,18 +521,16 @@ def test_employees_access_requires_org_id():
 
 def test_employees_access_does_not_read_org_id_from_token_file(tmp_path):
     """Disk share payloads do not read token files for org_id fallback."""
-    token_path = tmp_path / "auth" / "corp.token"
-    token_path.parent.mkdir(parents=True, exist_ok=True)
-    token_path.write_text(
-        json.dumps(
-            {
-                "email": "user@example.com",
-                "write-token": {"client_id": "disk-write-client"},
-                "org_id": "123456",
-            }
-        ),
-        encoding="utf-8",
+    write_legacy_token(
+        tmp_path,
+        "corp",
+        {
+            "email": "user@example.com",
+            "write-token": {"client_id": "disk-write-client"},
+            "org_id": "123456",
+        },
     )
+    token_path = canonical_token("corp")
     disk = YandexDisk(account="corp", data_dir=str(tmp_path))
     try:
         disk._build_share_payload(access="employees", rights="read")
@@ -535,18 +542,16 @@ def test_employees_access_does_not_read_org_id_from_token_file(tmp_path):
 
 def test_single_account_dispatch_deletes_token_meta(tmp_path):
     """Central dispatch infers the single token file and deletes token_meta."""
-    token_path = tmp_path / "auth" / "corp.token"
-    token_path.parent.mkdir(parents=True, exist_ok=True)
-    token_path.write_text(
-        json.dumps(
-            {
-                "email": "user@example.com",
-                "write-token": {"client_id": "disk-write-client"},
-                "token_meta": {"write-token": {"client_id": "old"}},
-            }
-        ),
-        encoding="utf-8",
+    write_legacy_token(
+        tmp_path,
+        "corp",
+        {
+            "email": "user@example.com",
+            "write-token": {"client_id": "disk-write-client"},
+            "token_meta": {"write-token": {"client_id": "old"}},
+        },
     )
+    token_path = canonical_token("corp")
     disk = YandexDisk(data_dir=str(tmp_path))
     disk._config["oauth_apps"] = {
         "catalog": {

@@ -33,7 +33,7 @@ Do not require importing the confirmation code through an environment variable. 
 ## Implementation notes
 
 - Existing apps must allow `https://oauth.yandex.ru/verification_code` as a Redirect URI.
-- Store all pending authorizations in one local registry file: `{data_dir}/auth/oauth-code-flow.json`. The registry contains an ordered `pending` list; list order is the link issue order and is the exchange attempt order. Do not expose or require a user-facing flow id.
+- Store all pending authorizations in one local registry file: `~/secrets/yandex-office/oauth-code-flow.json`. If the canonical file is absent, managed auth moves an existing `{data_dir}/auth/oauth-code-flow.json` into the canonical directory and emits a token-safe migration warning. The registry contains an ordered `pending` list; list order is the link issue order and is the exchange attempt order. Do not expose or require a user-facing flow id.
 - Each registry entry stores `state`, `code_verifier`, `client_id`, `app_id`, account/email hints, `created_at`, and `expires_at`.
 - Exclude generation-time ties in code: assign each new `created_at` as a strictly increasing timestamp relative to the last registry entry, even when several links are generated in the same second.
 - Yandex confirmation codes live for 10 minutes. Set `expires_at = created_at + 600` and print both the lifetime and expiry timestamp in `--code-flow start` output so the agent knows when the human-provided code will expire.

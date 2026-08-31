@@ -26,7 +26,13 @@ from urllib.request import Request, urlopen
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from common.auth import load_token_file, save_token_file, token_refs
-from common.config import bootstrap_runtime_context, choose_account_alias, find_token_account_by_email
+from common.config import (
+    bootstrap_runtime_context,
+    choose_account_alias,
+    find_token_account_by_email,
+    list_auth_token_paths,
+    resolve_auth_file,
+)
 from common.oauth_apps import (
     oauth_app_for_client_id,
     plan_oauth_app_setup,
@@ -71,7 +77,7 @@ def _validate_code_flow_app_id(app_id: str) -> str:
 
 def _code_flow_registry_path(data_dir: Path) -> Path:
     """Return the single registry file for all pending screen-code flows."""
-    return data_dir / "auth" / "oauth-code-flow.json"
+    return resolve_auth_file(data_dir, "oauth-code-flow.json")
 
 
 def _load_code_flow_registry(data_dir: Path) -> dict[str, list[dict[str, object]]]:
@@ -416,7 +422,7 @@ def main() -> None:
     data_dir = runtime.data_dir
 
     if args.accounts:
-        token_paths = sorted((data_dir / "auth").glob("*.token"))
+        token_paths = list_auth_token_paths(data_dir)
         if args.accounts == "list":
             for token_path in token_paths:
                 print(token_path.stem)
@@ -429,7 +435,7 @@ def main() -> None:
         alias = str(args.account or "").strip()
         if not alias or Path(alias).name != alias:
             parser.error("--accounts delete requires a plain --account <alias>")
-        token_path = data_dir / "auth" / f"{alias}.token"
+        token_path = resolve_auth_file(data_dir, f"{alias}.token")
         if not token_path.exists():
             print(f"missing {alias}", file=sys.stderr)
             sys.exit(2)
@@ -466,7 +472,7 @@ def main() -> None:
         if not resolved_account or Path(resolved_account).name != resolved_account:
             parser.error("--account must be a plain alias")
 
-        token_path = data_dir / "auth" / f"{resolved_account}.token"
+        token_path = resolve_auth_file(data_dir, f"{resolved_account}.token")
         try:
             token_data = load_token_file(token_path)
         except FileNotFoundError:

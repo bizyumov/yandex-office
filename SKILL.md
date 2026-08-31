@@ -6,7 +6,7 @@ license: MIT
 compatibility: Python 3.10+, per-skill dependencies, network access for Yandex APIs
 metadata:
   author: bizyumov
-  version: "2026.05.27"
+  version: "2026.08.31"
   openclaw:
     emoji: "🟡"
     requires:
@@ -26,7 +26,7 @@ Yandex identity behind an alias. Apps, scopes, and tokens are defined in
 
 ## Document Map
 
-- (1-16) Frontmatter (metadata version 2026.05.27)
+- (1-16) Frontmatter (metadata version 2026.08.31)
 - (17-25) Opening Model
 - (27-39) Document Map
 - (41-47) Reference Map
@@ -142,9 +142,9 @@ artifacts. Warnings print to stderr; stdout is the resolved alias or a structure
 JSON report, depending on the command.
 
 Prefer the Yandex screen-code flow for new OAuth setup. It creates a PKCE
-authorization URL, stores pending verifier state in
-`{data_dir}/auth/oauth-code-flow.json`, exchanges the short confirmation code,
-and imports the returned bearer token through managed auth without printing it.
+authorization URL, stores managed tokens and pending verifier state under
+`~/secrets/yandex-office`, migrates missing secrets once from legacy
+`{data_dir}/auth`, and never prints the returned bearer token.
 
 ```bash
 python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account <alias> --app <app_id> --code-flow start
