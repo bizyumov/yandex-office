@@ -27,9 +27,8 @@ def resolve_auth_path() -> Path:
     return AUTH_PATH.expanduser()
 
 
-def resolve_legacy_auth_path(data_dir: str | Path) -> Path:
+def resolve_legacy_auth_path(data_dir: Path) -> Path:
     """Return the legacy runtime-data auth directory."""
-    data_dir = Path(data_dir).resolve()
     LEGACY_AUTH_PATH = data_dir / "auth"
     return LEGACY_AUTH_PATH
 
@@ -52,7 +51,7 @@ def resolve_auth_file(data_dir: str | Path, filename: str) -> Path:
     if canonical_path.exists():
         return canonical_path
 
-    legacy_path = resolve_legacy_auth_path(data_dir) / safe_name
+    legacy_path = resolve_legacy_auth_path(Path(data_dir).resolve()) / safe_name
     if not legacy_path.exists():
         return canonical_path
 
@@ -65,7 +64,7 @@ def resolve_auth_file(data_dir: str | Path, filename: str) -> Path:
 def list_auth_token_paths(data_dir: str | Path) -> list[Path]:
     """Return canonical token paths after migrating missing legacy counterparts."""
     canonical_dir = _ensure_auth_path()
-    legacy_dir = resolve_legacy_auth_path(data_dir)
+    legacy_dir = resolve_legacy_auth_path(Path(data_dir).resolve())
     if legacy_dir.exists():
         for legacy_path in sorted(legacy_dir.glob("*.token")):
             resolve_auth_file(data_dir, legacy_path.name)
