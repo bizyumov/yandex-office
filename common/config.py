@@ -15,9 +15,7 @@ LEGACY_GLOBAL_CONFIG_NAME = "config.json"
 AGENT_CONFIG_NAME = "config.agent.json"
 AGENT_CONFIG_TEMPLATE_NAME = "config.agent.example.json"
 DEFAULT_DATA_DIR = "yandex-data"
-data_dir = (Path.cwd() / DEFAULT_DATA_DIR).resolve()
 AUTH_PATH = Path("~/secrets/yandex-office")
-LEGACY_AUTH_PATH = data_dir / "auth"
 LEGACY_AUTH_MIGRATION_WARNING = (
     "WARNING: Legacy Yandex Office credentials were found and successfully moved "
     "to ~/secrets/yandex-office."
@@ -40,6 +38,7 @@ def _ensure_auth_path() -> Path:
 def resolve_auth_file(data_dir: str | Path, filename: str) -> Path:
     """Resolve a canonical secret file and migrate its legacy counterpart once."""
     data_dir = Path(data_dir).resolve()
+    LEGACY_AUTH_PATH = data_dir / "auth"
     safe_name = str(filename).strip()
     if not safe_name or Path(safe_name).name != safe_name:
         raise ValueError("Auth filename must be a plain filename")
@@ -48,7 +47,7 @@ def resolve_auth_file(data_dir: str | Path, filename: str) -> Path:
     if canonical_path.exists():
         return canonical_path
 
-    legacy_path = data_dir / LEGACY_AUTH_PATH.name / safe_name
+    legacy_path = LEGACY_AUTH_PATH / safe_name
     if not legacy_path.exists():
         return canonical_path
 
@@ -61,7 +60,7 @@ def resolve_auth_file(data_dir: str | Path, filename: str) -> Path:
 def list_auth_token_paths(data_dir: str | Path) -> list[Path]:
     """Return canonical token paths after migrating missing legacy counterparts."""
     canonical_dir = _ensure_auth_path()
-    legacy_dir = Path(data_dir).resolve() / LEGACY_AUTH_PATH.name
+    legacy_dir = Path(data_dir).resolve() / "auth"
     if legacy_dir.exists():
         for legacy_path in sorted(legacy_dir.glob("*.token")):
             resolve_auth_file(data_dir, legacy_path.name)
