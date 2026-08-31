@@ -16,7 +16,6 @@ AGENT_CONFIG_NAME = "config.agent.json"
 AGENT_CONFIG_TEMPLATE_NAME = "config.agent.example.json"
 DEFAULT_DATA_DIR = "yandex-data"
 AUTH_PATH = Path("~/secrets/yandex-office")
-LEGACY_AUTH_DIR_NAME = "auth"
 LEGACY_AUTH_MIGRATION_WARNING = (
     "WARNING: Legacy Yandex Office credentials were found and successfully moved "
     "to ~/secrets/yandex-office."
@@ -30,7 +29,9 @@ def resolve_auth_path() -> Path:
 
 def resolve_legacy_auth_path(data_dir: str | Path) -> Path:
     """Return the legacy runtime-data auth directory."""
-    return Path(data_dir).resolve() / LEGACY_AUTH_DIR_NAME
+    data_dir = Path(data_dir).resolve()
+    LEGACY_AUTH_PATH = data_dir / "auth"
+    return LEGACY_AUTH_PATH
 
 
 def _ensure_auth_path() -> Path:
