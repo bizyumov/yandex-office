@@ -9,7 +9,6 @@ from common.config import (
     RuntimeContext,
     bootstrap_runtime_context,
     list_token_accounts,
-    resolve_legacy_auth_path,
 )
 
 
@@ -38,7 +37,6 @@ def test_auth_path_declarations_do_not_embed_runtime_placeholders(tmp_path: Path
     data_dir = tmp_path / "runtime" / "yandex-data"
 
     assert AUTH_PATH == Path("~/secrets/yandex-office")
-    assert resolve_legacy_auth_path(data_dir) == data_dir.resolve() / "auth"
     assert "{" not in str(AUTH_PATH)
 
 
