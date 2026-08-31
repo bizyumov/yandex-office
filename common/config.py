@@ -17,23 +17,6 @@ AGENT_CONFIG_TEMPLATE_NAME = "config.agent.example.json"
 DEFAULT_DATA_DIR = "yandex-data"
 
 
-_root = Path(__file__).resolve().parent
-while not (_root / GLOBAL_CONFIG_NAME).exists() and _root != _root.parent:
-    _root = _root.parent
-config = json.loads((_root / GLOBAL_CONFIG_NAME).read_text(encoding="utf-8"))
-config["data_dir"] = str((Path.cwd() / DEFAULT_DATA_DIR).resolve())
-
-data_dir = Path(config["data_dir"])
-AUTH_PATH = Path("~/secrets/yandex-office")
-LEGACY_AUTH_PATH = data_dir / "auth"
-
-
-LEGACY_AUTH_MIGRATION_WARNING = (
-    "WARNING: Legacy Yandex Office credentials were found and successfully moved "
-    "to ~/secrets/yandex-office."
-)
-
-
 def _read_json(path: Path) -> dict[str, Any]:
     with open(path, encoding="utf-8") as handle:
         return json.load(handle)
@@ -77,6 +60,20 @@ def resolve_data_dir(cwd: str | Path | None = None, data_dir_override: str | Pat
     data_dir = resolved
     LEGACY_AUTH_PATH = resolved / "auth"
     return resolved
+
+
+config = load_global_config(find_skill_root(__file__))[1]
+config["data_dir"] = str(resolve_data_dir())
+
+data_dir = Path(config["data_dir"])
+AUTH_PATH = Path("~/secrets/yandex-office")
+LEGACY_AUTH_PATH = data_dir / "auth"
+
+
+LEGACY_AUTH_MIGRATION_WARNING = (
+    "WARNING: Legacy Yandex Office credentials were found and successfully moved "
+    "to ~/secrets/yandex-office."
+)
 
 
 def _ensure_auth_path() -> Path:
