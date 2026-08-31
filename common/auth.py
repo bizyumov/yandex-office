@@ -10,7 +10,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-from common.config import resolve_auth_file
+from common.config import resolve_auth_file, resolve_data_dir
 
 
 class TokenResolutionError(RuntimeError):
@@ -377,8 +377,8 @@ def resolve_token(
     if skill == "search":
         raise ValueError("search does not use token-file auth")
 
-    config = {**config, "data_dir": str(Path(data_dir).resolve())}
-    token_path = resolve_auth_file(config, f"{account}.token")
+    resolve_data_dir(data_dir_override=data_dir)
+    token_path = resolve_auth_file(f"{account}.token")
     token_data = load_prepared_token_file(
         token_path,
         config,

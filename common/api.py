@@ -36,6 +36,7 @@ from common.config import (
     list_auth_token_paths,
     load_agent_config_payload,
     resolve_auth_file,
+    resolve_data_dir,
     save_agent_config_payload,
 )
 from common.oauth_apps import (
@@ -126,8 +127,8 @@ class YandexApiContext:
     token_data: dict[str, Any] | None = None
 
     def __post_init__(self) -> None:
-        """Keep the resolved data directory in runtime configuration."""
-        object.__setattr__(self, "config", {**self.config, "data_dir": str(self.data_dir.resolve())})
+        """Sync module auth paths to this context's data directory."""
+        resolve_data_dir(data_dir_override=self.data_dir)
 
     def for_token(
         self,
@@ -599,7 +600,7 @@ def _resolve_account_alias(ctx: YandexApiContext, method_id: str) -> str:
     if ctx.account:
         return ctx.account
 
-    token_paths = list_auth_token_paths(ctx.config)
+    token_paths = list_auth_token_paths()
     if len(token_paths) == 1:
         return token_paths[0].stem
     if not token_paths:
@@ -627,9 +628,9 @@ def digest_legacy_disk_token_env(ctx: YandexApiContext) -> None:
         return
 
     token_paths = (
-        [resolve_auth_file(ctx.config, f"{ctx.account}.token")]
+        [resolve_auth_file(f"{ctx.account}.token")]
         if ctx.account
-        else list_auth_token_paths(ctx.config)
+        else list_auth_token_paths()
     )
     for token_path in token_paths:
         try:
@@ -683,7 +684,7 @@ def _dispatch_yandex_api(
             pass
 
     account = _resolve_account_alias(ctx, auth.method_id)
-    token_path = resolve_auth_file(ctx.config, f"{account}.token")
+    token_path = resolve_auth_file(f"{account}.token")
     token_data = _load_token_data_for_dispatch(
         ctx,
         account=account,

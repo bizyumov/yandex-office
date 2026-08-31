@@ -3,13 +3,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from common import config as c
 from common.auth import resolve_token
-from common.config import (
-    RuntimeContext,
-    bootstrap_runtime_context,
-    list_token_accounts,
-    resolve_auth_paths,
-)
+from common.config import RuntimeContext, bootstrap_runtime_context
 
 
 def write_json(path: Path, payload: dict) -> None:
@@ -17,28 +13,19 @@ def write_json(path: Path, payload: dict) -> None:
     path.write_text(json.dumps(payload), encoding="utf-8")
 
 
-def runtime_context(tmp_path: Path) -> RuntimeContext:
-    data_dir = tmp_path / "runtime" / "yandex-data"
-    config_path = tmp_path / "config.skill.json"
-    agent_config_path = data_dir / "config.agent.json"
-    return RuntimeContext(
-        skill_root=tmp_path,
-        cwd=tmp_path,
-        global_config_path=config_path,
-        global_config={},
-        data_dir=data_dir,
-        agent_config_path=agent_config_path,
-        agent_config={},
-        config={},
-    )
+def sync_data_dir(data_dir: Path) -> None:
+    c.resolve_data_dir(data_dir_override=data_dir)
 
 
-def test_auth_path_declarations_do_not_embed_runtime_placeholders(tmp_path: Path) -> None:
+def test_auth_paths_are_module_level_declarations(tmp_path: Path) -> None:
     data_dir = tmp_path / "runtime" / "yandex-data"
 
-    AUTH_PATH, LEGACY_AUTH_PATH = resolve_auth_paths({"data_dir": str(data_dir)})
-    assert AUTH_PATH == Path.home() / "secrets" / "yandex-office"
-    assert LEGACY_AUTH_PATH == data_dir / "auth"
+    sync_data_dir(data_dir)
+
+    assert c.AUTH_PATH == Path("~/secrets/yandex-office")
+    assert c.LEGACY_AUTH_PATH == data_dir / "auth"
+    assert "{" not in str(c.AUTH_PATH)
+    assert "{" not in str(c.LEGACY_AUTH_PATH)
 
 
 def test_runtime_auth_file_uses_standard_user_secrets_directory(
@@ -46,8 +33,21 @@ def test_runtime_auth_file_uses_standard_user_secrets_directory(
 ) -> None:
     home = tmp_path / "home"
     monkeypatch.setenv("HOME", str(home))
+    data_dir = tmp_path / "runtime" / "yandex-data"
+    sync_data_dir(data_dir)
 
-    path = runtime_context(tmp_path).auth_file("work")
+    ctx = RuntimeContext(
+        skill_root=tmp_path,
+        cwd=tmp_path,
+        global_config_path=tmp_path / "config.skill.json",
+        global_config={},
+        data_dir=data_dir,
+        agent_config_path=data_dir / "config.agent.json",
+        agent_config={},
+        config={},
+    )
+
+    path = ctx.auth_file("work")
 
     assert path == home / "secrets" / "yandex-office" / "work.token"
 
@@ -58,6 +58,7 @@ def test_account_listing_migrates_legacy_token_and_warns(
     home = tmp_path / "home"
     monkeypatch.setenv("HOME", str(home))
     data_dir = tmp_path / "runtime" / "yandex-data"
+    sync_data_dir(data_dir)
     legacy_path = data_dir / "auth" / "work.token"
     canonical_path = home / "secrets" / "yandex-office" / "work.token"
     write_json(
@@ -65,7 +66,7 @@ def test_account_listing_migrates_legacy_token_and_warns(
         {"email": "account@example.test", "token-value": {"client_id": "client-id"}},
     )
 
-    accounts = list_token_accounts({"data_dir": str(data_dir)})
+    accounts = c.list_token_accounts()
 
     captured = capsys.readouterr()
     assert accounts[0]["token_path"] == str(canonical_path)
@@ -83,12 +84,13 @@ def test_account_listing_prefers_canonical_token_without_touching_legacy(
     home = tmp_path / "home"
     monkeypatch.setenv("HOME", str(home))
     data_dir = tmp_path / "runtime" / "yandex-data"
+    sync_data_dir(data_dir)
     canonical_path = home / "secrets" / "yandex-office" / "work.token"
     legacy_path = data_dir / "auth" / "work.token"
     write_json(canonical_path, {"email": "canonical@example.test"})
     write_json(legacy_path, {"email": "legacy@example.test"})
 
-    accounts = list_token_accounts({"data_dir": str(data_dir)})
+    accounts = c.list_token_accounts()
 
     captured = capsys.readouterr()
     assert accounts == [
