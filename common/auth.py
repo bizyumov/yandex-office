@@ -377,7 +377,8 @@ def resolve_token(
     if skill == "search":
         raise ValueError("search does not use token-file auth")
 
-    token_path = resolve_auth_file(data_dir, f"{account}.token")
+    config = {**config, "data_dir": str(Path(data_dir).resolve())}
+    token_path = resolve_auth_file(config, f"{account}.token")
     token_data = load_prepared_token_file(
         token_path,
         config,

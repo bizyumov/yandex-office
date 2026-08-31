@@ -5,10 +5,10 @@ from pathlib import Path
 
 from common.auth import resolve_token
 from common.config import (
-    AUTH_PATH,
     RuntimeContext,
     bootstrap_runtime_context,
     list_token_accounts,
+    resolve_auth_paths,
 )
 
 
@@ -36,8 +36,9 @@ def runtime_context(tmp_path: Path) -> RuntimeContext:
 def test_auth_path_declarations_do_not_embed_runtime_placeholders(tmp_path: Path) -> None:
     data_dir = tmp_path / "runtime" / "yandex-data"
 
-    assert AUTH_PATH == Path("~/secrets/yandex-office")
-    assert "{" not in str(AUTH_PATH)
+    AUTH_PATH, LEGACY_AUTH_PATH = resolve_auth_paths({"data_dir": str(data_dir)})
+    assert AUTH_PATH == Path.home() / "secrets" / "yandex-office"
+    assert LEGACY_AUTH_PATH == data_dir / "auth"
 
 
 def test_runtime_auth_file_uses_standard_user_secrets_directory(
@@ -64,7 +65,7 @@ def test_account_listing_migrates_legacy_token_and_warns(
         {"email": "account@example.test", "token-value": {"client_id": "client-id"}},
     )
 
-    accounts = list_token_accounts(data_dir)
+    accounts = list_token_accounts({"data_dir": str(data_dir)})
 
     captured = capsys.readouterr()
     assert accounts[0]["token_path"] == str(canonical_path)
@@ -87,7 +88,7 @@ def test_account_listing_prefers_canonical_token_without_touching_legacy(
     write_json(canonical_path, {"email": "canonical@example.test"})
     write_json(legacy_path, {"email": "legacy@example.test"})
 
-    accounts = list_token_accounts(data_dir)
+    accounts = list_token_accounts({"data_dir": str(data_dir)})
 
     captured = capsys.readouterr()
     assert accounts == [

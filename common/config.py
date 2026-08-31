@@ -15,35 +15,36 @@ LEGACY_GLOBAL_CONFIG_NAME = "config.json"
 AGENT_CONFIG_NAME = "config.agent.json"
 AGENT_CONFIG_TEMPLATE_NAME = "config.agent.example.json"
 DEFAULT_DATA_DIR = "yandex-data"
-AUTH_PATH = Path("~/secrets/yandex-office")
 LEGACY_AUTH_MIGRATION_WARNING = (
     "WARNING: Legacy Yandex Office credentials were found and successfully moved "
     "to ~/secrets/yandex-office."
 )
 
 
-def resolve_auth_path() -> Path:
-    """Return the canonical per-user directory for managed OAuth secrets."""
-    return AUTH_PATH.expanduser()
+def resolve_auth_paths(config: dict[str, Any]) -> tuple[Path, Path]:
+    """Resolve auth paths only after runtime configuration is available."""
+    data_dir = Path(config["data_dir"])
+    AUTH_PATH = Path("~/secrets/yandex-office")
+    LEGACY_AUTH_PATH = data_dir / "auth"
+    return AUTH_PATH.expanduser(), LEGACY_AUTH_PATH
 
 
-def _ensure_auth_path() -> Path:
+def _ensure_auth_path(config: dict[str, Any]) -> Path:
     """Create the canonical secret directory with owner-only permissions."""
-    auth_path = resolve_auth_path()
+    auth_path, _ = resolve_auth_paths(config)
     auth_path.mkdir(parents=True, exist_ok=True, mode=0o700)
     auth_path.chmod(0o700)
     return auth_path
 
 
-def resolve_auth_file(data_dir: str | Path, filename: str) -> Path:
+def resolve_auth_file(config: dict[str, Any], filename: str) -> Path:
     """Resolve a canonical secret file and migrate its legacy counterpart once."""
-    data_dir = Path(data_dir).resolve()
-    LEGACY_AUTH_PATH = data_dir / "auth"
+    _, LEGACY_AUTH_PATH = resolve_auth_paths(config)
     safe_name = str(filename).strip()
     if not safe_name or Path(safe_name).name != safe_name:
         raise ValueError("Auth filename must be a plain filename")
 
-    canonical_path = _ensure_auth_path() / safe_name
+    canonical_path = _ensure_auth_path(config) / safe_name
     if canonical_path.exists():
         return canonical_path
 
@@ -57,13 +58,14 @@ def resolve_auth_file(data_dir: str | Path, filename: str) -> Path:
     return canonical_path
 
 
-def list_auth_token_paths(data_dir: str | Path) -> list[Path]:
+def list_auth_token_paths(config: dict[str, Any]) -> list[Path]:
     """Return canonical token paths after migrating missing legacy counterparts."""
-    canonical_dir = _ensure_auth_path()
-    legacy_dir = Path(data_dir).resolve() / "auth"
+    canonical_dir, legacy_dir = resolve_auth_paths(config)
+    canonical_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+    canonical_dir.chmod(0o700)
     if legacy_dir.exists():
         for legacy_path in sorted(legacy_dir.glob("*.token")):
-            resolve_auth_file(data_dir, legacy_path.name)
+            resolve_auth_file(config, legacy_path.name)
     return sorted(canonical_dir.glob("*.token"))
 
 
@@ -80,13 +82,17 @@ class RuntimeContext:
     agent_config: dict[str, Any]
     config: dict[str, Any]
 
+    def __post_init__(self) -> None:
+        """Keep the resolved data directory in runtime configuration."""
+        object.__setattr__(self, "config", {**self.config, "data_dir": str(self.data_dir.resolve())})
+
     def path(self, *parts: str) -> Path:
         """Return a path inside the resolved runtime data directory."""
         return self.data_dir.joinpath(*parts)
 
     def auth_file(self, account: str) -> Path:
         """Return the token file path for an account alias."""
-        return resolve_auth_file(self.data_dir, f"{account}.token")
+        return resolve_auth_file(self.config, f"{account}.token")
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -104,10 +110,10 @@ def _write_json(path: Path, payload: dict[str, Any]) -> None:
     )
 
 
-def list_token_accounts(data_dir: str | Path) -> list[dict[str, Any]]:
+def list_token_accounts(config: dict[str, Any]) -> list[dict[str, Any]]:
     """Return account rows derived from managed auth token files."""
     accounts: list[dict[str, Any]] = []
-    for token_path in list_auth_token_paths(data_dir):
+    for token_path in list_auth_token_paths(config):
         try:
             payload = _read_json(token_path)
         except json.JSONDecodeError:
@@ -153,11 +159,11 @@ def yandex_identity_matches(left: str, right: str) -> bool:
     )
 
 
-def find_token_account_by_email(data_dir: str | Path, email: str) -> dict[str, Any] | None:
+def find_token_account_by_email(config: dict[str, Any], email: str) -> dict[str, Any] | None:
     """Find a token-backed account by verified Yandex identity."""
     if not str(email).strip():
         return None
-    for account in list_token_accounts(data_dir):
+    for account in list_token_accounts(config):
         if yandex_identity_matches(str(account.get("email", "")), email):
             return account
     return None
@@ -174,12 +180,12 @@ def _suggest_account_name(email: str, preferred_name: str | None = None) -> str:
 
 
 def choose_account_alias(
-    data_dir: str | Path,
+    config: dict[str, Any],
     email: str,
     preferred_name: str | None = None,
 ) -> str:
     """Choose an unused token-file alias for an email address."""
-    used_names = {path.stem for path in list_auth_token_paths(data_dir)}
+    used_names = {path.stem for path in list_auth_token_paths(config)}
     base_name = _suggest_account_name(email, preferred_name)
     resolved_name = base_name
     suffix = 2
@@ -320,7 +326,7 @@ def load_agent_config(
     agent_config_path = data_path / AGENT_CONFIG_NAME
     if agent_config_path.exists():
         payload = _read_json(agent_config_path)
-        token_accounts = list_token_accounts(data_path)
+        token_accounts = list_token_accounts({"data_dir": str(data_path)})
         if token_accounts:
             payload["accounts"] = [
                 {"name": item["alias"], "email": item["email"]}

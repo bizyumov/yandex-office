@@ -75,14 +75,14 @@ def _validate_code_flow_app_id(app_id: str) -> str:
     return normalized
 
 
-def _code_flow_registry_path(data_dir: Path) -> Path:
+def _code_flow_registry_path(config: dict[str, object]) -> Path:
     """Return the single registry file for all pending screen-code flows."""
-    return resolve_auth_file(data_dir, "oauth-code-flow.json")
+    return resolve_auth_file(config, "oauth-code-flow.json")
 
 
-def _load_code_flow_registry(data_dir: Path) -> dict[str, list[dict[str, object]]]:
+def _load_code_flow_registry(config: dict[str, object]) -> dict[str, list[dict[str, object]]]:
     """Load the ordered pending screen-code registry."""
-    registry_path = _code_flow_registry_path(data_dir)
+    registry_path = _code_flow_registry_path(config)
     try:
         with open(registry_path, encoding="utf-8") as handle:
             payload = json.load(handle)
@@ -97,9 +97,9 @@ def _load_code_flow_registry(data_dir: Path) -> dict[str, list[dict[str, object]
     return {"pending": pending}
 
 
-def _save_code_flow_registry(data_dir: Path, registry: dict[str, list[dict[str, object]]]) -> Path:
+def _save_code_flow_registry(config: dict[str, object], registry: dict[str, list[dict[str, object]]]) -> Path:
     """Persist the ordered pending screen-code registry atomically."""
-    registry_path = _code_flow_registry_path(data_dir)
+    registry_path = _code_flow_registry_path(config)
     registry_path.parent.mkdir(parents=True, exist_ok=True)
     temp_path = registry_path.with_suffix(".tmp")
     with open(temp_path, "w", encoding="utf-8") as handle:
@@ -119,7 +119,7 @@ def _next_unique_created_at(registry: dict[str, list[dict[str, object]]]) -> int
 
 
 def _write_pending_code_flow(
-    data_dir: Path,
+    config: dict[str, object],
     *,
     app_id: str,
     client_id: str,
@@ -131,7 +131,7 @@ def _write_pending_code_flow(
 ) -> Path:
     """Append pending PKCE state in the exact order links are issued."""
     app_id = _validate_code_flow_app_id(app_id)
-    registry = _load_code_flow_registry(data_dir)
+    registry = _load_code_flow_registry(config)
     created_at = _next_unique_created_at(registry)
     payload = {
         "app_id": app_id,
@@ -147,21 +147,21 @@ def _write_pending_code_flow(
     if email:
         payload["email"] = email
     registry.setdefault("pending", []).append(payload)
-    return _save_code_flow_registry(data_dir, registry)
+    return _save_code_flow_registry(config, registry)
 
 
-def _remove_pending_code_flow_at_index(data_dir: Path, *, index: int) -> Path:
+def _remove_pending_code_flow_at_index(config: dict[str, object], *, index: int) -> Path:
     """Remove one completed pending flow by issued-order index."""
-    registry = _load_code_flow_registry(data_dir)
+    registry = _load_code_flow_registry(config)
     pending = registry.get("pending", [])
     if 0 <= index < len(pending):
         pending.pop(index)
-    return _save_code_flow_registry(data_dir, {"pending": pending})
+    return _save_code_flow_registry(config, {"pending": pending})
 
 
-def _unexpired_pending_code_flows(data_dir: Path) -> list[tuple[int, dict[str, object]]]:
+def _unexpired_pending_code_flows(config: dict[str, object]) -> list[tuple[int, dict[str, object]]]:
     """Return unexpired pending flows in the exact link issue order."""
-    registry = _load_code_flow_registry(data_dir)
+    registry = _load_code_flow_registry(config)
     now = int(time.time())
     kept: list[dict[str, object]] = []
     result: list[tuple[int, dict[str, object]]] = []
@@ -172,7 +172,7 @@ def _unexpired_pending_code_flows(data_dir: Path) -> list[tuple[int, dict[str, o
         kept.append(item)
         result.append((len(kept) - 1, item))
     if len(kept) != len(registry.get("pending", [])):
-        _save_code_flow_registry(data_dir, {"pending": kept})
+        _save_code_flow_registry(config, {"pending": kept})
     return result
 
 
@@ -208,7 +208,6 @@ def _build_code_flow_authorization_url(
 def _start_code_flow(
     *,
     config: dict[str, object],
-    data_dir: Path,
     plan,
     account: str | None,
     email: str | None,
@@ -225,7 +224,7 @@ def _start_code_flow(
         email=email,
     )
     pending_path = _write_pending_code_flow(
-        data_dir,
+        config,
         app_id=plan.app_id,
         client_id=plan.client_id,
         redirect_uri=OAUTH_SCREEN_CODE_REDIRECT_URI,
@@ -234,7 +233,7 @@ def _start_code_flow(
         account=account,
         email=email,
     )
-    pending_items = _load_code_flow_registry(data_dir)["pending"]
+    pending_items = _load_code_flow_registry(config)["pending"]
     pending = pending_items[-1]
     expires_at = int(str(pending["expires_at"]))
     expires_at_text = datetime.fromtimestamp(expires_at, tz=timezone.utc).isoformat()
@@ -422,7 +421,7 @@ def main() -> None:
     data_dir = runtime.data_dir
 
     if args.accounts:
-        token_paths = list_auth_token_paths(data_dir)
+        token_paths = list_auth_token_paths(config)
         if args.accounts == "list":
             for token_path in token_paths:
                 print(token_path.stem)
@@ -435,7 +434,7 @@ def main() -> None:
         alias = str(args.account or "").strip()
         if not alias or Path(alias).name != alias:
             parser.error("--accounts delete requires a plain --account <alias>")
-        token_path = resolve_auth_file(data_dir, f"{alias}.token")
+        token_path = resolve_auth_file(config, f"{alias}.token")
         if not token_path.exists():
             print(f"missing {alias}", file=sys.stderr)
             sys.exit(2)
@@ -453,7 +452,7 @@ def main() -> None:
         normalized_email = str(args.email or "").strip()
         requested_account = str(args.account or "").strip()
         existing_account = None if requested_account else (
-            find_token_account_by_email(data_dir, normalized_email)
+            find_token_account_by_email(config, normalized_email)
             if normalized_email
             else None
         )
@@ -463,7 +462,7 @@ def main() -> None:
             resolved_account = existing_account["alias"]
         elif normalized_email:
             resolved_account = choose_account_alias(
-                data_dir,
+                config,
                 normalized_email,
                 preferred_name=requested_account or None,
             )
@@ -472,7 +471,7 @@ def main() -> None:
         if not resolved_account or Path(resolved_account).name != resolved_account:
             parser.error("--account must be a plain alias")
 
-        token_path = resolve_auth_file(data_dir, f"{resolved_account}.token")
+        token_path = resolve_auth_file(config, f"{resolved_account}.token")
         try:
             token_data = load_token_file(token_path)
         except FileNotFoundError:
@@ -493,7 +492,6 @@ def main() -> None:
                 sys.exit(2)
             _start_code_flow(
                 config=config,
-                data_dir=data_dir,
                 plan=plan,
                 account=args.account,
                 email=args.email,
@@ -505,7 +503,7 @@ def main() -> None:
             matched_index = None
             matched_pending = None
             last_error = None
-            pending_candidates = _unexpired_pending_code_flows(data_dir)
+            pending_candidates = _unexpired_pending_code_flows(config)
             if not pending_candidates:
                 raise RuntimeError("No pending code-flow authorizations. Run --code-flow start first.")
             for index, pending in pending_candidates:
@@ -543,7 +541,7 @@ def main() -> None:
         except RuntimeError as exc:
             print(f"Error: {exc}", file=sys.stderr)
             sys.exit(1)
-        _remove_pending_code_flow_at_index(data_dir, index=matched_index)
+        _remove_pending_code_flow_at_index(config, index=matched_index)
         _print_warnings(import_result.warnings)
         print(
             json.dumps(
