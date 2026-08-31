@@ -15,6 +15,19 @@ LEGACY_GLOBAL_CONFIG_NAME = "config.json"
 AGENT_CONFIG_NAME = "config.agent.json"
 AGENT_CONFIG_TEMPLATE_NAME = "config.agent.example.json"
 DEFAULT_DATA_DIR = "yandex-data"
+
+
+_root = Path(__file__).resolve().parent
+while not (_root / GLOBAL_CONFIG_NAME).exists() and _root != _root.parent:
+    _root = _root.parent
+config = json.loads((_root / GLOBAL_CONFIG_NAME).read_text(encoding="utf-8"))
+config["data_dir"] = str((Path.cwd() / DEFAULT_DATA_DIR).resolve())
+
+data_dir = Path(config["data_dir"])
+AUTH_PATH = Path("~/secrets/yandex-office")
+LEGACY_AUTH_PATH = data_dir / "auth"
+
+
 LEGACY_AUTH_MIGRATION_WARNING = (
     "WARNING: Legacy Yandex Office credentials were found and successfully moved "
     "to ~/secrets/yandex-office."
@@ -22,56 +35,39 @@ LEGACY_AUTH_MIGRATION_WARNING = (
 
 
 def _read_json(path: Path) -> dict[str, Any]:
-    """Read a JSON object from disk."""
     with open(path, encoding="utf-8") as handle:
         return json.load(handle)
 
 
 def find_skill_root(start_path: str | Path) -> Path:
-    """Find the shared skill root above a path."""
     current = Path(start_path).resolve()
     if current.is_file():
         current = current.parent
-
-    for candidate in [current] + list(current.parents):
-        config_path = candidate / GLOBAL_CONFIG_NAME
-        legacy_config_path = candidate / LEGACY_GLOBAL_CONFIG_NAME
-        if config_path.exists() or legacy_config_path.exists():
+    for candidate in [current, *current.parents]:
+        if (candidate / GLOBAL_CONFIG_NAME).exists() or (candidate / LEGACY_GLOBAL_CONFIG_NAME).exists():
             return candidate
-
     raise FileNotFoundError(
         f"{GLOBAL_CONFIG_NAME} or {LEGACY_GLOBAL_CONFIG_NAME} not found above "
         f"{Path(start_path).resolve()}"
     )
 
 
-def load_global_config(
-    skill_root: str | Path,
-    *,
-    bootstrap: bool = False,
-) -> tuple[Path, dict[str, Any]]:
-    """Load the shared skill config file."""
+def load_global_config(skill_root: str | Path, *, bootstrap: bool = False) -> tuple[Path, dict[str, Any]]:
     del bootstrap
     root = Path(skill_root).resolve()
     config_path = root / GLOBAL_CONFIG_NAME
     if config_path.exists():
         return config_path, _read_json(config_path)
-
     legacy_config_path = root / LEGACY_GLOBAL_CONFIG_NAME
     if legacy_config_path.exists():
         return legacy_config_path, _read_json(legacy_config_path)
-
     raise FileNotFoundError(
         f"Global config not found: expected {config_path} "
         f"(or legacy compatibility file {legacy_config_path})."
     )
 
 
-def resolve_data_dir(
-    cwd: str | Path | None = None,
-    data_dir_override: str | Path | None = None,
-) -> Path:
-    """Resolve the runtime data directory and keep the module auth paths in sync."""
+def resolve_data_dir(cwd: str | Path | None = None, data_dir_override: str | Path | None = None) -> Path:
     global data_dir, LEGACY_AUTH_PATH
     if data_dir_override is not None:
         resolved = Path(data_dir_override).resolve()
@@ -81,20 +77,6 @@ def resolve_data_dir(
     data_dir = resolved
     LEGACY_AUTH_PATH = resolved / "auth"
     return resolved
-
-
-def _load_module_config() -> dict[str, Any]:
-    """Load the shared config and record the resolved runtime data directory."""
-    skill_root = find_skill_root(__file__)
-    _, global_config = load_global_config(skill_root)
-    global_config["data_dir"] = str(resolve_data_dir())
-    return global_config
-
-
-config = _load_module_config()
-data_dir = Path(config["data_dir"])
-AUTH_PATH = Path("~/secrets/yandex-office")
-LEGACY_AUTH_PATH = data_dir / "auth"
 
 
 def _ensure_auth_path() -> Path:
