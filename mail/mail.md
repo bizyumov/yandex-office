@@ -10,6 +10,17 @@ metadata:
 
 # Yandex Mail / Почта
 
+## Command shorthand
+
+Set once in the shell before running the examples in this document:
+
+```bash
+YO="python3 <full-path-to-yandex-office>"
+```
+
+Replace the placeholder with the absolute skill path. Commands below reuse `$YO`;
+they do not change the working directory or runtime data-directory resolution.
+
 Generic email fetcher and sender for Yandex Mail via IMAP/SMTP XOAUTH2. Fetches incoming emails matching configured filters into a structured directory for downstream processing by other skills. Sends emails via SMTP through managed OAuth and the configured SMTP send app.
 
 ## Quick Start
@@ -21,28 +32,28 @@ Ask the user to verify that IMAP + OAuth is enabled for the target account first
 
 ```bash
 # Print an OAuth approval URL; add --account only if alias alex is already known:
-python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --app mail-readonly
+$YO/scripts/oauth_setup.py --app mail-readonly
 
 # For SMTP sending, authorize the send app:
-python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --app mail-smtp
+$YO/scripts/oauth_setup.py --app mail-smtp
 
 # Discover available account aliases before using Mail
-python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --accounts list
+$YO/scripts/oauth_setup.py --accounts list
 
 # Fetch new emails with all enabled configured filters
-python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py
+$YO/mail/scripts/fetch_emails.py
 
 # Fetch at most N new messages from enabled configured filters in this run
-python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --num 20
+$YO/mail/scripts/fetch_emails.py --num 20
 
 # Run one named filter only
-python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --filter forms
+$YO/mail/scripts/fetch_emails.py --filter forms
 
 # Run an ad-hoc one-off search without touching persistent cursor state
-python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account alex --subject "code" --since-date 2026-05-26 --dry-run --preview-body --num 5
+$YO/mail/scripts/fetch_emails.py --account alex --subject "code" --since-date 2026-05-26 --dry-run --preview-body --num 5
 
 # Fetch exactly one message without advancing state
-python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account alex --uid <uid>
+$YO/mail/scripts/fetch_emails.py --account alex --uid <uid>
 ```
 
 > Recommended: use `--app mail-readonly` for fetching and `--app mail-smtp`
@@ -60,11 +71,11 @@ python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account alex
 
 ## Typical Agent Workflow
 
-1. Run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --accounts list`.
+1. Run `$YO/scripts/oauth_setup.py --accounts list`.
 2. Pick only a listed account alias requested by the user.
-3. Run `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --subject "<pattern>" --since-date <YYYY-MM-DD> --dry-run --preview-body --num 5`.
+3. Run `$YO/mail/scripts/fetch_emails.py --account <alias> --subject "<pattern>" --since-date <YYYY-MM-DD> --dry-run --preview-body --num 5`.
 4. Inspect all returned matches and use the newest relevant message.
-5. If a full saved copy is needed, run `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --uid <uid>`.
+5. If a full saved copy is needed, run `$YO/mail/scripts/fetch_emails.py --account <alias> --uid <uid>`.
 6. Read `email_body.html` or `email_body.txt` from the saved incoming directory.
 
 If the requested account alias is missing, stop. The agent imports that account
@@ -76,7 +87,7 @@ a fallback.
 Use `--num` to cap the total number of newly fetched messages per run:
 
 ```bash
-python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --num 25
+$YO/mail/scripts/fetch_emails.py --num 25
 ```
 
 Behavior:
@@ -377,14 +388,14 @@ Use `send_email.py` to send emails via Yandex SMTP with managed OAuth and the co
 
 ```bash
 # Send a simple email
-python3 <full-path-to-yandex-office>/mail/scripts/send_email.py \
+$YO/mail/scripts/send_email.py \
     --account <alias> \
     --to recipient@example.com \
     --subject "Hello" \
     --body "Hi there"
 
 # Send with CC and Reply-To
-python3 <full-path-to-yandex-office>/mail/scripts/send_email.py \
+$YO/mail/scripts/send_email.py \
     --account <alias> \
     --to recipient@example.com \
     --cc other@example.com \
@@ -393,14 +404,14 @@ python3 <full-path-to-yandex-office>/mail/scripts/send_email.py \
     --body "Reply body"
 
 # Read body from file (multi-line content)
-python3 <full-path-to-yandex-office>/mail/scripts/send_email.py \
+$YO/mail/scripts/send_email.py \
     --account <alias> \
     --to recipient@example.com \
     --subject "Report" \
     --body-file /path/to/report.txt
 
 # HTML body
-python3 <full-path-to-yandex-office>/mail/scripts/send_email.py \
+$YO/mail/scripts/send_email.py \
     --account <alias> \
     --to recipient@example.com \
     --subject "HTML Report" \
@@ -408,7 +419,7 @@ python3 <full-path-to-yandex-office>/mail/scripts/send_email.py \
     --content-type html
 
 # JSON output
-python3 <full-path-to-yandex-office>/mail/scripts/send_email.py \
+$YO/mail/scripts/send_email.py \
     --account <alias> \
     --to recipient@example.com \
     --subject "Test" \
@@ -465,7 +476,7 @@ Configuration:
 
 ## Managed Auth
 
-Use `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py` for OAuth
+Use `$YO/scripts/oauth_setup.py` for OAuth
 intake and refresh, normally with `--app mail-readonly` for fetching and
 `--app mail-smtp` for sending. Runtime selects eligible credentials through the
 decorated auth metadata and config-backed OAuth app catalog.

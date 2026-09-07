@@ -10,25 +10,36 @@ metadata:
 
 # Yandex Forms / Формы
 
+## Command shorthand
+
+Set once in the shell before running the examples in this document:
+
+```bash
+YO="python3 <full-path-to-yandex-office>"
+```
+
+Replace the placeholder with the absolute skill path. Commands below reuse `$YO`;
+they do not change the working directory or runtime data-directory resolution.
+
 API client for Yandex Forms to download form responses, export results, and discover forms. Works with forms in Yandex 360 for Business organizations.
 
 ## Quick Start
 
 ```bash
 # Discover forms and get monthly response statistics
-python3 <full-path-to-yandex-office>/forms/scripts/discover_forms.py --account mary
+$YO/forms/scripts/discover_forms.py --account mary
 
 # Get stats for specific form(s)
-python3 <full-path-to-yandex-office>/forms/scripts/get_form_stats.py --form-id FORM_ID --account mary
+$YO/forms/scripts/get_form_stats.py --form-id FORM_ID --account mary
 
 # Export form responses to XLSX
-python3 <full-path-to-yandex-office>/forms/scripts/export_responses.py --form-id FORM_ID --account mary
+$YO/forms/scripts/export_responses.py --form-id FORM_ID --account mary
 
 # Export to specific directory
-python3 <full-path-to-yandex-office>/forms/scripts/export_responses.py --form-id FORM_ID --account mary --output ./my-forms/
+$YO/forms/scripts/export_responses.py --form-id FORM_ID --account mary --output ./my-forms/
 
 # Get single answer by ID
-python3 <full-path-to-yandex-office>/forms/scripts/get_answer.py --answer-id 2037950340 --account mary
+$YO/forms/scripts/get_answer.py --answer-id 2037950340 --account mary
 ```
 
 ## What It Does
@@ -122,7 +133,7 @@ for reading responses or `forms:write` for full operations.
 Import or refresh Forms authorization through managed auth:
 ```bash
 # Use the full path to the shared Yandex skill:
-python3 <full-path-to-yandex-office>/scripts/oauth_setup.py \
+$YO/scripts/oauth_setup.py \
   --email user@yandex.ru \
   --account mary \
   --app forms-read
@@ -134,12 +145,12 @@ Recommended: use `--app forms-read` for response export/read. Use
 ### Multiple Accounts
 
 The agent can import multiple account aliases through
-`python3 <full-path-to-yandex-office>/scripts/oauth_setup.py` under user
+`$YO/scripts/oauth_setup.py` under user
 authorization to access forms reachable through different Yandex accounts.
 
 Then use `--account` to specify which account alias to use:
 ```bash
-python3 <full-path-to-yandex-office>/forms/scripts/get_form_stats.py --form-id FORM_ID --account admin
+$YO/forms/scripts/get_form_stats.py --form-id FORM_ID --account admin
 ```
 
 ### OAuth App Registration
@@ -157,7 +168,7 @@ python3 <full-path-to-yandex-office>/forms/scripts/get_form_stats.py --form-id F
 Discover forms and get monthly response statistics. Scans CWD mail data for form references and queries API for accessible forms.
 
 ```bash
-python3 <full-path-to-yandex-office>/forms/scripts/discover_forms.py --account ACCOUNT [options]
+$YO/forms/scripts/discover_forms.py --account ACCOUNT [options]
 ```
 
 **Arguments:**
@@ -172,13 +183,13 @@ python3 <full-path-to-yandex-office>/forms/scripts/discover_forms.py --account A
 **Example:**
 ```bash
 # Discover forms and display summary
-python3 <full-path-to-yandex-office>/forms/scripts/discover_forms.py --account mary
+$YO/forms/scripts/discover_forms.py --account mary
 
 # Save to JSON
-python3 <full-path-to-yandex-office>/forms/scripts/discover_forms.py --account mary --output ./forms-report.json
+$YO/forms/scripts/discover_forms.py --account mary --output ./forms-report.json
 
 # Use existing registry without scanning
-python3 <full-path-to-yandex-office>/forms/scripts/discover_forms.py --account mary --no-scan
+$YO/forms/scripts/discover_forms.py --account mary --no-scan
 ```
 
 **Output:**
@@ -209,7 +220,7 @@ Accessible Forms with Response Totals:
 Get response statistics for specific form(s), including monthly breakdown. This is useful when you know the form IDs and want detailed response counts.
 
 ```bash
-python3 <full-path-to-yandex-office>/forms/scripts/get_form_stats.py --form-id FORM_ID [--form-id FORM_ID2 ...] --account ACCOUNT [options]
+$YO/forms/scripts/get_form_stats.py --form-id FORM_ID [--form-id FORM_ID2 ...] --account ACCOUNT [options]
 ```
 
 **Arguments:**
@@ -225,17 +236,17 @@ python3 <full-path-to-yandex-office>/forms/scripts/get_form_stats.py --form-id F
 **Example:**
 ```bash
 # Get stats for single form
-python3 <full-path-to-yandex-office>/forms/scripts/get_form_stats.py --form-id 6800cd9202848f10b272a9cc --account mary
+$YO/forms/scripts/get_form_stats.py --form-id 6800cd9202848f10b272a9cc --account mary
 
 # Get stats for multiple forms
-python3 <full-path-to-yandex-office>/forms/scripts/get_form_stats.py \
+$YO/forms/scripts/get_form_stats.py \
   --form-id FORM_ID_1 \
   --form-id FORM_ID_2 \
   --form-id FORM_ID_3 \
   --account mary
 
 # Save to JSON
-python3 <full-path-to-yandex-office>/forms/scripts/get_form_stats.py \
+$YO/forms/scripts/get_form_stats.py \
   --form-id 6800cd9202848f10b272a9cc \
   --account mary \
   --output ./stats.json
@@ -265,7 +276,7 @@ Yandex Forms Response Statistics
 Export all responses from a form to XLSX file.
 
 ```bash
-python3 <full-path-to-yandex-office>/forms/scripts/export_responses.py --form-id FORM_ID --account ACCOUNT [options]
+$YO/forms/scripts/export_responses.py --form-id FORM_ID --account ACCOUNT [options]
 ```
 
 **Arguments:**
@@ -280,7 +291,7 @@ python3 <full-path-to-yandex-office>/forms/scripts/export_responses.py --form-id
 
 **Example:**
 ```bash
-python3 <full-path-to-yandex-office>/forms/scripts/export_responses.py \
+$YO/forms/scripts/export_responses.py \
   --form-id 6800cd9202848f10b272a9cc \
   --account mary \
   --output ./downloads/ \
@@ -300,7 +311,7 @@ python3 <full-path-to-yandex-office>/forms/scripts/export_responses.py \
 List forms accessible to the account.
 
 ```bash
-python3 <full-path-to-yandex-office>/forms/scripts/list_forms.py --account mary [--limit 10]
+$YO/forms/scripts/list_forms.py --account mary [--limit 10]
 ```
 
 ### get_answer.py
@@ -308,7 +319,7 @@ python3 <full-path-to-yandex-office>/forms/scripts/list_forms.py --account mary 
 Get a single answer by ID.
 
 ```bash
-python3 <full-path-to-yandex-office>/forms/scripts/get_answer.py --answer-id 2037950340 --account mary [--output ./answer.json]
+$YO/forms/scripts/get_answer.py --answer-id 2037950340 --account mary [--output ./answer.json]
 ```
 
 ## Output Structure
@@ -345,7 +356,7 @@ Schedule weekly exports of survey responses for reporting:
 
 ```bash
 # Cron: Every Monday at 9 AM
-0 9 * * 1 python3 <full-path-to-yandex-office>/forms/scripts/export_responses.py --form-id SURVEY_ID --account mary --output ./reports/
+0 9 * * 1 $YO/forms/scripts/export_responses.py --form-id SURVEY_ID --account mary --output ./reports/
 ```
 
 ### 2. Event Registration Processing
@@ -353,7 +364,7 @@ Schedule weekly exports of survey responses for reporting:
 After an event, export all registrations:
 
 ```bash
-python3 <full-path-to-yandex-office>/forms/scripts/export_responses.py \
+$YO/forms/scripts/export_responses.py \
   --form-id EVENT_REG_FORM_ID \
   --account mary \
   --format xlsx \
@@ -369,7 +380,7 @@ Automated backup of critical form data:
 # backup_forms.sh
 FORMS=("form1_id" "form2_id" "form3_id")
 for FORM_ID in "${FORMS[@]}"; do
-  python3 <full-path-to-yandex-office>/forms/scripts/export_responses.py \
+  $YO/forms/scripts/export_responses.py \
     --form-id "$FORM_ID" \
     --account mary \
     --output ./backups/$(date +%Y-%m)/
@@ -433,7 +444,7 @@ Optional forms-specific config:
 
 ## Managed Auth
 
-Use `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py` for OAuth intake and refresh. Runtime managed auth
+Use `$YO/scripts/oauth_setup.py` for OAuth intake and refresh. Runtime managed auth
 handles credential selection.
 
 ## Error Handling
@@ -460,13 +471,13 @@ Schedule monthly discovery to track all forms and their response statistics acro
 
 ```bash
 # Monthly discovery job
-python3 <full-path-to-yandex-office>/forms/scripts/discover_forms.py \
+$YO/forms/scripts/discover_forms.py \
   --account mary \
   --output ./reports/forms-$(date +%Y-%m).json
 
 # Export data for each discovered form
 for form_id in $(jq -r '.forms | keys[]' ./reports/forms-$(date +%Y-%m).json); do
-  python3 <full-path-to-yandex-office>/forms/scripts/export_responses.py \
+  $YO/forms/scripts/export_responses.py \
     --form-id "$form_id" \
     --account mary \
     --format xlsx \
@@ -480,7 +491,7 @@ A research team uses Yandex Forms for survey data collection. Weekly automated e
 
 ```bash
 # Weekly export job
-python3 <full-path-to-yandex-office>/forms/scripts/export_responses.py \
+$YO/forms/scripts/export_responses.py \
   --form-id RESEARCH_SURVEY_ID \
   --account mary \
   --format xlsx \
@@ -493,7 +504,7 @@ An event organizer collects registrations via Yandex Forms. After registration c
 
 ```bash
 # Post-event export
-python3 <full-path-to-yandex-office>/forms/scripts/export_responses.py \
+$YO/forms/scripts/export_responses.py \
   --form-id EVENT_REG_ID \
   --account mary \
   --format json
@@ -508,7 +519,7 @@ Support team uses forms for customer feedback. Daily exports feed into a dashboa
 
 ```bash
 # Daily morning export
-python3 <full-path-to-yandex-office>/forms/scripts/export_responses.py \
+$YO/forms/scripts/export_responses.py \
   --form-id FEEDBACK_FORM_ID \
   --account mary \
   --output ./dashboard/input/

@@ -10,28 +10,39 @@ metadata:
 
 # Yandex Tracker / Трекер
 
+## Command shorthand
+
+Set once in the shell before running the examples in this document:
+
+```bash
+YO="python3 <full-path-to-yandex-office>"
+```
+
+Replace the placeholder with the absolute skill path. Commands below reuse `$YO`;
+they do not change the working directory or runtime data-directory resolution.
+
 API client for Yandex Tracker to manage tasks, projects, and agile workflows. Works with organizations in Yandex 360 for Business and Yandex Cloud.
 
 ## Quick Start
 
 ```bash
 # Search issues with query language
-python3 <full-path-to-yandex-office>/tracker/scripts/search_issues.py --query "Queue: PROJ Status: open" --account mary
+$YO/tracker/scripts/search_issues.py --query "Queue: PROJ Status: open" --account mary
 
 # Create a new issue
-python3 <full-path-to-yandex-office>/tracker/scripts/create_issue.py --queue PROJ --summary "New task title" --account mary
+$YO/tracker/scripts/create_issue.py --queue PROJ --summary "New task title" --account mary
 
 # Get issue details
-python3 <full-path-to-yandex-office>/tracker/scripts/get_issue.py --issue PROJ-123 --account mary
+$YO/tracker/scripts/get_issue.py --issue PROJ-123 --account mary
 
 # Add comment to issue
-python3 <full-path-to-yandex-office>/tracker/scripts/add_comment.py --issue PROJ-123 --text "Status update" --account mary
+$YO/tracker/scripts/add_comment.py --issue PROJ-123 --text "Status update" --account mary
 
 # List my open issues
-python3 <full-path-to-yandex-office>/tracker/scripts/my_issues.py --account mary
+$YO/tracker/scripts/my_issues.py --account mary
 
 # Get board columns and issues
-python3 <full-path-to-yandex-office>/tracker/scripts/get_board.py --board 123 --account mary
+$YO/tracker/scripts/get_board.py --board 123 --account mary
 ```
 
 ## What It Does
@@ -53,7 +64,7 @@ for reading or `tracker:write` for full operations.
 
 Import or refresh Tracker authorization through managed auth:
 ```bash
-python3 <full-path-to-yandex-office>/scripts/oauth_setup.py \
+$YO/scripts/oauth_setup.py \
   --email user@yandex.ru \
   --account mary \
   --app tracker-read
@@ -81,7 +92,7 @@ To find your org ID: https://tracker.yandex.ru/admin/orgs
 Search issues using Yandex Tracker query language or filters.
 
 ```bash
-python3 <full-path-to-yandex-office>/tracker/scripts/search_issues.py --account ACCOUNT [options]
+$YO/tracker/scripts/search_issues.py --account ACCOUNT [options]
 ```
 
 **Arguments:**
@@ -102,16 +113,16 @@ python3 <full-path-to-yandex-office>/tracker/scripts/search_issues.py --account 
 **Query Language Examples:**
 ```bash
 # My open tasks
-python3 <full-path-to-yandex-office>/tracker/scripts/search_issues.py --account mary --query "Assignee: me() Status: open"
+$YO/tracker/scripts/search_issues.py --account mary --query "Assignee: me() Status: open"
 
 # High priority bugs in specific queue
-python3 <full-path-to-yandex-office>/tracker/scripts/search_issues.py --account mary --query 'Queue: PROJ Type: bug Priority: high'
+$YO/tracker/scripts/search_issues.py --account mary --query 'Queue: PROJ Type: bug Priority: high'
 
 # Overdue tasks
-python3 <full-path-to-yandex-office>/tracker/scripts/search_issues.py --account mary --query "Deadline: < today() Status: !closed"
+$YO/tracker/scripts/search_issues.py --account mary --query "Deadline: < today() Status: !closed"
 
 # Tasks created this week
-python3 <full-path-to-yandex-office>/tracker/scripts/search_issues.py --account mary --query 'Created: >= "-7d"'
+$YO/tracker/scripts/search_issues.py --account mary --query 'Created: >= "-7d"'
 ```
 
 **Output:**
@@ -144,7 +155,7 @@ Found 3 issues:
 Create a new issue in specified queue.
 
 ```bash
-python3 <full-path-to-yandex-office>/tracker/scripts/create_issue.py --queue QUEUE --summary SUMMARY --account ACCOUNT [options]
+$YO/tracker/scripts/create_issue.py --queue QUEUE --summary SUMMARY --account ACCOUNT [options]
 ```
 
 **Arguments:**
@@ -167,10 +178,10 @@ python3 <full-path-to-yandex-office>/tracker/scripts/create_issue.py --queue QUE
 **Examples:**
 ```bash
 # Simple task
-python3 <full-path-to-yandex-office>/tracker/scripts/create_issue.py --queue PROJ --summary "Review PR #42" --account mary
+$YO/tracker/scripts/create_issue.py --queue PROJ --summary "Review PR #42" --account mary
 
 # Task with all metadata
-python3 <full-path-to-yandex-office>/tracker/scripts/create_issue.py \
+$YO/tracker/scripts/create_issue.py \
   --queue PROJ \
   --summary "Critical bug in production" \
   --description "## Steps to reproduce\n1. Open app\n2. Click button" \
@@ -187,7 +198,7 @@ python3 <full-path-to-yandex-office>/tracker/scripts/create_issue.py \
 Get detailed information about a specific issue.
 
 ```bash
-python3 <full-path-to-yandex-office>/tracker/scripts/get_issue.py --issue ISSUE_KEY --account ACCOUNT [options]
+$YO/tracker/scripts/get_issue.py --issue ISSUE_KEY --account ACCOUNT [options]
 ```
 
 **Arguments:**
@@ -205,7 +216,7 @@ python3 <full-path-to-yandex-office>/tracker/scripts/get_issue.py --issue ISSUE_
 Add a comment to an issue.
 
 ```bash
-python3 <full-path-to-yandex-office>/tracker/scripts/add_comment.py --issue ISSUE --text TEXT --account ACCOUNT [options]
+$YO/tracker/scripts/add_comment.py --issue ISSUE --text TEXT --account ACCOUNT [options]
 ```
 
 **Arguments:**
@@ -220,7 +231,7 @@ python3 <full-path-to-yandex-office>/tracker/scripts/add_comment.py --issue ISSU
 
 **Example:**
 ```bash
-python3 <full-path-to-yandex-office>/tracker/scripts/add_comment.py \
+$YO/tracker/scripts/add_comment.py \
   --issue PROJ-123 \
   --text "@petrov @ivanov Please review the updated design" \
   --summon petrov,ivanov \
@@ -232,7 +243,7 @@ python3 <full-path-to-yandex-office>/tracker/scripts/add_comment.py \
 Update issue fields or status.
 
 ```bash
-python3 <full-path-to-yandex-office>/tracker/scripts/update_issue.py --issue ISSUE --account ACCOUNT [options]
+$YO/tracker/scripts/update_issue.py --issue ISSUE --account ACCOUNT [options]
 ```
 
 **Arguments:**
@@ -256,20 +267,20 @@ python3 <full-path-to-yandex-office>/tracker/scripts/update_issue.py --issue ISS
 **Examples:**
 ```bash
 # Change assignee
-python3 <full-path-to-yandex-office>/tracker/scripts/update_issue.py --issue PROJ-123 --assignee petrov --account mary
+$YO/tracker/scripts/update_issue.py --issue PROJ-123 --assignee petrov --account mary
 
 # Close issue with resolution
-python3 <full-path-to-yandex-office>/tracker/scripts/update_issue.py \
+$YO/tracker/scripts/update_issue.py \
   --issue PROJ-123 \
   --status closed \
   --resolution "fixed" \
   --account mary
 
 # Add tags
-python3 <full-path-to-yandex-office>/tracker/scripts/update_issue.py --issue PROJ-123 --add-tags "frontend,urgent" --account mary
+$YO/tracker/scripts/update_issue.py --issue PROJ-123 --add-tags "frontend,urgent" --account mary
 
 # Take issue to work
-python3 <full-path-to-yandex-office>/tracker/scripts/update_issue.py \
+$YO/tracker/scripts/update_issue.py \
   --issue PROJ-123 \
   --assignee me() \
   --status "in_progress" \
@@ -282,7 +293,7 @@ python3 <full-path-to-yandex-office>/tracker/scripts/update_issue.py \
 List issues assigned to the selected Yandex account identity.
 
 ```bash
-python3 <full-path-to-yandex-office>/tracker/scripts/my_issues.py --account ACCOUNT [options]
+$YO/tracker/scripts/my_issues.py --account ACCOUNT [options]
 ```
 
 **Arguments:**
@@ -301,7 +312,7 @@ python3 <full-path-to-yandex-office>/tracker/scripts/my_issues.py --account ACCO
 Get board columns and issues (Agile board).
 
 ```bash
-python3 <full-path-to-yandex-office>/tracker/scripts/get_board.py --board BOARD_ID --account ACCOUNT [options]
+$YO/tracker/scripts/get_board.py --board BOARD_ID --account ACCOUNT [options]
 ```
 
 **Arguments:**
@@ -317,7 +328,7 @@ python3 <full-path-to-yandex-office>/tracker/scripts/get_board.py --board BOARD_
 List queues available to the selected Yandex account.
 
 ```bash
-python3 <full-path-to-yandex-office>/tracker/scripts/get_queues.py --account ACCOUNT [options]
+$YO/tracker/scripts/get_queues.py --account ACCOUNT [options]
 ```
 
 **Arguments:**
@@ -388,7 +399,7 @@ Cron job to notify about upcoming deadlines:
 
 ```bash
 # Daily check for tasks due tomorrow
-python3 <full-path-to-yandex-office>/tracker/scripts/search_issues.py \
+$YO/tracker/scripts/search_issues.py \
   --account mary \
   --query 'Deadline: "+1d" Status: !closed' \
   --output ./due_tomorrow.json
@@ -463,7 +474,7 @@ issue = create_issue(
 
 ## Managed Auth
 
-Use `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py` for OAuth intake and refresh. Runtime managed auth
+Use `$YO/scripts/oauth_setup.py` for OAuth intake and refresh. Runtime managed auth
 handles credential selection.
 
 ## Error Handling

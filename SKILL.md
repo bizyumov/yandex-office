@@ -16,6 +16,17 @@ metadata:
 
 # yandex-office
 
+## Command shorthand
+
+Set once in the shell before running the examples in this document:
+
+```bash
+YO="python3 <full-path-to-yandex-office>"
+```
+
+Replace the placeholder with the absolute skill path. Commands below reuse `$YO`;
+they do not change the working directory or runtime data-directory resolution.
+
 Use this skill directory as `<full-path-to-yandex-office>` in commands below.
 Do not `cd` into the skill directory before running commands. CWD determines
 `./yandex-data`; use full script paths from CWD, or pass `--data-dir`.
@@ -49,7 +60,7 @@ Yandex identity behind an alias. Apps, scopes, and tokens are defined in
 ## Account-First Workflow
 
 Run first:
-`python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --accounts list`
+`$YO/scripts/oauth_setup.py --accounts list`
 
 If aliases print, choose only an exact listed alias. If no alias is suitable,
 pause the business task and set up or import the account through `yandex-office`
@@ -77,17 +88,17 @@ onboarding path. The literal alias `list` is valid; discovery uses plural
 ## Account And OAuth Helper
 
 - List aliases:
-  `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --accounts list`
+  `$YO/scripts/oauth_setup.py --accounts list`
 - Create or update an account handle:
-  `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account <alias>`
+  `$YO/scripts/oauth_setup.py --account <alias>`
 - Create or resolve an alias from email:
-  `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email>`
+  `$YO/scripts/oauth_setup.py --email <email>`
 - Save email under a chosen alias:
-  `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email <email> --account <alias>`
+  `$YO/scripts/oauth_setup.py --email <email> --account <alias>`
 - Start screen-code OAuth:
-  `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account <alias> --app <app_id> --code-flow start`
+  `$YO/scripts/oauth_setup.py --account <alias> --app <app_id> --code-flow start`
 - Complete screen-code OAuth:
-  `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account <alias> --code-flow complete --code <confirmation-code>`
+  `$YO/scripts/oauth_setup.py --account <alias> --code-flow complete --code <confirmation-code>`
 
 Do not use `--account <alias>` to test whether an alias exists. It creates or
 updates the local account handle. Use it only when that is intended, or after
@@ -127,8 +138,8 @@ OAuth, `--app office-core` is required. Email and account are optional hints and
 may not match the verified token identity if the human authorizes while logged
 into a different Yandex account.
 
-Examples: `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account <alias> --app office-core --code-flow start`
-then `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account <alias> --code-flow complete --code <confirmation-code>`
+Examples: `$YO/scripts/oauth_setup.py --account <alias> --app office-core --code-flow start`
+then `$YO/scripts/oauth_setup.py --account <alias> --code-flow complete --code <confirmation-code>`
 
 To ensure an account covers a workflow, run `--account <alias>` and read `apps`.
 For Calendar plus Telemost, acceptable coverage includes `office-core`, or both
@@ -147,8 +158,8 @@ authorization URL, stores managed tokens and pending verifier state under
 `{data_dir}/auth`, and never prints the returned bearer token.
 
 ```bash
-python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account <alias> --app <app_id> --code-flow start
-python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account <alias> --code-flow complete --code <confirmation-code>
+$YO/scripts/oauth_setup.py --account <alias> --app <app_id> --code-flow start
+$YO/scripts/oauth_setup.py --account <alias> --code-flow complete --code <confirmation-code>
 ```
 
 Completion prints token-safe JSON with `requested_account`, `saved_account`,
@@ -163,24 +174,24 @@ managed imports: existing verified-email account wins, else explicit
 
 Mail:
 - Check recent mail without persistence:
-  `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --dry-run --num <limit>`
+  `$YO/mail/scripts/fetch_emails.py --account <alias> --dry-run --num <limit>`
 - Preview matching mail body without persistence:
-  `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --dry-run --preview-body --sender <sender-or-pattern>`
+  `$YO/mail/scripts/fetch_emails.py --account <alias> --dry-run --preview-body --sender <sender-or-pattern>`
 - Fetch one known message:
-  `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --uid <uid>`
+  `$YO/mail/scripts/fetch_emails.py --account <alias> --uid <uid>`
 - Send an email:
-  `python3 <full-path-to-yandex-office>/mail/scripts/send_email.py --account <alias> --to <addr> --subject <subj> --body <text>`
+  `$YO/mail/scripts/send_email.py --account <alias> --to <addr> --subject <subj> --body <text>`
 - Send with CC/BCC/HTML:
-  `python3 <full-path-to-yandex-office>/mail/scripts/send_email.py --account <alias> --to <addr> --cc <addr> --bcc <addr> --subject <subj> --body <html> --content-type html --format json`
+  `$YO/mail/scripts/send_email.py --account <alias> --to <addr> --cc <addr> --bcc <addr> --subject <subj> --body <html> --content-type html --format json`
 - Backfill from a UID floor without persisting state:
   use `--from-uid <uid>`. Exact single-message fetch uses `--uid <uid>`.
 - Current Mail CLI uses `--account`; do not write legacy `--mailbox`.
 
 Telemost transcripts:
 - Check-only:
-  `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --filter telemost --dry-run`
+  `$YO/mail/scripts/fetch_emails.py --account <alias> --filter telemost --dry-run`
 - Actual bounded fetch:
-  `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias> --filter telemost --num <limit>`
+  `$YO/mail/scripts/fetch_emails.py --account <alias> --filter telemost --num <limit>`
 - For "today", use `--since-date <YYYY-MM-DD>`.
 - After actual fetch, process via `telemost/telemost.md`.
 

@@ -1,5 +1,16 @@
 # Config, Data, And Tests
 
+## Command shorthand
+
+Set once in the shell before running the examples in this document:
+
+```bash
+YO="python3 <full-path-to-yandex-office>"
+```
+
+Replace the placeholder with the absolute skill path. Commands below reuse `$YO`;
+they do not change the working directory or runtime data-directory resolution.
+
 ## Shared Configuration
 
 All Yandex sub-skills use the same two-level config:
@@ -92,8 +103,8 @@ Mail filter notes:
 - named filters may use `any: [...]` for OR-style branch filters; each branch supports the same `sender`, `subject`, `since_date`, and `before_date` fields, while branch cursor state is stored in the normal mail state file `{data_dir}/{mail.state_file}` (default `{data_dir}/state.json`) directly in the existing account bucket `filters.<filter>.accounts.<account>` as `sha256:...` keys alongside normal cursor fields such as `last_uid`, `last_check`, and `last_received_date`; do not add a `branches` wrapper or a filter-local state file
 - filter keys must be lowercase English schema keys because they are also used as incoming subdirectory names
 - `default` is reserved for ad-hoc one-off runs and must not be used as a configured filter key
-- `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --filter <name>` runs exactly that named filter, even if it is disabled for bare runs
-- `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias>` selects the token-backed account resolved by `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --accounts list`
+- `$YO/mail/scripts/fetch_emails.py --filter <name>` runs exactly that named filter, even if it is disabled for bare runs
+- `$YO/mail/scripts/fetch_emails.py --account <alias>` selects the token-backed account resolved by `$YO/scripts/oauth_setup.py --accounts list`
 - raw CLI overrides such as `--sender`, `--subject`, `--since-date`, `--before-date`, and `--uid` are treated as ad-hoc, do not advance persistent cursors, and search account history by default when no `--filter` is selected
 - `--uid <n>` fetches exactly one message, skips filter search logic, and requires `--account` when multiple accounts are available
 - `--preview-body` with `--dry-run` includes a `body` object for matching messages without writing incoming files; without it, dry-run fetches headers only
