@@ -1,5 +1,16 @@
 # yandex-office Extension Reference
 
+## Command shorthand
+
+Set once in the shell before running the examples in this document:
+
+```bash
+YO="python3 <full-path-to-yandex-office>"
+```
+
+Replace the placeholder with the absolute skill path. Commands below reuse `$YO`;
+they do not change the working directory or runtime data-directory resolution.
+
 Use this reference only when auditing or extending shared yandex-office runtime
 mechanics. Workflow commands must resolve account first and use sub-skill docs.
 
@@ -94,7 +105,7 @@ blockers.
 ## Script Import Bootstrap
 
 Command scripts in this repository are documented and executed by full file path,
-for example `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py`.
+for example `$YO/mail/scripts/fetch_emails.py`.
 They therefore cannot rely on installed packages, `python -m`, or relative
 package imports to reach shared runtime code.
 

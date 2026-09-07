@@ -1,5 +1,16 @@
 # Yandex 360 Directory / Директория
 
+## Command shorthand
+
+Set once in the shell before running the examples in this document:
+
+```bash
+YO="python3 <full-path-to-yandex-office>"
+```
+
+Replace the placeholder with the absolute skill path. Commands below reuse `$YO`;
+they do not change the working directory or runtime data-directory resolution.
+
 ## Overview
 
 Yandex 360 Directory / Директория API integration for accessing organization users, departments, and calendar free/busy information. Works alongside Calendar and Contacts skills to enable "find common meeting time" workflows.
@@ -16,7 +27,7 @@ https://api360.yandex.net/directory/v1
 ### Authentication
 - Managed OAuth token linked to an app covering `directory:read_users`, `directory:read_departments`, `directory:read_groups`
 - Use managed auth authorized through
-  `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py`, normally with
+  `$YO/scripts/oauth_setup.py`, normally with
   `--app directory-read`
 
 ### Required Scopes
@@ -45,7 +56,7 @@ GET /org/{orgId}/users
 
 **Managed CLI** (implemented — `directory/scripts/list.py`):
 ```bash
-python3 <full-path-to-yandex-office>/directory/scripts/list.py \
+$YO/directory/scripts/list.py \
   --account mary \
   --org-id 123456 \
   --per-page 1000
@@ -110,7 +121,7 @@ PATCH https://api360.yandex.net/directory/v1/org/{orgId}/users/{userId}
 Via the skill CLI:
 
 ```bash
-python3 <full-path-to-yandex-office>/directory/scripts/update_user.py \
+$YO/directory/scripts/update_user.py \
   --account alice --org-id 123456 --user-id 1120000000000001 --display-name "Имя Фамилия"
 ```
 
@@ -138,7 +149,7 @@ Three non-obvious behaviors:
 
 **Planned CLI Interface:**
 ```bash
-python3 <full-path-to-yandex-office>/directory/scripts/search.py \
+$YO/directory/scripts/search.py \
   --account mary \
   --query "Лебедев"
 ```
@@ -180,7 +191,7 @@ def search_user(account, org_id, query):
 
 **Planned CLI Interface:**
 ```bash
-python3 <full-path-to-yandex-office>/directory/scripts/find_slot.py \
+$YO/directory/scripts/find_slot.py \
   --account mary \
   --attendee "user@example.com" \
   --date 2026-03-04 \

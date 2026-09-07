@@ -1,8 +1,19 @@
 # IMAP XOAUTH2 Protocol Notes
 
+## Command shorthand
+
+Set once in the shell before running the examples in this document:
+
+```bash
+YO="python3 <full-path-to-yandex-office>"
+```
+
+Replace the placeholder with the absolute skill path. Commands below reuse `$YO`;
+they do not change the working directory or runtime data-directory resolution.
+
 ## Authentication Flow
 
-1. Obtain OAuth token via Yandex OAuth (run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py ...`)
+1. Obtain OAuth token via Yandex OAuth (run `$YO/scripts/oauth_setup.py ...`)
 2. Connect to `imap.yandex.com:993` over TLS
 3. Authenticate with XOAUTH2 SASL mechanism:
 
@@ -22,7 +33,7 @@ The auth string is base64-encoded by `imaplib.IMAP4_SSL.authenticate()`.
 ## Token Lifecycle
 
 - Tokens are valid for ~1 year
-- No refresh token mechanism — re-run `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py ...` to get a new token
+- No refresh token mechanism — re-run `$YO/scripts/oauth_setup.py ...` to get a new token
 - Runtime managed auth handles credential selection.
 
 ## Yandex IMAP Specifics

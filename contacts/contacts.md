@@ -1,5 +1,16 @@
 # Yandex Contacts / Контакты
 
+## Command shorthand
+
+Set once in the shell before running the examples in this document:
+
+```bash
+YO="python3 <full-path-to-yandex-office>"
+```
+
+Replace the placeholder with the absolute skill path. Commands below reuse `$YO`;
+they do not change the working directory or runtime data-directory resolution.
+
 ## Overview
 
 A CardDAV-based Contacts / Контакты skill for managing Yandex Contacts (Address Book), integrated with the Yandex skill ecosystem. Provides read/write access to contacts, fuzzy name search, and seamless integration with Calendar and Mail skills.
@@ -21,7 +32,7 @@ GitHub #46.
 
 ### Authentication
 Use a Contacts OAuth app token authorized through
-`python3 <full-path-to-yandex-office>/scripts/oauth_setup.py`, normally with
+`$YO/scripts/oauth_setup.py`, normally with
 `--app contacts-default`. Runtime uses managed auth for Contacts requests.
 
 ### Account Structure
@@ -82,9 +93,9 @@ Use a Contacts OAuth app token authorized through
 
 **Planned CLI Interface:**
 ```bash
-python3 <full-path-to-yandex-office>/contacts/scripts/search.py --account mary --query "Иван"
-python3 <full-path-to-yandex-office>/contacts/scripts/search.py --account mary --query "Ivanov" --json
-python3 <full-path-to-yandex-office>/contacts/scripts/search.py --account mary --domain "transneft.ru"
+$YO/contacts/scripts/search.py --account mary --query "Иван"
+$YO/contacts/scripts/search.py --account mary --query "Ivanov" --json
+$YO/contacts/scripts/search.py --account mary --domain "transneft.ru"
 ```
 
 ### 2. Add New Contact
@@ -114,7 +125,7 @@ python3 <full-path-to-yandex-office>/contacts/scripts/search.py --account mary -
 
 **Planned CLI Interface:**
 ```bash
-python3 <full-path-to-yandex-office>/contacts/scripts/add.py \
+$YO/contacts/scripts/add.py \
   --account mary \
   --first-name "Иван" \
   --last-name "Иванов" \
@@ -123,7 +134,7 @@ python3 <full-path-to-yandex-office>/contacts/scripts/add.py \
   --org "Транснефть"
 
 # Batch import
-python3 <full-path-to-yandex-office>/contacts/scripts/add.py --account mary --from-json contacts.json
+$YO/contacts/scripts/add.py --account mary --from-json contacts.json
 ```
 
 ### 3. Update Existing Contact
@@ -142,14 +153,14 @@ python3 <full-path-to-yandex-office>/contacts/scripts/add.py --account mary --fr
 
 **Planned CLI Interface:**
 ```bash
-python3 <full-path-to-yandex-office>/contacts/scripts/update.py \
+$YO/contacts/scripts/update.py \
   --account mary \
   --search "Иванов" \
   --phone "+79161234567" \
   --phone-type "mobile"
 
 # Update by UID
-python3 <full-path-to-yandex-office>/contacts/scripts/update.py \
+$YO/contacts/scripts/update.py \
   --account mary \
   --uid "uuid-here" \
   --org "Новая компания"
@@ -169,8 +180,8 @@ python3 <full-path-to-yandex-office>/contacts/scripts/update.py \
 
 **Planned CLI Interface:**
 ```bash
-python3 <full-path-to-yandex-office>/contacts/scripts/delete.py --account mary --search "Иванов"
-python3 <full-path-to-yandex-office>/contacts/scripts/delete.py --account mary --uid "uuid" --force
+$YO/contacts/scripts/delete.py --account mary --search "Иванов"
+$YO/contacts/scripts/delete.py --account mary --uid "uuid" --force
 ```
 
 ### 5. Sync Contacts from Email History
@@ -195,14 +206,14 @@ python3 <full-path-to-yandex-office>/contacts/scripts/delete.py --account mary -
 
 **Planned CLI Interface:**
 ```bash
-python3 <full-path-to-yandex-office>/contacts/scripts/sync_from_email.py \
+$YO/contacts/scripts/sync_from_email.py \
   --account mary \
   --domain "transneft.ru" \
   --require-full-name \
   --dry-run
 
 # Full sync
-python3 <full-path-to-yandex-office>/contacts/scripts/sync_from_email.py --account mary --all
+$YO/contacts/scripts/sync_from_email.py --account mary --all
 ```
 
 ### 6. List All Contacts
@@ -220,9 +231,9 @@ python3 <full-path-to-yandex-office>/contacts/scripts/sync_from_email.py --accou
 
 **Planned CLI Interface:**
 ```bash
-python3 <full-path-to-yandex-office>/contacts/scripts/list.py --account mary
-python3 <full-path-to-yandex-office>/contacts/scripts/list.py --account mary --source Personal --json
-python3 <full-path-to-yandex-office>/contacts/scripts/list.py --account mary --export contacts_backup.json
+$YO/contacts/scripts/list.py --account mary
+$YO/contacts/scripts/list.py --account mary --source Personal --json
+$YO/contacts/scripts/list.py --account mary --export contacts_backup.json
 ```
 
 ---
@@ -246,7 +257,7 @@ def suggest_attendees(account: str, partial_name: str, limit: int = 5) -> List[C
 
 **Usage in Calendar:**
 ```bash
-python3 <full-path-to-yandex-office>/calendars/scripts/create_event.py \
+$YO/calendars/scripts/create_event.py \
   --account mary \
   --contact "Иванов" \
   --start "2026-03-04T11:00:00" \
@@ -345,7 +356,7 @@ Add shared defaults to root `config.skill.json` and local Contacts settings to
 
 ## Security Considerations
 
-1. **Managed auth**: Use `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py` for OAuth intake and refresh
+1. **Managed auth**: Use `$YO/scripts/oauth_setup.py` for OAuth intake and refresh
 2. **No token logging**: Never log OAuth tokens
 3. **Contact privacy**: Respect Yandex ACLs (Personal vs Shared addressbooks)
 4. **Cache encryption**: Consider encrypting local cache at rest

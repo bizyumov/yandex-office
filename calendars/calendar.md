@@ -1,5 +1,16 @@
 # Yandex Calendar / Календарь
 
+## Command shorthand
+
+Set once in the shell before running the examples in this document:
+
+```bash
+YO="python3 <full-path-to-yandex-office>"
+```
+
+Replace the placeholder with the absolute skill path. Commands below reuse `$YO`;
+they do not change the working directory or runtime data-directory resolution.
+
 ## Overview
 
 A CalDAV-based Calendar / Календарь skill for managing Yandex Calendar events, integrated with the Yandex office skill pack. Provides read/write access to calendars, meeting scheduling, and multi-user availability queries.
@@ -17,7 +28,7 @@ Auth: `--accounts list` discovers token-file aliases; absent aliases are importe
 - **Authentication**: managed OAuth token linked to an app that declares `calendar:all`
 
 ### Authentication
-Use a Calendar OAuth app token authorized through `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py`, normally
+Use a Calendar OAuth app token authorized through `$YO/scripts/oauth_setup.py`, normally
 with `--app calendar-user`. Runtime joins managed auth to the config-backed
 OAuth app catalog and the decorated Calendar method auth shape.
 
@@ -73,8 +84,8 @@ OAuth app catalog and the decorated Calendar method auth shape.
 
 **CLI Interface:**
 ```bash
-python3 <full-path-to-yandex-office>/calendars/scripts/list_events.py --account mary --date tomorrow
-python3 <full-path-to-yandex-office>/calendars/scripts/list_events.py --account mary --date 2026-03-03 --calendar "Мои события"
+$YO/calendars/scripts/list_events.py --account mary --date tomorrow
+$YO/calendars/scripts/list_events.py --account mary --date 2026-03-03 --calendar "Мои события"
 ```
 
 ---
@@ -129,7 +140,7 @@ Naive `--start` values are treated as local wall time in the effective context;
 aware `--start` values are converted into it.
 
 ```bash
-python3 <full-path-to-yandex-office>/calendars/scripts/create_event.py \
+$YO/calendars/scripts/create_event.py \
   --account <account> \
   --summary "<title>" \
   --start "YYYY-MM-DDTHH:MM:SS" \
@@ -144,7 +155,7 @@ python3 <full-path-to-yandex-office>/calendars/scripts/create_event.py \
 Bind an existing Telemost conference instead of creating a new one:
 
 ```bash
-python3 <full-path-to-yandex-office>/calendars/scripts/create_event.py \
+$YO/calendars/scripts/create_event.py \
   --account <account> \
   --summary "<title>" \
   --start "YYYY-MM-DDTHH:MM:SS" \
@@ -157,7 +168,7 @@ python3 <full-path-to-yandex-office>/calendars/scripts/create_event.py \
 Existing conference settings can be changed in the same provisioning run:
 
 ```bash
-python3 <full-path-to-yandex-office>/calendars/scripts/create_event.py \
+$YO/calendars/scripts/create_event.py \
   --account <account> \
   --summary "<title>" \
   --start "YYYY-MM-DDTHH:MM:SS" \
@@ -175,7 +186,7 @@ already known.
 Attach a local file while creating the event:
 
 ```bash
-python3 <full-path-to-yandex-office>/calendars/scripts/create_event.py \
+$YO/calendars/scripts/create_event.py \
   --account <account> \
   --summary "<title>" \
   --start "YYYY-MM-DDTHH:MM:SS" \
@@ -234,13 +245,13 @@ Attachment implementation note:
 GitHub #45.
 
 ```bash
-python3 <full-path-to-yandex-office>/calendars/scripts/reschedule.py \
+$YO/calendars/scripts/reschedule.py \
   --account mary \
   --search "Сбер ЦФА" \
   --date "2026-03-03" \
   --new-start "2026-03-03T16:00:00"
 
-python3 <full-path-to-yandex-office>/calendars/scripts/reschedule.py \
+$YO/calendars/scripts/reschedule.py \
   --account mary \
   --event-uid "uuid-here" \
   --postpone 30  # minutes
@@ -274,12 +285,12 @@ python3 <full-path-to-yandex-office>/calendars/scripts/reschedule.py \
 GitHub #45.
 
 ```bash
-python3 <full-path-to-yandex-office>/calendars/scripts/cancel.py \
+$YO/calendars/scripts/cancel.py \
   --account mary \
   --search "Team Sync" \
   --date "2026-03-03"
 
-python3 <full-path-to-yandex-office>/calendars/scripts/cancel.py \
+$YO/calendars/scripts/cancel.py \
   --account mary \
   --event-uid "uuid-here" \
   --cancel-series
@@ -353,14 +364,14 @@ python3 <full-path-to-yandex-office>/calendars/scripts/cancel.py \
 GitHub #45.
 
 ```bash
-python3 <full-path-to-yandex-office>/calendars/scripts/find_slots.py \
+$YO/calendars/scripts/find_slots.py \
   --duration 120 \
   --attendees "alex,mary,colleague@yandex.ru" \
   --from "tomorrow" \
   --to "friday" \
   --time-window "9:00-18:00"
 
-python3 <full-path-to-yandex-office>/calendars/scripts/find_slots.py \
+$YO/calendars/scripts/find_slots.py \
   --duration 60 \
   --attendees "alex,mary" \
   --next-available
@@ -410,7 +421,7 @@ def update_telemost_link(
 **Data Contract:**
 - Telemost link stored in `LOCATION`
 - Event description may include Telemost dial-in info
-- `python3 <full-path-to-yandex-office>/calendars/scripts/create_event.py` now creates the Telemost conference first, then writes the returned `join_url` into the event
+- `$YO/calendars/scripts/create_event.py` now creates the Telemost conference first, then writes the returned `join_url` into the event
 - if `--telemost-conference-id` is provided, the script fetches the existing conference and writes that conference's `join_url` into the event instead of creating a new conference
 - if `--telemost-conference-id` is provided with Telemost settings, the script
   updates that conference before writing the Calendar event
@@ -471,7 +482,7 @@ Add local Calendar settings to `yandex-data/config.agent.json`:
 ## Error Handling
 
 ### Common Error Cases
-1. **Managed auth expired** → Refresh through `yandex-office` under user authorization: `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account <alias> --app calendar-user`
+1. **Managed auth expired** → Refresh through `yandex-office` under user authorization: `$YO/scripts/oauth_setup.py --account <alias> --app calendar-user`
 2. **Calendar not found** → List available calendars
 3. **Event not found** → Suggest similar titles, show events for that date
 4. **Conflict detected** → Show conflicting events, ask for confirmation
@@ -490,7 +501,7 @@ Add local Calendar settings to `yandex-data/config.agent.json`:
 
 ## Security Considerations
 
-1. **Managed auth**: Use `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py` for OAuth intake and refresh
+1. **Managed auth**: Use `$YO/scripts/oauth_setup.py` for OAuth intake and refresh
 2. **No token logging**: Never log OAuth tokens
 3. **Calendar permissions**: Respect Yandex ACLs (read-only vs read-write)
 4. **Attendee privacy**: Don't expose other users' full event details in availability queries

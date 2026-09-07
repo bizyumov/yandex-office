@@ -10,6 +10,17 @@ metadata:
 
 # Yandex Disk / Диск
 
+## Command shorthand
+
+Set once in the shell before running the examples in this document:
+
+```bash
+YO="python3 <full-path-to-yandex-office>"
+```
+
+Replace the placeholder with the absolute skill path. Commands below reuse `$YO`;
+they do not change the working directory or runtime data-directory resolution.
+
 Download public files from Yandex Disk, work with private `disk:/` and `app:/`
 paths, upload files, import direct URLs, and manage share links.
 
@@ -31,43 +42,43 @@ entry, but they are not the architecture. Disk business logic lives in
 ## Quick Start
 
 ```bash
-python3 <full-path-to-yandex-office>/disk/scripts/disk.py download "https://yadi.sk/d/x4dG3ImjPMSvzg" --output ./downloads/
+$YO/disk/scripts/disk.py download "https://yadi.sk/d/x4dG3ImjPMSvzg" --output ./downloads/
 
 # Materialize a public folder as files instead of downloading the provider archive
-python3 <full-path-to-yandex-office>/disk/scripts/disk.py download "https://disk.yandex.ru/d/<id>" --materialize-dir --output ./downloads/
+$YO/disk/scripts/disk.py download "https://disk.yandex.ru/d/<id>" --materialize-dir --output ./downloads/
 
 # Flatten only the public folder wrapper while preserving nested children
-python3 <full-path-to-yandex-office>/disk/scripts/disk.py download "https://disk.yandex.ru/d/<id>" --flatten-single-root --output ./downloads/
+$YO/disk/scripts/disk.py download "https://disk.yandex.ru/d/<id>" --flatten-single-root --output ./downloads/
 
 # Download an authenticated private file
-python3 <full-path-to-yandex-office>/disk/scripts/disk.py download "disk:/Docs/report.pdf" --account alex --output ./downloads/
+$YO/disk/scripts/disk.py download "disk:/Docs/report.pdf" --account alex --output ./downloads/
 
 # List private Disk resources
-python3 <full-path-to-yandex-office>/disk/scripts/disk.py list --account alex --path "disk:/Docs" --jsonl
+$YO/disk/scripts/disk.py list --account alex --path "disk:/Docs" --jsonl
 
 # Publish a Disk file for public read access
-python3 <full-path-to-yandex-office>/disk/scripts/disk.py share publish --account alex --path "disk:/Docs/report.pdf" --access all --rights read
+$YO/disk/scripts/disk.py share publish --account alex --path "disk:/Docs/report.pdf" --access all --rights read
 
 # Upload a local file and auto-create missing parent folders
-python3 <full-path-to-yandex-office>/disk/scripts/disk.py upload --account alex --local ./photo.jpg --remote "disk:/Проекты/photo.jpg"
+$YO/disk/scripts/disk.py upload --account alex --local ./photo.jpg --remote "disk:/Проекты/photo.jpg"
 
 # Upload and publish in one step
-python3 <full-path-to-yandex-office>/disk/scripts/disk.py upload --account alex --local ./photo.jpg --remote "disk:/Проекты/photo.jpg" --publish --access all --rights read
+$YO/disk/scripts/disk.py upload --account alex --local ./photo.jpg --remote "disk:/Проекты/photo.jpg" --publish --access all --rights read
 
 # Import a direct downloadable URL into Disk
-python3 <full-path-to-yandex-office>/disk/scripts/disk.py import-url --account alex --source-url "https://example.com/file.bin" --remote "disk:/Imports/file.bin" --wait
+$YO/disk/scripts/disk.py import-url --account alex --source-url "https://example.com/file.bin" --remote "disk:/Imports/file.bin" --wait
 
 # Bridge a local large file through temporary S3 object storage
-python3 <full-path-to-yandex-office>/disk/scripts/disk.py s3-upload --account alex --local ./backup.tar.gz --remote "disk:/Backups/backup.tar.gz"
+$YO/disk/scripts/disk.py s3-upload --account alex --local ./backup.tar.gz --remote "disk:/Backups/backup.tar.gz"
 
 # Inspect current share settings
-python3 <full-path-to-yandex-office>/disk/scripts/disk.py share info --account alex --path "disk:/Docs/report.pdf"
+$YO/disk/scripts/disk.py share info --account alex --path "disk:/Docs/report.pdf"
 
 # Revoke access
-python3 <full-path-to-yandex-office>/disk/scripts/disk.py share unpublish --account alex --path "disk:/Docs/report.pdf"
+$YO/disk/scripts/disk.py share unpublish --account alex --path "disk:/Docs/report.pdf"
 
 # Manage files without changing share settings
-python3 <full-path-to-yandex-office>/disk/scripts/disk.py manage mkdir --account alex --path "app:/Reports"
+$YO/disk/scripts/disk.py manage mkdir --account alex --path "app:/Reports"
 ```
 
 ## Python API
@@ -132,7 +143,7 @@ business workflows from `disk.lib.workflows`.
 For public files: no token required.
 
 For private files, uploads, or any share-management operation, use managed auth
-authorized through `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py`. Raw-token environment fallbacks are not
+authorized through `$YO/scripts/oauth_setup.py`. Raw-token environment fallbacks are not
 supported runtime auth paths.
 
 If multiple managed accounts exist, pass `--account` so runtime selects the
@@ -165,7 +176,7 @@ Full Disk app:
 Using the full path to the shared Yandex skill, authorize a download-capable app token:
 
 ```bash
-python3 <full-path-to-yandex-office>/scripts/oauth_setup.py \
+$YO/scripts/oauth_setup.py \
   --email user@yandex.ru \
   --account alex \
   --app disk-read
@@ -174,7 +185,7 @@ python3 <full-path-to-yandex-office>/scripts/oauth_setup.py \
 Authorize an upload/share-management app token:
 
 ```bash
-python3 <full-path-to-yandex-office>/scripts/oauth_setup.py \
+$YO/scripts/oauth_setup.py \
   --email user@yandex.ru \
   --account alex \
   --app disk-full
@@ -270,7 +281,7 @@ This is a practical deployment mapping, not a claim that the `Organizations` res
 Public share:
 
 ```bash
-python3 <full-path-to-yandex-office>/disk/scripts/disk.py share publish \
+$YO/disk/scripts/disk.py share publish \
   --account alex \
   --path "disk:/Docs/report.pdf" \
   --access all \
@@ -280,7 +291,7 @@ python3 <full-path-to-yandex-office>/disk/scripts/disk.py share publish \
 Organization-only share:
 
 ```bash
-python3 <full-path-to-yandex-office>/disk/scripts/disk.py share publish \
+$YO/disk/scripts/disk.py share publish \
   --account mary \
   --path "disk:/Docs/report.pdf" \
   --access employees \
@@ -294,7 +305,7 @@ Live-verified on March 11, 2026:
 Password-protected share:
 
 ```bash
-python3 <full-path-to-yandex-office>/disk/scripts/disk.py share publish \
+$YO/disk/scripts/disk.py share publish \
   --account alex \
   --path "disk:/Docs/report.pdf" \
   --access all \
@@ -305,7 +316,7 @@ python3 <full-path-to-yandex-office>/disk/scripts/disk.py share publish \
 Expiring public share:
 
 ```bash
-python3 <full-path-to-yandex-office>/disk/scripts/disk.py share update \
+$YO/disk/scripts/disk.py share update \
   --account alex \
   --path "disk:/Docs/report.pdf" \
   --access all \
@@ -338,7 +349,7 @@ structured `{fileName, url, size}` handoff.
 Upload into a new nested folder:
 
 ```bash
-python3 <full-path-to-yandex-office>/disk/scripts/disk.py upload \
+$YO/disk/scripts/disk.py upload \
   --account alex \
   --local ./build/report.pdf \
   --remote "disk:/Projects/2026/report.pdf"
@@ -347,7 +358,7 @@ python3 <full-path-to-yandex-office>/disk/scripts/disk.py upload \
 Upload with overwrite:
 
 ```bash
-python3 <full-path-to-yandex-office>/disk/scripts/disk.py upload \
+$YO/disk/scripts/disk.py upload \
   --account alex \
   --local ./build/report.pdf \
   --remote "disk:/Projects/2026/report.pdf" \
@@ -357,7 +368,7 @@ python3 <full-path-to-yandex-office>/disk/scripts/disk.py upload \
 Disable parent auto-creation:
 
 ```bash
-python3 <full-path-to-yandex-office>/disk/scripts/disk.py upload \
+$YO/disk/scripts/disk.py upload \
   --account alex \
   --local ./build/report.pdf \
   --remote "disk:/Projects/2026/report.pdf" \
@@ -369,7 +380,7 @@ python3 <full-path-to-yandex-office>/disk/scripts/disk.py upload \
 Upload and immediately publish a public read link:
 
 ```bash
-python3 <full-path-to-yandex-office>/disk/scripts/disk.py upload \
+$YO/disk/scripts/disk.py upload \
   --account alex \
   --local ./photo.jpg \
   --remote "disk:/Проекты/photo.jpg" \
@@ -381,7 +392,7 @@ python3 <full-path-to-yandex-office>/disk/scripts/disk.py upload \
 Upload and attempt an org-only link:
 
 ```bash
-python3 <full-path-to-yandex-office>/disk/scripts/disk.py upload \
+$YO/disk/scripts/disk.py upload \
   --account mary \
   --local ./report.pdf \
   --remote "disk:/Проекты/Какой-то проект на русском/report.pdf" \
@@ -397,7 +408,7 @@ This flow is live-verified with the documented request shape:
 Inspect current share settings after upload:
 
 ```bash
-python3 <full-path-to-yandex-office>/disk/scripts/disk.py share info --account alex --path "disk:/Проекты/photo.jpg"
+$YO/disk/scripts/disk.py share info --account alex --path "disk:/Проекты/photo.jpg"
 ```
 
 ## Listing And Private Downloads
@@ -411,7 +422,7 @@ file. Use `--manifest` and `--source-root` to materialize a selected set of
 private files while preserving their paths relative to the source root:
 
 ```bash
-python3 <full-path-to-yandex-office>/disk/scripts/disk.py download \
+$YO/disk/scripts/disk.py download \
   --account alex \
   --manifest ./selected.jsonl \
   --source-root "disk:/Projects" \

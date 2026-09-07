@@ -9,6 +9,17 @@ metadata:
 
 # Yandex Telemost / Телемост
 
+## Command shorthand
+
+Set once in the shell before running the examples in this document:
+
+```bash
+YO="python3 <full-path-to-yandex-office>"
+```
+
+Replace the placeholder with the absolute skill path. Commands below reuse `$YO`;
+they do not change the working directory or runtime data-directory resolution.
+
 Process Telemost meeting transcripts and recordings into structured documents, and create or update real Telemost conferences via the Telemost API.
 
 ## Quick Start
@@ -19,34 +30,34 @@ Fetch through the predefined Telemost mail filter first; then process the
 received Telemost email directories.
 
 ```bash
-python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py \
+$YO/mail/scripts/fetch_emails.py \
   --filter telemost \
   --account <account> \
   --num <limit>
-python3 <full-path-to-yandex-office>/telemost/scripts/process_meeting.py \
+$YO/telemost/scripts/process_meeting.py \
   --verbose
 ```
 
 With recording downloads:
 
 ```bash
-python3 <full-path-to-yandex-office>/telemost/scripts/process_meeting.py \
+$YO/telemost/scripts/process_meeting.py \
   --download-recordings \
   --verbose
 ```
 
 ```bash
 # Create a real conference (defaults: PUBLIC access, PUBLIC waiting room, no cohosts)
-python3 <full-path-to-yandex-office>/telemost/scripts/conference.py create --account mary
+$YO/telemost/scripts/conference.py create --account mary
 
 # Read conference info
-python3 <full-path-to-yandex-office>/telemost/scripts/conference.py get --account mary --id <conference_id>
+$YO/telemost/scripts/conference.py get --account mary --id <conference_id>
 
 # Update conference settings
-python3 <full-path-to-yandex-office>/telemost/scripts/conference.py update --account mary --id <conference_id> --waiting-room ADMINS
+$YO/telemost/scripts/conference.py update --account mary --id <conference_id> --waiting-room ADMINS
 
 # Reuse an existing conference when creating a calendar event
-python3 <full-path-to-yandex-office>/calendars/scripts/create_event.py \
+$YO/calendars/scripts/create_event.py \
   --account mary \
   --summary "Проектный созвон" \
   --start "2026-03-12T10:00:00" \
@@ -55,22 +66,22 @@ python3 <full-path-to-yandex-office>/calendars/scripts/create_event.py \
   --telemost-conference-id <conference_id>
 
 # Read organization defaults applied to new conferences
-python3 <full-path-to-yandex-office>/telemost/scripts/settings.py get --account mary
+$YO/telemost/scripts/settings.py get --account mary
 
 # Update organization defaults
-python3 <full-path-to-yandex-office>/telemost/scripts/settings.py update --account mary --waiting-room-calendar ORGANIZATION
+$YO/telemost/scripts/settings.py update --account mary --waiting-room-calendar ORGANIZATION
 
 # Process all unprocessed meetings using CWD runtime discovery
-python3 <full-path-to-yandex-office>/telemost/scripts/process_meeting.py
+$YO/telemost/scripts/process_meeting.py
 
 # Cron-safe wrapper (PID lock, forwards CLI args)
 <full-path-to-yandex-office>/telemost/scripts/process.sh
 
 # Or specify paths explicitly
-python3 <full-path-to-yandex-office>/telemost/scripts/process_meeting.py --incoming ./incoming --output ./meetings
+$YO/telemost/scripts/process_meeting.py --incoming ./incoming --output ./meetings
 
 # Without archiving (keep originals in incoming/)
-python3 <full-path-to-yandex-office>/telemost/scripts/process_meeting.py --no-archive
+$YO/telemost/scripts/process_meeting.py --no-archive
 
 # Wrapper with forwarded args
 <full-path-to-yandex-office>/telemost/scripts/process.sh --no-archive --download-recordings
@@ -96,7 +107,7 @@ Supported operations:
 - update conference settings
 - get organization settings
 - update organization settings
-- bind an existing conference to a new calendar event through `python3 <full-path-to-yandex-office>/calendars/scripts/create_event.py --telemost-conference-id ...`
+- bind an existing conference to a new calendar event through `$YO/calendars/scripts/create_event.py --telemost-conference-id ...`
 
 Conference create/update calls are write operations. They return the normalized
 conference JSON available from the write response and request context; use
@@ -235,10 +246,10 @@ Run once to normalize previously generated folders:
 
 ```bash
 # Preview changes
-python3 <full-path-to-yandex-office>/telemost/scripts/migrate_meeting_dirs.py --dry-run
+$YO/telemost/scripts/migrate_meeting_dirs.py --dry-run
 
 # Apply changes
-python3 <full-path-to-yandex-office>/telemost/scripts/migrate_meeting_dirs.py
+$YO/telemost/scripts/migrate_meeting_dirs.py
 ```
 
 The migration script scans `{data_dir}/meetings/**/meeting.meta.json`,

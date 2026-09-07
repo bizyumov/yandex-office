@@ -1,5 +1,16 @@
 # yandex-office
 
+## Command shorthand
+
+Set once in the shell before running the examples in this document:
+
+```bash
+YO="python3 <full-path-to-yandex-office>"
+```
+
+Replace the placeholder with the absolute skill path. Commands below reuse `$YO`;
+they do not change the working directory or runtime data-directory resolution.
+
 A collection of [agentskills.io](https://agentskills.io/specification)-compliant skills for working with Yandex platform services.
 
 Current release:
@@ -147,25 +158,25 @@ Mail filter notes:
 - named filters support `enabled: false`; bare runs execute all enabled filters
 - filter keys must be lowercase English schema keys because they are also used as incoming subdirectory names
 - `default` is reserved for ad-hoc one-off runs and must not be used as a configured filter key
-- `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --filter <name>` runs exactly that named filter, even if it is disabled for bare runs
-- `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --accounts list` is the primary token-backed account discovery helper
-- `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py --account <alias>` runs Mail against the selected Yandex account
+- `$YO/mail/scripts/fetch_emails.py --filter <name>` runs exactly that named filter, even if it is disabled for bare runs
+- `$YO/scripts/oauth_setup.py --accounts list` is the primary token-backed account discovery helper
+- `$YO/mail/scripts/fetch_emails.py --account <alias>` runs Mail against the selected Yandex account
 - raw CLI overrides such as `--sender` / `--subject` do not advance persistent cursors and search account history by default when no `--filter` is selected
 - `--uid` is a one-message, non-persistent read
 - sender and subject filters are literal IMAP substring matches; no extra query language is implemented
 - large dry-run result sets spill into `{data_dir}/latest-query/`; the next spilled run replaces the previous artifact, so copy it elsewhere if you need to keep it
 
-First account discovery runs `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --accounts list` from CWD. This bootstraps `./yandex-data` and prints managed account aliases only.
+First account discovery runs `$YO/scripts/oauth_setup.py --accounts list` from CWD. This bootstraps `./yandex-data` and prints managed account aliases only.
 
 ## Auth Task Routing
 
-- Discover aliases: `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --accounts list` prints aliases only.
-- Create/update a local handle: `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account alex` prints `{"alias":"alex","apps":[]}` when no email or app-backed token is known.
-- Record email on a handle: `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --email user@yandex.ru --account alex` prints `{"alias":"alex","email":"user@yandex.ru","apps":[]}` until a token is imported.
-- Check account app coverage: `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account alex` prints configured app IDs such as `mail-readonly` or custom app labels such as `custom(scope1, scope2)`.
-- Start screen-code OAuth: `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account alex --app mail-readonly --code-flow start`.
-- Complete screen-code OAuth: `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account alex --code-flow complete --code <confirmation-code>`.
-- Import a supplied bearer token: `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --from-env YANDEX_ACCESS_TOKEN`.
+- Discover aliases: `$YO/scripts/oauth_setup.py --accounts list` prints aliases only.
+- Create/update a local handle: `$YO/scripts/oauth_setup.py --account alex` prints `{"alias":"alex","apps":[]}` when no email or app-backed token is known.
+- Record email on a handle: `$YO/scripts/oauth_setup.py --email user@yandex.ru --account alex` prints `{"alias":"alex","email":"user@yandex.ru","apps":[]}` until a token is imported.
+- Check account app coverage: `$YO/scripts/oauth_setup.py --account alex` prints configured app IDs such as `mail-readonly` or custom app labels such as `custom(scope1, scope2)`.
+- Start screen-code OAuth: `$YO/scripts/oauth_setup.py --account alex --app mail-readonly --code-flow start`.
+- Complete screen-code OAuth: `$YO/scripts/oauth_setup.py --account alex --code-flow complete --code <confirmation-code>`.
+- Import a supplied bearer token: `$YO/scripts/oauth_setup.py --from-env YANDEX_ACCESS_TOKEN`.
 
 Do not ask for email to print an OAuth URL. `--app` is an
 `oauth_apps.catalog` key; token import verifies identity and stores by verified
@@ -221,7 +232,7 @@ git sparse-checkout add telemost disk
 2. **telemost** enriches Telemost emails, groups by meeting UID, merges + transforms
 3. **disk** (optional) downloads video/audio from yadi.sk links
 
-Important: for "what is new", always run `python3 <full-path-to-yandex-office>/mail/scripts/fetch_emails.py` first. Do not treat `archive/` or `meetings/` as the source of truth for new messages.
+Important: for "what is new", always run `$YO/mail/scripts/fetch_emails.py` first. Do not treat `archive/` or `meetings/` as the source of truth for new messages.
 
 Disk note:
 
@@ -238,7 +249,7 @@ Telemost recording OAuth caveat:
 
 Telemost calendar note:
 
-- `python3 <full-path-to-yandex-office>/calendars/scripts/create_event.py` can create a new Telemost conference, bind an existing one with `--telemost-conference-id`, or reuse an already known join URL with `--telemost-link`.
+- `$YO/calendars/scripts/create_event.py` can create a new Telemost conference, bind an existing one with `--telemost-conference-id`, or reuse an already known join URL with `--telemost-link`.
 - Every create-event call must have an effective time context from local agent config or `--timezone <IANA>` / `--utc-offset <Z|+HH:MM|-HH:MM>`.
 - Existing-conference binding can apply `--telemost-access-level`, `--telemost-waiting-room`, and `--telemost-cohosts` before the Calendar event is written.
 
@@ -271,8 +282,8 @@ Processing semantics:
 Migration for existing folders:
 
 ```bash
-python3 <full-path-to-yandex-office>/telemost/scripts/migrate_meeting_dirs.py --dry-run
-python3 <full-path-to-yandex-office>/telemost/scripts/migrate_meeting_dirs.py
+$YO/telemost/scripts/migrate_meeting_dirs.py --dry-run
+$YO/telemost/scripts/migrate_meeting_dirs.py
 ```
 
 ## OAuth Setup
@@ -288,7 +299,7 @@ CWD
 Skill config.skill.json
   -> oauth_apps.catalog.<app_id> stores app name, client_id, and declared scopes
 
-python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --app mail-readonly
+$YO/scripts/oauth_setup.py --app mail-readonly
   -> reads oauth_apps.catalog.<app_id>
   -> selects the configured OAuth client and permission bundle
   -> generates a screen-code or legacy approval URL
@@ -330,14 +341,14 @@ Whole-package OAuth uses `office-core`: Mail read, Disk full, Calendar, and
 Telemost. It does not cover Contacts, Tracker, Forms, or Directory.
 
 To inspect stored coverage for an account, run
-`python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --account <alias>`
+`$YO/scripts/oauth_setup.py --account <alias>`
 and read `apps`. This creates or updates the local account handle, so use it
 only after `--accounts list` proves the alias exists or when account setup is
 intended.
 
 ### Managed Auth
 
-Use `python3 <full-path-to-yandex-office>/scripts/oauth_setup.py --app <app_id> --code-flow start` to print a screen-code approval URL; add `--account <alias>` when the authorized token should be associated with that alias unless the verified email already exists under another account. Complete with `--code-flow complete --code <confirmation-code>`. `--from-env <ENV_VAR>` remains the non-interactive bearer-token import path. Runtime clients select credentials through decorator-declared auth metadata and the config-backed app catalog. Low-level unknown-`client_id` resolution rules live in `references/yandex-office-extension.md`.
+Use `$YO/scripts/oauth_setup.py --app <app_id> --code-flow start` to print a screen-code approval URL; add `--account <alias>` when the authorized token should be associated with that alias unless the verified email already exists under another account. Complete with `--code-flow complete --code <confirmation-code>`. `--from-env <ENV_VAR>` remains the non-interactive bearer-token import path. Runtime clients select credentials through decorator-declared auth metadata and the config-backed app catalog. Low-level unknown-`client_id` resolution rules live in `references/yandex-office-extension.md`.
 
 Current-used API methods declare auth directly in code through
 `@yandex_api_method(method_id, public=True | one_of=[...] | all_of=[...])`.
