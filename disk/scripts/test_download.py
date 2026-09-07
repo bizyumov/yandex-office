@@ -354,8 +354,8 @@ def test_get_resource_meta_uses_account_token_dispatch(tmp_path):
     )
     saved = json.loads(token_path.read_text(encoding="utf-8"))
     assert meta["path"] == "disk:/team/report.txt"
-    assert saved["read-token"]["good_at"]
-    assert "bad_at" not in saved["read-token"]
+    assert next(entry for entry in saved.values() if isinstance(entry, dict) and entry.get("access_token") == "read-token")["good_at"]
+    assert "bad_at" not in next(entry for entry in saved.values() if isinstance(entry, dict) and entry.get("access_token") == "read-token")
 
 
 def test_list_resource_passes_paging_and_app_scope(tmp_path):

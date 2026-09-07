@@ -617,7 +617,10 @@ def _load_token_data_for_dispatch(
     """Load token data for the selected account."""
 
     try:
-        return load_prepared_token_file(token_path, ctx.config)
+        return load_prepared_token_file(
+            token_path, ctx.config,
+            prepare_catalog=lambda data: _upgrade_missing_client_apps(ctx, token_data=data),
+        )
     except FileNotFoundError:
         raise TokenConfigError(
             f"Token file not found for account {account}: {token_path}"

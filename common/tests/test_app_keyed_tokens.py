@@ -64,3 +64,38 @@ def test_import_duplicate_preserves_key_and_health(monkeypatch, tmp_path):
     assert second.token_data == first.token_data
     third = module.import_managed_oauth_token(**{**kwargs, "token": "fixture-second"})
     assert third.token_data["office-core-2"]["access_token"] == "fixture-second"
+
+
+def test_normal_load_migrates_automatically_once(tmp_path, monkeypatch):
+    import json
+    from common import auth
+    p = tmp_path / "account.token"
+    old = {"email": "user@example.com", "fixture-secret": {"client_id": "client", "good_at": "2026-01-01T00:00:00Z"}}
+    p.write_text(json.dumps(old))
+    result = auth.load_prepared_token_file(p, CONFIG)
+    assert result == json.loads(p.read_text())
+    assert result["office-core-1"]["access_token"] == "fixture-secret"
+    monkeypatch.setattr(auth, "save_token_file", lambda *a, **k: pytest.fail("already converted file must not be rewritten"))
+    assert auth.load_prepared_token_file(p, CONFIG) == result
+
+
+def test_unknown_app_auto_migration_preserves_original(tmp_path):
+    import json
+    from common.auth import load_prepared_token_file
+    p = tmp_path / "account.token"
+    p.write_text(json.dumps({"fixture-secret": {"client_id": "unknown"}}))
+    before = p.read_bytes()
+    with pytest.raises(TokenResolutionError):
+        load_prepared_token_file(p, CONFIG)
+    assert p.read_bytes() == before
+
+
+def test_failed_atomic_save_preserves_original(tmp_path, monkeypatch):
+    from common import auth
+    p = tmp_path / "account.token"
+    p.write_text("original")
+    monkeypatch.setattr(auth.json, "dump", lambda *a, **k: (_ for _ in ()).throw(OSError("write failure")))
+    with pytest.raises(OSError):
+        auth.save_token_file(p, {"email": "user@example.com"})
+    assert p.read_text() == "original"
+    assert not p.with_suffix(".tmp").exists()

@@ -239,7 +239,7 @@ def test_resolve_token_converts_new_token_object_shape(tmp_path: Path) -> None:
 
     assert resolved.token == "directory_token"
     assert canonical_token_key("directory") == "token.directory"
-    assert resolved.source_key == "directory_token"
+    assert resolved.source_key == "directory-app-1"
 
 
 def test_resolve_token_rejects_conflicting_token_health_state(tmp_path: Path) -> None:
@@ -324,9 +324,9 @@ def test_resolve_token_converts_legacy_service_key_by_verifying_token_value(tmp_
     assert upgraded["email"] == "verified@example.com"
     assert "token_meta" not in upgraded
     assert "token.directory" not in upgraded
-    assert upgraded["directory_token"] == {"client_id": "directory-client"}
+    assert upgraded["directory-app-1"] == {"access_token": "directory_token", "client_id": "directory-client"}
     assert resolved.token == "directory_token"
-    assert resolved.source_key == "directory_token"
+    assert resolved.source_key == "directory-app-1"
 
 
 def test_resolve_token_deletes_token_meta_before_rejecting_unrecoverable_legacy_key(tmp_path: Path) -> None:

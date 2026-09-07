@@ -126,7 +126,7 @@ def test_resolve_token_migrates_requested_legacy_account(
         account="work",
         skill="mail",
         data_dir=data_dir,
-        config={},
+        config={"oauth_apps": {"catalog": {"mail-readonly": {"client_id": "client-id", "scopes": ["mail:imap_ro"]}}}},
         required_scopes=["mail:imap_ro"],
     )
 

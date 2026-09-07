@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
@@ -74,11 +75,17 @@ def save_token_file(token_path: str | Path, payload: dict[str, Any]) -> None:
     path = Path(token_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     temp_path = path.with_suffix(".tmp")
-    with open(temp_path, "w", encoding="utf-8") as handle:
-        json.dump(payload, handle, ensure_ascii=False, indent=2)
-        handle.write("\n")
-    temp_path.replace(path)
-    path.chmod(0o600)
+    fd = os.open(temp_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle, ensure_ascii=False, indent=2)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        temp_path.replace(path)
+    finally:
+        if temp_path.exists():
+            temp_path.unlink()
 
 
 def _token_object(value: Any) -> dict[str, Any]:
@@ -156,6 +163,7 @@ def load_prepared_token_file(
     config: dict[str, Any],
     *,
     verify_identity: TokenIdentityVerifier | None = None,
+    prepare_catalog: Callable[[dict[str, Any]], None] | None = None,
 ) -> dict[str, Any]:
     """Load token state, delete forbidden metadata, and convert legacy tokens.
 
@@ -175,7 +183,12 @@ def load_prepared_token_file(
     ):
         save_token_file(token_path, token_data)
     _reject_legacy_token_keys(token_data)
-    return token_data
+    if prepare_catalog is not None:
+        prepare_catalog(token_data)
+    converted = app_keyed_tokens(token_data, config)
+    if converted != token_data:
+        save_token_file(token_path, converted)
+    return converted
 
 
 def _legacy_token_keys(token_data: dict[str, Any]) -> list[str]:
