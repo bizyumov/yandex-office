@@ -28,6 +28,31 @@ Installed workflow agents:
 - `.codex/agents/task-fixer.toml`
 <!-- repo-task-proof-loop:end -->
 
+## Yandex-office Proof-loop Requirements
+
+- Issue bodies are contracts for proof-loop work. When a repo-task-proof-loop
+  task is grounded in GitHub issues, download every related issue body and
+  comments in full as local Markdown references under the task artifacts before
+  freezing the spec. Cite the issue reference files in the spec. Unless the user
+  explicitly waives or narrows an issue, each related issue is part of the
+  implementation contract.
+- Resolve vague proof-loop wording before freeze. Draft specs must not leave
+  important behavior behind words like "may", "could", "if available", "where
+  practical", "such as", or bare parameter names. Replace them with concrete
+  defaults, allowed values, required/error behavior, dependencies, evidence
+  expectations, and explicit user-waiver points before asking for approval.
+- Upload performance tests use local source fixtures. For upload-performance
+  work, select explicit local source files or generated local fixtures. Do not
+  scan a remote/private storage inventory to find files to upload unless the
+  user asks for remote inventory analysis. Record fixture paths, sizes, target
+  paths, cleanup policy, and whether the files are non-sensitive or approved by
+  the user for live upload.
+- Separate proof from duplicated code. When a task requires separate auth
+  surfaces, scopes, path prefixes, tenants, or providers, keep docs, tests,
+  evidence, and capability metadata distinct, but reuse implementation code
+  unless a real provider/API difference requires a split. Do not use separate
+  proof surfaces as an excuse to bloat the codebase.
+
 ## Yandex-office Calendar Time Context Docs
 
 - Do not add or remove explanatory prose in root `SKILL.md` for Calendar

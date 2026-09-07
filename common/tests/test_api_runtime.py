@@ -15,7 +15,6 @@ from common.api import (
     YandexApiContext,
     YandexApiError,
     candidate_tokens,
-    digest_legacy_disk_token_env,
     handle_json_response,
     method_auth,
     yandex_api_method,
@@ -57,6 +56,10 @@ class FakeSession:
 def write_json(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def canonical_token(account: str) -> Path:
+    return Path.home() / "secrets" / "yandex-office" / f"{account}.token"
 
 
 def config() -> dict:
@@ -326,7 +329,7 @@ def test_forbidden_error_marks_bad_and_tries_next_token(tmp_path: Path) -> None:
         return "ok"
 
     result = method(context(tmp_path))
-    saved = json.loads((tmp_path / "auth" / "acct.token").read_text())
+    saved = json.loads(canonical_token("acct").read_text())
 
     assert result == "ok"
     assert attempts == ["bad-token", "good-token"]
@@ -356,7 +359,7 @@ def test_non_auth_failure_does_not_mark_token_good_or_bad(tmp_path: Path) -> Non
     with pytest.raises(YandexApiError):
         method(context(tmp_path))
 
-    saved = json.loads((tmp_path / "auth" / "acct.token").read_text())
+    saved = json.loads(canonical_token("acct").read_text())
     assert saved["token"] == {"client_id": "client-read"}
 
 
@@ -388,7 +391,7 @@ def test_dispatch_converts_legacy_token_file_before_selecting_candidates(
         return "ok"
 
     result = method(context(tmp_path))
-    saved = json.loads((tmp_path / "auth" / "acct.token").read_text())
+    saved = json.loads(canonical_token("acct").read_text())
 
     assert result == "ok"
     assert saved["email"] == "verified@example.com"
@@ -398,7 +401,7 @@ def test_dispatch_converts_legacy_token_file_before_selecting_candidates(
     assert "token_meta" not in saved
 
 
-def test_dispatch_upgrades_legacy_yandex_disk_token_env(
+def test_dispatch_does_not_auto_upgrade_legacy_yandex_disk_token_env(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -414,91 +417,13 @@ def test_dispatch_upgrades_legacy_yandex_disk_token_env(
 
     @yandex_api_method("disk.resources.get.disk", one_of=["scope:read"])
     def method(ctx: YandexApiContext) -> str:
-        assert ctx.token_ref.token == "legacy-env-token"
         return "ok"
 
-    result = method(context(tmp_path, account="diskacct"))
-    saved = json.loads((tmp_path / "auth" / "diskacct.token").read_text())
+    with pytest.raises(TokenConfigError) as exc_info:
+        method(context(tmp_path, account="diskacct"))
 
-    assert result == "ok"
-    assert saved["email"] == "disk@example.com"
-    assert saved["legacy-env-token"]["client_id"] == "client-read"
-    assert saved["legacy-env-token"]["good_at"]
-
-
-def test_digest_legacy_yandex_disk_token_env_ignores_existing_account_token(
-    tmp_path: Path,
-    monkeypatch,
-) -> None:
-    write_json(
-        tmp_path / "auth" / "diskacct.token",
-        {
-            "email": "disk@example.com",
-            "legacy-env-token": {"client_id": "client-read"},
-        },
-    )
-    monkeypatch.setenv("YANDEX_DISK_TOKEN", "legacy-env-token")
-    monkeypatch.setattr(
-        api_module,
-        "verify_token_identity",
-        lambda *_args, **_kwargs: pytest.fail("stored legacy token should not verify"),
-    )
-
-    digest_legacy_disk_token_env(context(tmp_path, account="diskacct"))
-
-    saved = json.loads((tmp_path / "auth" / "diskacct.token").read_text())
-    assert saved == {
-        "email": "disk@example.com",
-        "legacy-env-token": {"client_id": "client-read"},
-    }
-
-
-def test_digest_legacy_yandex_disk_token_env_uses_existing_verified_email_account(
-    tmp_path: Path,
-    monkeypatch,
-) -> None:
-    write_json(
-        tmp_path / "auth" / "existing.token",
-        {
-            "email": "disk@example.com",
-        },
-    )
-    monkeypatch.setenv("YANDEX_DISK_TOKEN", "legacy-env-token")
-    monkeypatch.setattr(
-        api_module,
-        "verify_token_identity",
-        lambda *_args, **_kwargs: VerifiedTokenIdentity(
-            email="disk@example.com",
-            client_id="client-read",
-        ),
-    )
-
-    digest_legacy_disk_token_env(context(tmp_path, account="diskacct"))
-
-    existing = json.loads((tmp_path / "auth" / "existing.token").read_text())
-    assert existing["legacy-env-token"]["client_id"] == "client-read"
+    assert "Token file not found" in str(exc_info.value)
     assert not (tmp_path / "auth" / "diskacct.token").exists()
-
-
-def test_digest_legacy_yandex_disk_token_env_creates_managed_account(
-    tmp_path: Path,
-    monkeypatch,
-) -> None:
-    monkeypatch.setenv("YANDEX_DISK_TOKEN", "legacy-env-token")
-    monkeypatch.setattr(
-        api_module,
-        "verify_token_identity",
-        lambda *_args, **_kwargs: VerifiedTokenIdentity(
-            email="disk@example.com",
-            client_id="client-read",
-        ),
-    )
-
-    digest_legacy_disk_token_env(context(tmp_path, account=None))
-
-    saved = json.loads((tmp_path / "auth" / "disk.token").read_text())
-    assert saved["email"] == "disk@example.com"
-    assert saved["legacy-env-token"]["client_id"] == "client-read"
 
 
 def test_dispatch_requires_account_without_managed_tokens(

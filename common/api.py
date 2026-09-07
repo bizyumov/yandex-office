@@ -26,22 +26,23 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from common.auth import (
     TokenRef,
     build_approval_url,
-    load_token_file,
     load_prepared_token_file,
     save_token_file,
     token_refs,
     verify_token_identity,
 )
-from common.config import load_agent_config_payload, save_agent_config_payload
+from common.config import (
+    list_auth_token_paths,
+    load_agent_config_payload,
+    resolve_auth_file,
+    resolve_data_dir,
+    save_agent_config_payload,
+)
 from common.oauth_apps import (
     UNRESOLVED_SCOPE,
     fetch_yandex_oauth_client_metadata,
     upsert_agent_oauth_app,
 )
-from common.oauth_token_import import import_managed_oauth_token
-
-
-LEGACY_DISK_TOKEN_ENV = "YANDEX_DISK_TOKEN"
 
 
 class YandexApiError(RuntimeError):
@@ -119,6 +120,10 @@ class YandexApiContext:
     session: requests.Session
     token_ref: TokenRef | None = None
     token_data: dict[str, Any] | None = None
+
+    def __post_init__(self) -> None:
+        """Sync module auth paths to this context's data directory."""
+        resolve_data_dir(data_dir_override=self.data_dir)
 
     def for_token(
         self,
@@ -590,8 +595,7 @@ def _resolve_account_alias(ctx: YandexApiContext, method_id: str) -> str:
     if ctx.account:
         return ctx.account
 
-    auth_dir = ctx.data_dir / "auth"
-    token_paths = sorted(auth_dir.glob("*.token")) if auth_dir.exists() else []
+    token_paths = list_auth_token_paths()
     if len(token_paths) == 1:
         return token_paths[0].stem
     if not token_paths:
@@ -601,45 +605,6 @@ def _resolve_account_alias(ctx: YandexApiContext, method_id: str) -> str:
     aliases = ", ".join(path.stem for path in token_paths)
     raise TokenConfigError(
         f"Account is required for {method_id}: multiple token files found ({aliases})"
-    )
-
-
-def _legacy_disk_env_token() -> str | None:
-    """Return the legacy Disk env token value when present."""
-
-    token = os.environ.get(LEGACY_DISK_TOKEN_ENV, "").strip()
-    return token or None
-
-
-def digest_legacy_disk_token_env(ctx: YandexApiContext) -> None:
-    """Run the managed env-token import path for legacy Disk compatibility."""
-
-    token = _legacy_disk_env_token()
-    if not token:
-        return
-
-    auth_dir = ctx.data_dir / "auth"
-    token_paths = (
-        [auth_dir / f"{ctx.account}.token"]
-        if ctx.account
-        else sorted(auth_dir.glob("*.token")) if auth_dir.exists() else []
-    )
-    for token_path in token_paths:
-        try:
-            if token in load_token_file(token_path):
-                return
-        except FileNotFoundError:
-            pass
-
-    agent_config_path, agent_config = load_agent_config_payload(ctx.data_dir)
-    import_managed_oauth_token(
-        config=ctx.config,
-        data_dir=ctx.data_dir,
-        agent_config=agent_config,
-        agent_config_path=agent_config_path,
-        token=token,
-        account=ctx.account,
-        service="disk",
     )
 
 
@@ -669,14 +634,8 @@ def _dispatch_yandex_api(
     if auth.public:
         return invoke(ctx)
 
-    if auth.method_id.startswith("disk."):
-        try:
-            digest_legacy_disk_token_env(ctx)
-        except Exception:
-            pass
-
     account = _resolve_account_alias(ctx, auth.method_id)
-    token_path = ctx.data_dir / "auth" / f"{account}.token"
+    token_path = resolve_auth_file(f"{account}.token")
     token_data = _load_token_data_for_dispatch(
         ctx,
         account=account,

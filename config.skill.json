@@ -17,6 +17,19 @@
     "server": "smtp.yandex.com",
     "port": 465
   },
+  "disk": {
+    "s3": {
+      "endpoint_url": "https://storage.yandexcloud.net",
+      "region": "ru-central1",
+      "bucket": "yandex-office",
+      "prefix": "upload",
+      "presign_ttl_seconds": 7200,
+      "cleanup_after_disk_import": true,
+      "multipart_threshold_mib": 64,
+      "multipart_chunk_mib": 64,
+      "max_concurrency": null
+    }
+  },
   "oauth_apps": {
     "catalog": {
       "calendar-user": {
@@ -73,6 +86,15 @@
           "directory:read_users"
         ],
         "is_default": true,
+        "omit_scope_in_url": true
+      },
+      "disk-app": {
+        "service": "disk",
+        "app_name": "Yandex-Office Disk App",
+        "client_id": "2d576219c2354a41ae30cff22b464a9d",
+        "scopes": [
+          "cloud_api:disk.app_folder"
+        ],
         "omit_scope_in_url": true
       },
       "disk-full": {
