@@ -696,6 +696,37 @@ def test_fetch_account_dry_run_preview_body_reads_body_without_links(monkeypatch
     ]
 
 
+def test_process_email_handles_imap_fetch_response_with_leading_integer(tmp_path) -> None:
+    full_message = (
+        "Subject: =?utf-8?B?0KLQtdGB0YI=?=\r\n"
+        "From: news@example.com\r\n"
+        "Date: Thu, 12 Mar 2026 10:00:00 +0000\r\n"
+        "Content-Type: text/plain; charset=utf-8\r\n\r\n"
+        "body text\n"
+    ).encode("utf-8")
+    fetcher = build_fetcher()
+    fetcher.data_dir = tmp_path
+    fetcher._fetch_message_data = lambda *_args, **_kwargs: (
+        "OK",
+        [1, (b"11 (RFC822 {144}", full_message), b")"],
+    )
+
+    meta = fetcher._process_email(
+        object(),
+        b"11",
+        11,
+        "alex",
+        "telemost",
+    )
+
+    assert meta is not None
+    assert meta["partial"] is False
+    assert meta["subject"] == "Тест"
+    email_dir = tmp_path / "incoming" / "telemost" / "2026-03-12_alex_uid11"
+    assert (email_dir / "email_body.txt").read_text(encoding="utf-8") == "body text\n"
+    assert json.loads((email_dir / "meta.json").read_text(encoding="utf-8"))["partial"] is False
+
+
 def test_cli_dry_run_includes_headers(monkeypatch, capsys) -> None:
     class FakeFetcher:
         active_filter = {"name": "default"}
