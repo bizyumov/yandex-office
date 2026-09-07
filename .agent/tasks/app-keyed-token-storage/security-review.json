@@ -1,0 +1,134 @@
+[
+  {
+    "file": ".agent/test-runtime/test_create_event_marks_calend0/yandex-data/auth/acct.token",
+    "line": 1,
+    "fields": [
+      "email",
+      "calendar-token",
+      "client_id"
+    ],
+    "classification": "OAuth client identifier"
+  },
+  {
+    "file": ".agent/test-runtime/test_list_events_uses_supporte0/yandex-data/auth/acct.token",
+    "line": 1,
+    "fields": [
+      "email",
+      "calendar-token",
+      "client_id"
+    ],
+    "classification": "OAuth client identifier"
+  },
+  {
+    "file": "calendars/scripts/test_create_event.py",
+    "line": 123,
+    "fields": [
+      "client_id"
+    ],
+    "classification": "OAuth client identifier"
+  },
+  {
+    "file": "config.skill.json",
+    "line": 38,
+    "fields": [
+      "client_id"
+    ],
+    "classification": "OAuth client identifier"
+  },
+  {
+    "file": "config.skill.json",
+    "line": 48,
+    "fields": [
+      "client_id"
+    ],
+    "classification": "OAuth client identifier"
+  },
+  {
+    "file": "config.skill.json",
+    "line": 79,
+    "fields": [
+      "client_id"
+    ],
+    "classification": "OAuth client identifier"
+  },
+  {
+    "file": "config.skill.json",
+    "line": 94,
+    "fields": [
+      "client_id"
+    ],
+    "classification": "OAuth client identifier"
+  },
+  {
+    "file": "config.skill.json",
+    "line": 103,
+    "fields": [
+      "client_id"
+    ],
+    "classification": "OAuth client identifier"
+  },
+  {
+    "file": "config.skill.json",
+    "line": 115,
+    "fields": [
+      "client_id"
+    ],
+    "classification": "OAuth client identifier"
+  },
+  {
+    "file": "config.skill.json",
+    "line": 125,
+    "fields": [
+      "client_id"
+    ],
+    "classification": "OAuth client identifier"
+  },
+  {
+    "file": "config.skill.json",
+    "line": 135,
+    "fields": [
+      "client_id"
+    ],
+    "classification": "OAuth client identifier"
+  },
+  {
+    "file": "config.skill.json",
+    "line": 155,
+    "fields": [
+      "client_id"
+    ],
+    "classification": "OAuth client identifier"
+  },
+  {
+    "file": "config.skill.json",
+    "line": 164,
+    "fields": [
+      "client_id"
+    ],
+    "classification": "OAuth client identifier"
+  },
+  {
+    "file": "config.skill.json",
+    "line": 178,
+    "fields": [
+      "client_id"
+    ],
+    "classification": "OAuth client identifier"
+  },
+  {
+    "file": "config.skill.json",
+    "line": 196,
+    "fields": [
+      "client_id"
+    ],
+    "classification": "OAuth client identifier"
+  },
+  {
+    "file": "config.skill.json",
+    "line": 219,
+    "fields": [
+      "client_id"
+    ],
+    "classification": "OAuth client identifier"
+  }
+]

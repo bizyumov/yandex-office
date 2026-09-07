@@ -90,8 +90,8 @@ def token_refs(token_data: dict[str, Any]) -> list[TokenRef]:
     for key, value in token_data.items():
         if key == "email" or key.startswith("token."):
             continue
-        token_value = str(key).strip()
         entry = _token_object(value)
+        token_value = str(entry.get("access_token", key)).strip()
         client_id = str(entry.get("client_id", "")).strip()
         if not token_value or not client_id:
             continue
@@ -100,13 +100,13 @@ def token_refs(token_data: dict[str, Any]) -> list[TokenRef]:
         if good_at and bad_at:
             raise TokenResolutionError(
                 "Token state cannot contain both good_at and bad_at",
-                token_key=token_value,
+                token_key=key,
             )
         refs.append(
             TokenRef(
                 token=token_value,
                 client_id=client_id,
-                source_key=token_value,
+                source_key=key,
                 good_at=good_at,
                 bad_at=bad_at,
             )
@@ -195,6 +195,35 @@ def _reject_legacy_token_keys(token_data: dict[str, Any]) -> None:
     legacy_keys = _legacy_token_keys(token_data)
     if legacy_keys:
         _raise_legacy_token_error(legacy_keys[0])
+
+
+def app_keyed_tokens(token_data: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
+    """Convert bearer-keyed entries locally, preserving metadata and stable names.
+
+    Unknown app mappings fail before callers write any data. Already named
+    entries retain their keys. This function performs no I/O or network calls.
+    """
+    from common.oauth_apps import oauth_app_for_client_id
+
+    result = dict(token_data)
+    for key, value in token_data.items():
+        if key == "email":
+            continue
+        if not isinstance(value, dict) or not value.get("client_id"):
+            raise TokenResolutionError("Invalid token entry; migration not written")
+        if "access_token" in value:
+            if not isinstance(value["access_token"], str) or not value["access_token"].strip():
+                raise TokenResolutionError("Empty access_token; migration not written")
+            continue
+        app = oauth_app_for_client_id(config, str(value["client_id"]))
+        if app is None:
+            raise TokenResolutionError("Unknown OAuth app; migration not written", client_id=value["client_id"])
+        number = 1
+        while f"{app.app_id}-{number}" in result:
+            number += 1
+        result[f"{app.app_id}-{number}"] = {**value, "access_token": key}
+        del result[key]
+    return result
 
 
 def get_token_entry(token_data: dict[str, Any], token_key: str) -> dict[str, Any]:
