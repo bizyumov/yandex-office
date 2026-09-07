@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Command adapter for Disk direct upload workflows."""
+"""Canonical command adapter for all Disk scenario subcommands."""
 
 from __future__ import annotations
 
@@ -8,8 +8,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from disk.lib.cli import build_upload_parser as build_parser, upload_main as main  # noqa: E402
-from disk.lib.workflows import YandexDisk  # noqa: E402,F401
+from disk.lib.cli import build_disk_parser as build_parser, disk_main as main  # noqa: E402
 
 
 if __name__ == "__main__":

@@ -135,7 +135,8 @@ Top-level schema sections:
 | Path | Status | Description |
 | --- | --- | --- |
 | `mail` | Supported | Local Mail runtime settings: named filters, throttling, output spill behavior, and state file naming. |
-| `calendar` | Mixed | Calendar event creation uses local time preference fields; availability/default-calendar placeholders are reserved. |
+| `disk` | Supported | Local Disk runtime overrides for the optional S3/Object Storage upload bridge. |
+| `calendar` | Mixed | Calendar event creation uses local time preference fields and attachment handoff settings; availability/default-calendar placeholders are reserved. |
 | `contacts` | Reserved | `(RESERVED FOR FUTURE USE)` Local Contacts settings. |
 | `directory` | Reserved | `(RESERVED FOR FUTURE USE)` Local Directory lookup settings. |
 | `forms` | Reserved | `(RESERVED FOR FUTURE USE)` Local Forms export and polling settings. |
@@ -162,6 +163,18 @@ Supported local config fields:
 | `mail.output.spill_dir` | Directory name under `{data_dir}` where oversized dry-run Mail output is written. |
 | `mail.since` | Whether Mail uses state-driven IMAP SINCE filtering for large accounts. |
 | `mail.state_file` | Mail state file name under `{data_dir}`; tracks UID/date cursors by account and filter. |
+| `disk.s3` | Optional non-secret S3/Object Storage settings for Disk upload staging; credentials stay with the S3 client runtime. |
+| `disk.s3.endpoint_url` | S3-compatible endpoint URL, such as `https://storage.yandexcloud.net`. |
+| `disk.s3.region` | S3 region name used by the client runtime. |
+| `disk.s3.bucket` | S3 bucket used for temporary upload staging; root skill defaults may provide a product default and local config may override it. |
+| `disk.s3.prefix` | Object key prefix for temporary upload staging. |
+| `disk.s3.presign_ttl_seconds` | Lifetime in seconds for presigned URLs generated in memory. |
+| `disk.s3.cleanup_after_disk_import` | Whether temporary S3 objects are deleted after Disk import verification. |
+| `disk.s3.multipart_threshold_mib` | Multipart upload threshold in MiB. |
+| `disk.s3.multipart_chunk_mib` | Multipart chunk size in MiB. |
+| `disk.s3.max_concurrency` | Optional boto3 transfer concurrency limit. |
+| `calendar.attachments` | Calendar attachment handoff settings for Disk-backed published-upload links. |
+| `calendar.attachments.remote_dir` | Disk directory used for Calendar attachment uploads before publishing them as `ATTACH;VALUE=URI` links. |
 | `calendar.timezone` | IANA timezone default for Calendar event creation, such as `Europe/Moscow`; CLI `--timezone` overrides it for one command. |
 | `calendar.utc_offset` | Fixed UTC offset default for Calendar event creation: `Z`, `+HH:MM`, or `-HH:MM`; CLI `--utc-offset` overrides it for one command. |
 | `oauth_apps.catalog` | Custom OAuth apps keyed by local app id. |

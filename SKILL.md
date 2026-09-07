@@ -6,7 +6,7 @@ license: MIT
 compatibility: Python 3.10+, per-skill dependencies, network access for Yandex APIs
 metadata:
   author: bizyumov
-  version: "2026.05.27"
+  version: "2026.6.11"
   openclaw:
     emoji: "🟡"
     requires:
@@ -26,7 +26,7 @@ Yandex identity behind an alias. Apps, scopes, and tokens are defined in
 
 ## Document Map
 
-- (1-16) Frontmatter (metadata version 2026.05.27)
+- (1-16) Frontmatter (metadata version 2026.6.11)
 - (17-25) Opening Model
 - (27-39) Document Map
 - (41-47) Reference Map
@@ -113,7 +113,7 @@ Use the default/read app unless the user requests a write-capable operation or
 explicitly approves broader access.
 
 - Mail read/fetch: default `mail-readonly`; IMAP mutation/delete: `mail-readwrite`; SMTP send: `mail-smtp`.
-- Disk read/download: default `disk-read`; write-capable `disk-full`.
+- Disk read/download: default `disk-read`; app-folder-only: `disk-app`; write-capable `disk-full`.
 - Calendar: `calendar-user`; default app already has operational coverage.
 - Contacts: `contacts-default`; default app already has operational coverage.
 - Telemost meetings: `telemost-default`; default app already has operational coverage.
@@ -207,7 +207,7 @@ Yandex Search moved to `https://github.com/bizyumov/yandex-search-skill`.
 Yandex Cloud infrastructure guidance lives in the private standalone
 `yandex-cloud` skill repository.
 
-`yandex-office` uses dated skill versions in `YYYY.MM.DD` format. Keep
+`yandex-office` uses dated skill versions in `YYYY.M.D` format. Keep
 `VERSION`, `CHANGELOG.md`, and skill metadata aligned.
 
 MIT

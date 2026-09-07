@@ -22,6 +22,8 @@ def _type_matches(expected: str, value: Any) -> bool:
         return (isinstance(value, int | float)) and not isinstance(value, bool)
     if expected == "boolean":
         return isinstance(value, bool)
+    if expected == "null":
+        return value is None
     return True
 
 
@@ -37,6 +39,8 @@ def _validate(schema: dict[str, Any], value: Any, path: str = "$") -> list[str]:
     expected_type = schema.get("type")
     if isinstance(expected_type, str) and not _type_matches(expected_type, value):
         return [f"{path}: expected {expected_type}, got {type(value).__name__}"]
+    if isinstance(expected_type, list) and not any(_type_matches(item, value) for item in expected_type):
+        return [f"{path}: expected one of {expected_type}, got {type(value).__name__}"]
 
     if "enum" in schema and value not in schema["enum"]:
         errors.append(f"{path}: expected one of {schema['enum']!r}")
@@ -116,7 +120,7 @@ def test_agent_config_schema_is_complete_for_current_sections() -> None:
     schema = json.loads((ROOT / "config.agent.schema.json").read_text(encoding="utf-8"))
     properties = schema["properties"]
 
-    assert set(properties) == {"mail", "calendar", "contacts", "directory", "forms", "oauth_apps"}
+    assert set(properties) == {"mail", "disk", "calendar", "contacts", "directory", "forms", "oauth_apps"}
     assert "accounts" not in properties
     assert "accounts" not in schema
     assert {"timezone", "utc_offset"} <= set(properties["calendar"]["properties"])
@@ -179,8 +183,21 @@ def test_agent_config_schema_keeps_supported_properties_unreserved() -> None:
         ("mail", "since"),
         ("mail", "state_file"),
         ("calendar",),
+        ("calendar", "attachments"),
+        ("calendar", "attachments", "remote_dir"),
         ("calendar", "timezone"),
         ("calendar", "utc_offset"),
+        ("disk",),
+        ("disk", "s3"),
+        ("disk", "s3", "endpoint_url"),
+        ("disk", "s3", "region"),
+        ("disk", "s3", "bucket"),
+        ("disk", "s3", "prefix"),
+        ("disk", "s3", "presign_ttl_seconds"),
+        ("disk", "s3", "cleanup_after_disk_import"),
+        ("disk", "s3", "multipart_threshold_mib"),
+        ("disk", "s3", "multipart_chunk_mib"),
+        ("disk", "s3", "max_concurrency"),
         ("oauth_apps",),
         ("oauth_apps", "catalog"),
         ("oauth_apps", "catalog", "*"),

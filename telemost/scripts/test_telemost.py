@@ -683,10 +683,10 @@ def test_download_recordings_uses_runtime_data_dir():
                 captured["output_dir"] = output_dir
                 return {"name": "recording.mp4", "size": 10}
 
-        import disk.scripts.download as disk_download
+        import disk.lib.client as disk_client
 
-        old_disk = disk_download.YandexDisk
-        disk_download.YandexDisk = StubDisk
+        old_disk = disk_client.YandexDisk
+        disk_client.YandexDisk = StubDisk
         try:
             results = download_recordings(
                 {
@@ -697,7 +697,7 @@ def test_download_recordings_uses_runtime_data_dir():
                 data_dir=data_dir,
             )
         finally:
-            disk_download.YandexDisk = old_disk
+            disk_client.YandexDisk = old_disk
 
         assert len(results) == 1
         assert captured["account"] == "test"
