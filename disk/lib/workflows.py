@@ -198,6 +198,10 @@ def normalize_resource(meta: dict, *, surface: str) -> dict:
         "public_key": meta.get("public_key"),
         "public_url": meta.get("public_url"),
         "public_settings": meta.get("public_settings"),
+        "sha256": meta.get("sha256"),
+        "md5": meta.get("md5"),
+        "created": meta.get("created"),
+        "modified": meta.get("modified"),
     }
 
 

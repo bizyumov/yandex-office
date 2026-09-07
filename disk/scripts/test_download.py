@@ -1281,3 +1281,13 @@ if __name__ == "__main__":
     import sys
 
     raise SystemExit(pytest.main([__file__]))
+
+
+def test_normalized_inventory_preserves_hashes_and_timestamps():
+    from disk.lib.workflows import normalize_resource
+    meta = {"sha256": "a" * 64, "md5": "b" * 32, "created": "2026-01-01T00:00:00Z", "modified": "2026-01-02T00:00:00Z"}
+    result = normalize_resource(meta, surface="disk:/")
+    for key, value in meta.items():
+        assert result[key] == value
+    missing = normalize_resource({}, surface="disk:/")
+    assert missing["sha256"] is None
