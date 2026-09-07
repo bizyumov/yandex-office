@@ -759,7 +759,7 @@ def test_create_event_marks_calendar_token_good_through_standard_dispatch(
     assert result["success"] is True
     assert captured["dav_auth"] == ("user@example.com", "calendar-token")
     assert captured["put_auth"] == ("user@example.com", "calendar-token")
-    assert "good_at" in saved["calendar-token"]
+    assert "good_at" in next(entry for entry in saved.values() if isinstance(entry, dict) and entry.get("access_token") == "calendar-token")
 
 
 def test_list_events_uses_supported_calendar_search(monkeypatch, tmp_path: Path) -> None:

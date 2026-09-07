@@ -141,13 +141,18 @@ OAuth catalog app ID resolved from `client_id`, followed by a numeric suffix
 unchanged `client_id`, optional `good_at` or `bad_at`. Existing numbered entries
 keep their keys. Reimporting the same bearer preserves its key and health.
 
-Runtime readers accept legacy bearer-keyed entries for compatibility. New imports
-write named entries. Convert existing files locally with
-`scripts/migrate_token_keys.py --account ACCOUNT --data-dir DATA_DIR`; this is a
-read-only preview. Add `--apply` to atomically replace the account file with mode
-0600. Migration resolves app IDs only from the merged local catalog, performs no
-network calls, preserves metadata, and refuses unknown clients without rewriting
-the original. No UUID, array, schema-version or health-state redesign is included.
+Normal managed-auth loading automatically checks the format and converts legacy
+bearer-keyed entries to app-name-number keys before token selection. The old
+location is resolved first by the canonical secret-path migration. Thus a file
+moved from `{data_dir}/auth` is converted on the same authorization path.
+Already converted files are not rewritten just for loading. Metadata is preserved;
+app names come from the catalog by client_id. Existing unknown-client resolution
+in the API dispatcher runs before conversion; unresolved mappings block use without
+inventing an app name. Pure format conversion makes no network calls.
+
+The optional `scripts/migrate_token_keys.py` remains a diagnostic/preconversion
+utility, not a required operator step. New imports write named entries. Atomic
+writes create their staging file with mode 0600 before writing secret bytes.
 
 ## Documentation search
 

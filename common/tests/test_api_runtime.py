@@ -333,10 +333,10 @@ def test_forbidden_error_marks_bad_and_tries_next_token(tmp_path: Path) -> None:
 
     assert result == "ok"
     assert attempts == ["bad-token", "good-token"]
-    assert "bad_at" in saved["bad-token"]
-    assert "good_at" in saved["good-token"]
-    assert "good_at" not in saved["bad-token"]
-    assert "bad_at" not in saved["good-token"]
+    assert "bad_at" in next(entry for entry in saved.values() if isinstance(entry, dict) and entry.get("access_token") == "bad-token")
+    assert "good_at" in next(entry for entry in saved.values() if isinstance(entry, dict) and entry.get("access_token") == "good-token")
+    assert "good_at" not in next(entry for entry in saved.values() if isinstance(entry, dict) and entry.get("access_token") == "bad-token")
+    assert "bad_at" not in next(entry for entry in saved.values() if isinstance(entry, dict) and entry.get("access_token") == "good-token")
 
 
 def test_non_auth_failure_does_not_mark_token_good_or_bad(tmp_path: Path) -> None:
@@ -360,7 +360,7 @@ def test_non_auth_failure_does_not_mark_token_good_or_bad(tmp_path: Path) -> Non
         method(context(tmp_path))
 
     saved = json.loads(canonical_token("acct").read_text())
-    assert saved["token"] == {"client_id": "client-read"}
+    assert next(entry for entry in saved.values() if isinstance(entry, dict) and entry.get("access_token") == "token") == {"access_token": "token", "client_id": "client-read"}
 
 
 def test_dispatch_converts_legacy_token_file_before_selecting_candidates(
@@ -395,8 +395,8 @@ def test_dispatch_converts_legacy_token_file_before_selecting_candidates(
 
     assert result == "ok"
     assert saved["email"] == "verified@example.com"
-    assert saved["legacy-token"]["client_id"] == "client-read"
-    assert saved["legacy-token"]["good_at"]
+    assert next(entry for entry in saved.values() if isinstance(entry, dict) and entry.get("access_token") == "legacy-token")["client_id"] == "client-read"
+    assert next(entry for entry in saved.values() if isinstance(entry, dict) and entry.get("access_token") == "legacy-token")["good_at"]
     assert "token.disk" not in saved
     assert "token_meta" not in saved
 
