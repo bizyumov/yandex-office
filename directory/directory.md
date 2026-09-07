@@ -301,3 +301,13 @@ Add shared defaults to root `config.skill.json` and directory-specific local set
 - For 10,000 users → need 10 pages
 - Always cache locally for search performance
 - Telegram formatting: use bullets, not tables
+
+
+### Explicit organization selection
+
+Use the organization established by user context as `--org-id`. If none is
+established, discover accessible organizations. Auto-select only when exactly
+one organization is available. With multiple organizations, ask the user to
+choose by name/ID; never choose the first entry. The CLI stops with the list of
+choices and requires `--org-id`. No update is sent before selection. Apply the
+same disambiguation principle to account aliases; never choose the first account.

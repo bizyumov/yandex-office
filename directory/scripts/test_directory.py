@@ -104,3 +104,27 @@ def test_update_user_never_targets_cloud_api_host(tmp_path):
         api.update_user("123456", "1", {"displayName": "X"})
     assert req.call_args.args[1].startswith("https://api360.yandex.net/")
     assert "cloud-api" not in req.call_args.args[1]
+
+
+def test_single_organization_is_selected():
+    api = object.__new__(DirectoryApi)
+    api.list_organizations = lambda: {"organizations": [{"id": 12, "name": "Only"}]}
+    assert api.resolve_org_id(None) == "12"
+
+
+def test_multiple_organizations_require_explicit_choice():
+    import pytest
+    api = object.__new__(DirectoryApi)
+    api.list_organizations = lambda: {"organizations": [{"id": 12, "name": "First"}, {"id": 34, "name": "Second"}]}
+    with pytest.raises(ValueError, match="--org-id") as error:
+        api.resolve_org_id(None)
+    assert "12" in str(error.value) and "34" in str(error.value)
+    assert api.resolve_org_id("34") == "34"
+
+
+def test_no_organizations_stops():
+    import pytest
+    api = object.__new__(DirectoryApi)
+    api.list_organizations = lambda: {"organizations": []}
+    with pytest.raises(RuntimeError):
+        api.resolve_org_id(None)

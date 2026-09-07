@@ -74,14 +74,19 @@ class DirectoryApi:
         return request_json(ctx, "GET", ctx.url("directory_api", "/directory/v1/org"))
 
     def resolve_org_id(self, org_id: int | str | None) -> str:
-        """Return an explicit org id, or discover the first accessible one."""
+        """Return an explicit org id, or discover the sole accessible one."""
         if org_id is not None and str(org_id).strip():
             return str(org_id).strip()
         payload = self.list_organizations()
         orgs = payload.get("organizations", []) if isinstance(payload, dict) else (payload or [])
         if not orgs:
             raise RuntimeError("No organization accessible to this account; pass --org-id")
-        return str(orgs[0].get("id"))
+        if len(orgs) != 1:
+            choices = [{"id": org.get("id"), "name": org.get("name")} for org in orgs]
+            raise ValueError("Multiple organizations accessible; ask the user to choose and pass --org-id: " + json.dumps(choices, ensure_ascii=False))
+        if not orgs[0].get("id"):
+            raise ValueError("Organization has no id; cannot select it")
+        return str(orgs[0]["id"])
 
     # ── users ──────────────────────────────────────────────────────────
 
