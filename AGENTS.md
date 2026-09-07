@@ -64,3 +64,9 @@ Installed workflow agents:
 - Calendar event creation agents must supply either a timezone or UTC offset to
   the CLI, preferably by saving `calendar.timezone` or `calendar.utc_offset` in
   local `{data_dir}/config.agent.json`.
+
+
+## Documentation discovery
+
+Use GitMark index and search at this repository root before searching documentation
+with file-content tools. Keep `.gitmark/` derived and ignored. Reindex after updates.

@@ -155,7 +155,8 @@ def test_oauth_setup_bootstraps_from_workspace_cwd(monkeypatch, tmp_path: Path) 
     assert saved["path"] == canonical_token("work")
     token_data = saved["token_data"]
     assert token_data["email"] == "work@example.com"
-    assert token_data["token-value"] == {
+    assert token_data["mail-readonly-1"] == {
+        "access_token": "token-value",
         "client_id": "660686ff45f947f2ac6e3f6495a9ec74",
     }
     assert "token_meta" not in token_data
@@ -400,7 +401,8 @@ def test_oauth_setup_app_without_identity_imports_verified_account(monkeypatch, 
 
     assert saved["path"] == canonical_token("user")
     assert saved["token_data"]["email"] == "user@example.com"
-    assert saved["token_data"]["token-value"] == {
+    assert saved["token_data"]["mail-readonly-1"] == {
+        "access_token": "token-value",
         "client_id": "660686ff45f947f2ac6e3f6495a9ec74",
     }
 
@@ -516,7 +518,7 @@ def test_oauth_setup_imports_legacy_yandex_disk_token_from_env(
     assert saved["path"] == canonical_token("diskacct")
     assert saved["token_data"] == {
         "email": "legacy@example.com",
-        "legacy-env-token": {"client_id": "disk-client"},
+        "disk-read-1": {"access_token": "legacy-env-token", "client_id": "disk-client"},
     }
 
 
@@ -753,7 +755,7 @@ def test_oauth_setup_imports_generic_env_token_without_app(
     assert saved["path"] == canonical_token("user")
     assert saved["token_data"] == {
         "email": "user@example.com",
-        "env-token": {"client_id": "mail-client"},
+        "mail-readonly-1": {"access_token": "env-token", "client_id": "mail-client"},
     }
 
 
@@ -780,7 +782,7 @@ def test_managed_import_uses_explicit_account_instead_of_deriving_alias_from_ema
     assert result.token_path == canonical_token("test")
     assert json.loads(canonical_token("test").read_text(encoding="utf-8")) == {
         "email": "bdi@example.com",
-        "office-token": {"client_id": "office-client"},
+        "office-core-1": {"access_token": "office-token", "client_id": "office-client"},
     }
     assert not canonical_token("bdi").exists()
 
@@ -814,7 +816,7 @@ def test_managed_import_uses_existing_account_for_verified_email_even_with_diffe
     assert result.token_path == canonical_token("bdi")
     assert json.loads(canonical_token("bdi").read_text(encoding="utf-8")) == {
         "email": "bdi@example.com",
-        "office-token": {"client_id": "office-client"},
+        "office-core-1": {"access_token": "office-token", "client_id": "office-client"},
     }
     assert not canonical_token("test").exists()
     assert 'Provided --account "test" does not match existing account "bdi"' in "\n".join(result.warnings)
@@ -892,7 +894,7 @@ def test_oauth_setup_warns_on_preconfigured_app_mismatch(monkeypatch, tmp_path: 
 
     captured = capsys.readouterr()
     assert "non-standard token" in captured.err
-    assert saved["token_data"]["token-value"] == {"client_id": "other-client"}
+    assert saved["token_data"]["mail-readwrite-1"] == {"access_token": "token-value", "client_id": "other-client"}
     assert "token_meta" not in saved["token_data"]
 
 
@@ -949,7 +951,7 @@ def test_oauth_setup_accepts_app_without_service(monkeypatch, tmp_path: Path) ->
     oauth_setup.main()
 
     token_data = saved["token_data"]
-    assert token_data["token-value"] == {"client_id": "office-core-client"}
+    assert token_data["office-core-1"] == {"access_token": "token-value", "client_id": "office-core-client"}
     assert not any(key.startswith("token.") for key in token_data)
 
 
@@ -1006,7 +1008,7 @@ def test_oauth_setup_propagates_multi_service_app_token(monkeypatch, tmp_path: P
     oauth_setup.main()
 
     token_data = saved["token_data"]
-    assert token_data["token-value"] == {"client_id": "office-core-client"}
+    assert token_data["office-core-1"] == {"access_token": "token-value", "client_id": "office-core-client"}
     assert "token_meta" not in token_data
 
 
@@ -1063,7 +1065,7 @@ def test_oauth_setup_imports_custom_app_from_live_metadata(monkeypatch, tmp_path
 
     oauth_setup.main()
 
-    assert saved["token_data"]["token-value"] == {"client_id": "custom-client"}
+    assert saved["token_data"]["custom-custom-client-1"] == {"access_token": "token-value", "client_id": "custom-client"}
     assert "token_meta" not in saved["token_data"]
     agent_config = json.loads(agent_config_path.read_text(encoding="utf-8"))
     assert "accounts" not in agent_config
@@ -1139,7 +1141,7 @@ def test_managed_import_marks_captcha_client_unresolved(monkeypatch, tmp_path: P
     )
 
     assert result.resolved_account == "user"
-    assert result.token_data["token-value"] == {"client_id": "custom-client"}
+    assert result.token_data["custom-custom-client-1"] == {"access_token": "token-value", "client_id": "custom-client"}
     assert any("CAPTCHA JSON" in warning for warning in result.warnings)
     agent_config = json.loads(agent_config_path.read_text(encoding="utf-8"))
     assert agent_config["oauth_apps"]["catalog"]["custom-custom-client"] == {

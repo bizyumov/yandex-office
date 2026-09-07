@@ -131,3 +131,26 @@ This document does not define a separate OpenClaw secret-storage design for Yand
 - Use runtime API responses as final truth. Scopes guide onboarding and remediation; they must not become premature runtime blockers.
 - Keep this model scoped to `yandex-office`; do not turn Yandex OAuth scopes into a universal OpenClaw auth abstraction.
 - Keep Yandex account isolation orthogonal to scope modeling.
+
+
+## App-keyed token files
+
+Account files retain `email` and a dictionary of token entries. Entry keys use the
+OAuth catalog app ID resolved from `client_id`, followed by a numeric suffix
+(e.g. `office-core-1`). Each entry stores the bearer only in `access_token`, with
+unchanged `client_id`, optional `good_at` or `bad_at`. Existing numbered entries
+keep their keys. Reimporting the same bearer preserves its key and health.
+
+Runtime readers accept legacy bearer-keyed entries for compatibility. New imports
+write named entries. Convert existing files locally with
+`scripts/migrate_token_keys.py --account ACCOUNT --data-dir DATA_DIR`; this is a
+read-only preview. Add `--apply` to atomically replace the account file with mode
+0600. Migration resolves app IDs only from the merged local catalog, performs no
+network calls, preserves metadata, and refuses unknown clients without rewriting
+the original. No UUID, array, schema-version or health-state redesign is included.
+
+## Documentation search
+
+Build the derived index at the skill root with GitMark `index`, then use GitMark
+`search` before documentation fan-out. `.gitmark/` belongs in `.gitignore` and must
+never be committed. Rebuild after documentation updates.
