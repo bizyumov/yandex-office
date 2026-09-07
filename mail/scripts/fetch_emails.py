@@ -519,8 +519,8 @@ class EmailFetcher:
     def _safe_filename(filename: str) -> str:
         """Sanitize attachment filename for local filesystem writes."""
         name = str(filename).strip()
-        # Replace path separators and control chars that break writes.
-        name = re.sub(r"[\\/]+", " - ", name)
+        # Replace filesystem-forbidden characters: \ / : * ? " < > |
+        name = re.sub(r'[\\/:*?"<>|]', "_", name)
         name = re.sub(r"[\x00-\x1f]+", " ", name)
         name = re.sub(r"\s+", " ", name).strip()
         return name or "attachment.bin"
@@ -871,7 +871,9 @@ class EmailFetcher:
 
         try:
             _, msg_data = self._fetch_message_data(conn, uid_bytes, "(RFC822)", ctx=ctx)
-            raw_email = msg_data[0][1]
+            raw_email = self._extract_message_bytes(msg_data)
+            if raw_email is None:
+                raise ValueError("No message payload returned by IMAP FETCH")
             msg = email.message_from_bytes(raw_email)
 
             subject = self._decode_header(msg.get("Subject", ""))

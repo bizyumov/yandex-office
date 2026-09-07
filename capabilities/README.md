@@ -207,6 +207,17 @@ Disk is the reference implementation for this process.
   `disk.trash.resources.restore.put` returned 403 for every one-scope Disk token
   and returned success with `cloud_api:disk.{read,write}`. They are represented
   as `all_of: ["cloud_api:disk.read", "cloud_api:disk.write"]`.
+- `disk.resources.download.get.disk` is current runtime code for private
+  `disk:/` downloads and maps to `cloud_api:disk.read`; the app-folder variant
+  maps to `cloud_api:disk.app_folder`.
+- `disk.resources.upload.post.disk` is current runtime code for upload-from-URL
+  into `disk:/` and maps to `cloud_api:disk.write`; the app-folder variant maps
+  to `cloud_api:disk.app_folder`. These rows require direct downloadable object
+  URLs for byte-identical imports.
+- `disk.resources.copy.post.*`, `disk.resources.move.post.*`,
+  `disk.resources.delete.*`, and `disk.operations.get.*` are now current
+  runtime code because the Disk CLI exposes private CRUD, URL-import polling,
+  and cleanup operations.
 - `disk.public.resources.save_to_disk.post.app_folder` uses the documented
   `public_key` + `name` request shape. `cloud_api:disk.app_folder` returned
   HTTP 403, but `cloud_api:disk.write` returned HTTP 201, so the generated map

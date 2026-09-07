@@ -20,6 +20,8 @@ from common.auth import (
 from common.config import (
     choose_account_alias,
     find_token_account_by_email,
+    resolve_auth_file,
+    resolve_data_dir,
     yandex_identity_matches,
 )
 from common.oauth_apps import (
@@ -86,6 +88,7 @@ def import_managed_oauth_token(
     selected_app_id: str | None = None,
 ) -> ManagedTokenImportResult:
     """Verify and store a managed OAuth token under the requested or resolved account file."""
+    resolve_data_dir(data_dir_override=data_dir)
     identity = verify_token_identity(config, token=token)
 
     warnings: list[str] = []
@@ -95,7 +98,7 @@ def import_managed_oauth_token(
             f'"{identity.email}". Storing verified identity email in the token file.'
         )
 
-    existing_account = find_token_account_by_email(data_dir, identity.email)
+    existing_account = find_token_account_by_email(identity.email)
     if existing_account is not None:
         resolved_account = existing_account["alias"]
         if account and account != resolved_account:
@@ -106,7 +109,7 @@ def import_managed_oauth_token(
     elif account:
         resolved_account = account
     else:
-        resolved_account = choose_account_alias(data_dir, identity.email)
+        resolved_account = choose_account_alias(identity.email)
 
     matched_app = oauth_app_for_client_id(config, identity.client_id, service=service)
     if selected_app_id and matched_app is not None and matched_app.app_id != selected_app_id:
@@ -165,7 +168,7 @@ def import_managed_oauth_token(
                 f'Created agent-local OAuth app "{app_id}" for client_id {identity.client_id}.'
             )
 
-    token_path = Path(data_dir) / "auth" / f"{resolved_account}.token"
+    token_path = resolve_auth_file(f"{resolved_account}.token")
     try:
         token_data = load_token_file(token_path)
     except FileNotFoundError:
@@ -175,7 +178,21 @@ def import_managed_oauth_token(
     for key in list(token_data):
         if str(key).startswith("token."):
             token_data.pop(key, None)
-    token_data[token] = {"client_id": identity.client_id}
+    app_name = matched_app.app_id if matched_app is not None else app_id
+    existing_key = next(
+        (key for key, value in token_data.items()
+         if isinstance(value, dict) and value.get("access_token") == token),
+        None,
+    )
+    if existing_key is None:
+        number = 1
+        while f"{app_name}-{number}" in token_data:
+            number += 1
+        existing_key = f"{app_name}-{number}"
+    previous = token_data.pop(token, {})
+    entry = dict(token_data.get(existing_key, previous))
+    entry.update(access_token=token, client_id=identity.client_id)
+    token_data[existing_key] = entry
     save_token_file(token_path, token_data)
 
     return ManagedTokenImportResult(

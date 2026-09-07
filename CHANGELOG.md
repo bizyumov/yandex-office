@@ -1,6 +1,121 @@
 # Changelog
 
-All public `yandex-office` skill releases use the `YYYY.MM.DD` version format.
+All public `yandex-office` skill releases use the `YYYY.M.D` version format.
+
+## 2026.6.12
+
+### Added
+
+- Added canonical `disk/scripts/disk.py` command surface with `list`,
+  `download`, `upload`, `import-url`, `share`, `manage`, and `s3-upload`
+  subcommands.
+- Added authenticated `disk:/` and `app:/` listing through `disk.py list` with
+  JSON/JSONL output, paging, recursive traversal, and stable public/share
+  metadata keys.
+- Added authenticated private `disk:/` and `app:/` file downloads through
+  `disk.py download`.
+- Added selected private materialization from JSON/JSONL manifests, preserving
+  paths relative to an explicit private source root.
+- Added public-folder materialization: `--materialize-dir` preserves the public
+  folder wrapper, while `--flatten-single-root` implies materialization and
+  omits only that wrapper. Public file links tolerate both flags and report that
+  folder mode was not applied.
+- Added `disk.py import-url` for managed-auth URL import into `disk:/` or proven
+  `app:/` paths, with source URL redaction and operation polling.
+- Added optional `disk.py s3-upload` for S3-compatible Object Storage staging
+  plus Disk upload-from-URL import. The helper imports `boto3` only when
+  invoked, uses managed Disk auth, reads non-secret S3 settings from `disk.s3`
+  or CLI overrides, leaves S3 credentials to the boto3 runtime, redacts
+  presigned URLs, exposes transfer concurrency controls, verifies S3 and Disk
+  metadata size, reports absent provider hashes as `hash_status: not_provided`,
+  and deletes S3 objects by default.
+- Set the default optional S3 staging bucket to `yandex-office`; live
+  verification can override it with the deployment bucket used for the test.
+- Added Disk CRUD helpers and CLI coverage for `mkdir`, `copy`, `move`, and
+  `delete` on both `disk:/` and `app:/` surfaces through `disk.py manage`.
+- Added Calendar attachment handoff metadata to published uploads:
+  `{fileName, url, size}`.
+
+### Changed
+
+- Updated Disk capability metadata for private download, copy, move, delete,
+  upload-from-URL, operation polling, and separate `disk:/` versus `app:/`
+  method ids.
+- Updated Disk docs, API reference, capability metadata, and release metadata to
+  the `2026.6.12` dated release.
+- Refactored Disk business logic out of script files into
+  `disk/lib/api.py` (`DiskApi` provider calls) and `disk/lib/workflows.py`
+  (`DiskRead`, `DiskWrite`, `DiskShare`, `YandexDisk`). Script files are now
+  command adapters over `disk/lib/cli.py`.
+- Updated the S3 helper to auto-create Disk parent folders before URL import by
+  default, matching direct upload ergonomics; `--no-create-parents` preserves
+  strict existing-parent behavior.
+- Removed automatic dispatch-time import of the legacy Disk env-token path;
+  managed auth token files remain the runtime path.
+- Verified `disk/requirements.txt` remains core-only (`requests`); `boto3` is
+  intentionally an opt-in dependency for the S3 helper instead of a base
+  requirement.
+- Verified `references/yandex-service-reference.md` and
+  `references/yandex-oauth-scopes.json` already contain the required Disk
+  `cloud_api:*` scopes; no `yadisk:disk` behavior is used.
+
+### Live Results
+
+- Primary archive fixture `gitea-20260611T010009Z.tar.gz` (1,039,233,346
+  bytes, SHA-256
+  `53b2f234276b70cc55977d8b5635752cbcb7f8c32e7b2ebf2a0cfb40d6eefe44`).
+- Direct `disk:/` upload through `disk.py upload`: two attempts were
+  stopped incomplete after poor observed progress. The exact public CLI attempt
+  reached 322,174,976 bytes (31.00%) after 2,237 s at 140.6 KiB/s average,
+  with an 83.0 min ETA remaining; no completed large direct timing is claimed.
+- S3-mediated `disk:/` upload through `disk.py s3-upload`: 100.215 s
+  total, 9.890 MiB/s effective; S3 upload phase was 85.432 s, Disk import phase
+  14.524 s, and the S3 staging object was deleted after import.
+- App-folder smoke fixture `bamboo_webinar_20260318.webm` (17,990,832 bytes).
+- Direct `app:/` upload through `disk.py upload`: 140 s,
+  0.123 MiB/s.
+- S3-mediated `app:/` upload through `disk.py s3-upload`: 6.239 s
+  total, 2.750 MiB/s effective; provider accepted the presigned object URL and
+  S3 cleanup succeeded.
+- The original direct upload path remains one Disk upload-link request plus one
+  file-body `PUT`; S3 is an optional transport, not the default.
+
+### Known Limitations
+
+- Disk upload-from-URL requires a direct downloadable object URL when byte
+  identity matters. Live testing showed that passing a Disk public share page
+  imports the share-page HTML instead of the shared file bytes.
+- The `public_calendar/v1/disk` surfaces remain excluded: managed OAuth probes
+  returned 403 for available accounts, so this release implements only the
+  standard Disk-side public-link handoff needed by attachment consumers.
+
+### Verification
+
+- `/usr/bin/python3 -m pytest -q disk/scripts/test_download.py`
+- `/usr/bin/python3 -m pytest -q`
+- `/usr/bin/python3 -m py_compile $(rg --files -g '*.py')`
+- `/usr/bin/python3 capabilities/audit-method-auth.py`
+- `/usr/bin/python3 capabilities/validate.py`
+- `git diff --check`
+- live managed-auth Disk CRUD, listing, private download, public-folder
+  materialization, attachment handoff, URL import behavior, S3 transport, and
+  cleanup checks on `disk:/` and `app:/`
+
+## 2026.08.31
+
+### Changed
+
+- Moved managed OAuth token files and pending screen-code state to the standard
+  per-user secret directory at `~/secrets/yandex-office`.
+- Added canonical-first authorization checks with automatic one-time migration
+  from the legacy `{data_dir}/auth` location and a token-safe success warning.
+- Stopped creating new legacy auth directories during runtime bootstrap.
+
+### Verification
+
+- focused RED/GREEN migration tests
+- full `scripts/test_regression.sh` suite
+- method-auth capability audit and validation
 
 ## 2026.05.27
 

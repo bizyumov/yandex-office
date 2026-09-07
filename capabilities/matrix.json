@@ -2010,6 +2010,106 @@
       "error": "DiskPathDoesntExistsError"
     },
     {
+      "method_id": "disk.resources.upload.post.disk",
+      "scope_id": "public",
+      "status": "not_tested",
+      "timestamp": "2026-06-11T00:00:00+00:00",
+      "token_fixture_id": "not_tested",
+      "request_fixture_id": "disk-upload-from-url",
+      "protocol_result": "not_run",
+      "evidence": ".agent/tasks/GH-disk-open-issues/evidence.md"
+    },
+    {
+      "method_id": "disk.resources.upload.post.disk",
+      "scope_id": "cloud_api:disk.app_folder",
+      "status": "not_tested",
+      "timestamp": "2026-06-11T00:00:00+00:00",
+      "token_fixture_id": "not_tested",
+      "request_fixture_id": "disk-upload-from-url",
+      "protocol_result": "not_run",
+      "evidence": ".agent/tasks/GH-disk-open-issues/evidence.md"
+    },
+    {
+      "method_id": "disk.resources.upload.post.disk",
+      "scope_id": "cloud_api:disk.info",
+      "status": "not_tested",
+      "timestamp": "2026-06-11T00:00:00+00:00",
+      "token_fixture_id": "not_tested",
+      "request_fixture_id": "disk-upload-from-url",
+      "protocol_result": "not_run",
+      "evidence": ".agent/tasks/GH-disk-open-issues/evidence.md"
+    },
+    {
+      "method_id": "disk.resources.upload.post.disk",
+      "scope_id": "cloud_api:disk.read",
+      "status": "not_tested",
+      "timestamp": "2026-06-11T00:00:00+00:00",
+      "token_fixture_id": "not_tested",
+      "request_fixture_id": "disk-upload-from-url",
+      "protocol_result": "not_run",
+      "evidence": ".agent/tasks/GH-disk-open-issues/evidence.md"
+    },
+    {
+      "method_id": "disk.resources.upload.post.disk",
+      "scope_id": "cloud_api:disk.write",
+      "status": "not_tested",
+      "timestamp": "2026-06-11T00:00:00+00:00",
+      "token_fixture_id": "not_tested",
+      "request_fixture_id": "disk-upload-from-url",
+      "protocol_result": "not_run",
+      "evidence": ".agent/tasks/GH-disk-open-issues/evidence.md"
+    },
+    {
+      "method_id": "disk.resources.upload.post.app_folder",
+      "scope_id": "public",
+      "status": "not_tested",
+      "timestamp": "2026-06-11T00:00:00+00:00",
+      "token_fixture_id": "not_tested",
+      "request_fixture_id": "disk-upload-from-url-app-folder",
+      "protocol_result": "not_run",
+      "evidence": ".agent/tasks/GH-disk-open-issues/evidence.md"
+    },
+    {
+      "method_id": "disk.resources.upload.post.app_folder",
+      "scope_id": "cloud_api:disk.app_folder",
+      "status": "not_tested",
+      "timestamp": "2026-06-11T00:00:00+00:00",
+      "token_fixture_id": "not_tested",
+      "request_fixture_id": "disk-upload-from-url-app-folder",
+      "protocol_result": "not_run",
+      "evidence": ".agent/tasks/GH-disk-open-issues/evidence.md"
+    },
+    {
+      "method_id": "disk.resources.upload.post.app_folder",
+      "scope_id": "cloud_api:disk.info",
+      "status": "not_tested",
+      "timestamp": "2026-06-11T00:00:00+00:00",
+      "token_fixture_id": "not_tested",
+      "request_fixture_id": "disk-upload-from-url-app-folder",
+      "protocol_result": "not_run",
+      "evidence": ".agent/tasks/GH-disk-open-issues/evidence.md"
+    },
+    {
+      "method_id": "disk.resources.upload.post.app_folder",
+      "scope_id": "cloud_api:disk.read",
+      "status": "not_tested",
+      "timestamp": "2026-06-11T00:00:00+00:00",
+      "token_fixture_id": "not_tested",
+      "request_fixture_id": "disk-upload-from-url-app-folder",
+      "protocol_result": "not_run",
+      "evidence": ".agent/tasks/GH-disk-open-issues/evidence.md"
+    },
+    {
+      "method_id": "disk.resources.upload.post.app_folder",
+      "scope_id": "cloud_api:disk.write",
+      "status": "not_tested",
+      "timestamp": "2026-06-11T00:00:00+00:00",
+      "token_fixture_id": "not_tested",
+      "request_fixture_id": "disk-upload-from-url-app-folder",
+      "protocol_result": "not_run",
+      "evidence": ".agent/tasks/GH-disk-open-issues/evidence.md"
+    },
+    {
       "method_id": "disk.resources.download.get.disk",
       "scope_id": "public",
       "status": "does_not_work",

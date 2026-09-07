@@ -17,13 +17,13 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from common.api import YandexApiError
-from disk.scripts.download import YandexDisk
+from disk.lib.workflows import YandexDisk
 from telemost.lib.client import TelemostError, YandexTelemostClient
 from calendars.lib.client import YandexCalendarClient
 from common.config import find_skill_root, load_agent_config, load_global_config, resolve_data_dir
 
 
-DEFAULT_ATTACHMENT_DIR = "disk:/yandex-office Calendar Attachments"
+DEFAULT_ATTACHMENT_DIR = "app:/yandex-calendar-attachments"
 UTC_OFFSET_RE = re.compile(r"^([+-])(\d{2}):(\d{2})$")
 TIME_CONTEXT_KEYS = ("timezone", "utc_offset")
 
@@ -177,6 +177,25 @@ def _agent_calendar_time_preference(data_dir: str | None) -> tuple[str | None, s
     )
 
 
+def _agent_calendar_attachment_remote_dir(data_dir: str | None) -> str | None:
+    """Read the operator-selected Calendar attachment Disk directory."""
+
+    resolved_data_dir = resolve_data_dir(data_dir_override=data_dir)
+    _agent_config_path, agent_config = load_agent_config(resolved_data_dir, required=False)
+    section = _calendar_config_section(agent_config, source="config.agent.json")
+    raw_attachments = section.get("attachments")
+    if raw_attachments is None:
+        return None
+    if not isinstance(raw_attachments, dict):
+        raise ValueError("config.agent.json calendar.attachments must be an object")
+    raw_remote_dir = raw_attachments.get("remote_dir")
+    if raw_remote_dir is None:
+        return None
+    if not isinstance(raw_remote_dir, str) or not raw_remote_dir.strip():
+        raise ValueError("config.agent.json calendar.attachments.remote_dir must be a non-empty string")
+    return raw_remote_dir.strip()
+
+
 def _validate_matching_time_context(
     *,
     start_str: str,
@@ -278,7 +297,7 @@ def create_telemost_event(
     telemost_settings_supplied: bool = False,
     telemost_cohosts_supplied: bool = False,
     attachments: list[str] | None = None,
-    attachment_remote_dir: str = DEFAULT_ATTACHMENT_DIR,
+    attachment_remote_dir: str | None = None,
 ) -> dict[str, object]:
     """Create a Calendar event with a real Telemost conference.
 
@@ -349,12 +368,17 @@ def create_telemost_event(
     if not conference or not conference.get("join_url"):
         raise ValueError("Telemost link is missing")
     telemost_link = conference["join_url"]
+    effective_attachment_remote_dir = (
+        attachment_remote_dir
+        or _agent_calendar_attachment_remote_dir(data_dir)
+        or DEFAULT_ATTACHMENT_DIR
+    )
     uploaded_attachments = [
         _upload_attachment(
             account=account,
             data_dir=data_dir,
             local_path=attachment,
-            remote_dir=attachment_remote_dir,
+            remote_dir=effective_attachment_remote_dir,
         )
         for attachment in attachments or []
     ]
@@ -467,8 +491,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--attachment-remote-dir",
-        default=DEFAULT_ATTACHMENT_DIR,
-        help=f"Disk directory for uploaded attachments (default: {DEFAULT_ATTACHMENT_DIR})",
+        help=f"Disk directory for uploaded attachments (default: {DEFAULT_ATTACHMENT_DIR}; set disk:/ explicitly as a fallback)",
     )
     parser.add_argument(
         "--telemost-access-level",

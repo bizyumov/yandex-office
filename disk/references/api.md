@@ -2,7 +2,9 @@
 
 ## Public Resources
 
-These endpoints are intended for public-share infrastructure. In this repo, the client still uses OAuth by default when a token is available, even for public-looking links, because Telemost and organization-only shares can require authenticated access.
+These endpoints are intended for public-share infrastructure. In this repo,
+public-resource calls are tokenless. Organization-only or private resources are
+handled through authenticated `disk:/` or `app:/` resource paths instead.
 
 ### Get metadata
 
@@ -64,11 +66,20 @@ Pass `&path=/filename.txt` to both endpoints to access a specific file within a 
 
 ## Managed Resources
 
-### Get resource metadata
+Authenticated resources use separate capability rows for visible Disk paths and
+app-folder paths. The same upstream endpoint is represented as `.disk` for
+`disk:/...` and `.app_folder` for `app:/...` when OAuth behavior differs.
+
+### Get resource metadata and listing
 
 ```
-GET https://cloud-api.yandex.net/v1/disk/resources?path=disk:/Docs/report.pdf
+GET https://cloud-api.yandex.net/v1/disk/resources?path=disk:/Docs&limit=100&offset=0
 ```
+
+Use `disk:/...` for the visible user Disk and `app:/...` for the app folder.
+Directory responses include `_embedded.items`; file responses describe one
+resource. `disk/scripts/disk.py list` normalizes names, paths, types, sizes,
+MIME types, and stable `public_key`, `public_url`, and `public_settings` keys.
 
 ### Create directory
 
@@ -94,6 +105,65 @@ GET https://cloud-api.yandex.net/v1/disk/resources/upload?path=disk:/Projects/20
 ```
 
 Upload the file body with a plain `PUT` to the returned `href`.
+
+### Get private download link
+
+```
+GET https://cloud-api.yandex.net/v1/disk/resources/download?path=disk:/Docs/report.pdf
+```
+
+The returned `href` is a provider download URL. Treat it as sensitive runtime
+material: do not store it in logs, docs, evidence, or release notes. Use the
+matching `app:/...` path with the `.app_folder` capability row for app-folder
+downloads.
+
+### Upload from URL
+
+```
+POST https://cloud-api.yandex.net/v1/disk/resources/upload?path=disk:/Imports/file.bin&url=https%3A%2F%2Fexample.com%2Ffile.bin&overwrite=true&disable_redirects=false
+```
+
+Expected response is usually an operation link:
+
+```json
+{
+  "href": "https://cloud-api.yandex.net/v1/disk/operations/<operation-id>",
+  "method": "GET",
+  "templated": false
+}
+```
+
+`disk/scripts/disk.py import-url` and `disk/scripts/disk.py s3-upload` redact
+the full source URL from JSON output and errors. The source must be a direct
+downloadable object URL when byte identity matters. A public Disk share page URL
+can be imported by the provider, but live testing showed it imports the HTML
+share page rather than the shared file bytes.
+
+The optional S3 bridge keeps non-secret S3 settings under `disk.s3` and leaves
+AWS-compatible credentials to the S3 client runtime. It does not parse
+credential files or accept S3 secret values on the command line.
+
+### Poll operation
+
+```
+GET https://cloud-api.yandex.net/v1/disk/operations/<operation-id>
+```
+
+Poll until `status` is `success` or `failed`. The helper methods use this for
+URL import, S3-mediated import, and asynchronous cleanup when the API returns an
+operation id.
+
+### Copy, move, and delete
+
+```
+POST https://cloud-api.yandex.net/v1/disk/resources/copy?from=disk:/Docs/a.txt&path=disk:/Docs/b.txt&overwrite=true
+POST https://cloud-api.yandex.net/v1/disk/resources/move?from=disk:/Docs/b.txt&path=disk:/Docs/c.txt&overwrite=true
+DELETE https://cloud-api.yandex.net/v1/disk/resources?path=disk:/Docs/c.txt&permanently=false&force_async=false
+```
+
+Source and destination must use the same surface. Do not use `disk:/` evidence
+as proof of `app:/` behavior; the app-folder variants use separate decorated
+method ids and `cloud_api:disk.app_folder`.
 
 ### Publish or update resource sharing
 
@@ -136,8 +206,7 @@ Practical implication:
 
 - `public_url` does not mean anonymous/public access
 - `/v1/disk/public/resources*` is for public-share infrastructure, not a universal access API for all share modes
-- when a token is available, this repo uses OAuth by default even for public-looking links
-- anonymous access is opt-in only, for explicit anonymous-access checks
+- public-link APIs are tokenless public-share infrastructure
 - resource metadata did not echo the configured `accesses` array back in live tests, so `get_share_info()` does not reconstruct ACLs from metadata alone
 
 ### Unpublish resource
@@ -169,10 +238,11 @@ Operational rule:
 
 ## Authentication
 
-- **Public files:** Public-resource endpoints allow anonymous access, but this repo uses OAuth by default when a token is available.
-- **Anonymous checks:** Use anonymous mode explicitly when you need to verify anonymous reachability.
+- **Public files:** Public-resource endpoints are called without OAuth.
 - **Organization-only files:** Use authenticated resource APIs by path; do not expect `/v1/disk/public/resources?public_key=...` to work.
-- **Private files:** `Authorization: OAuth {token}` header.
+- **Private files:** `Authorization: OAuth {token}` header through managed auth.
+- **Redaction:** Do not print raw access tokens, provider download hrefs,
+  presigned URLs, or unredacted source URLs.
 
 ### Token scopes
 

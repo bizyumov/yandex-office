@@ -69,7 +69,7 @@ def test_bootstrap_runtime_context_initializes_data_dir(tmp_path: Path) -> None:
     assert (repo / "config.skill.json").exists()
     assert not (repo / "config.json").exists()
     assert runtime.data_dir == (workspace / "yandex-data").resolve()
-    assert (workspace / "yandex-data" / "auth").is_dir()
+    assert not (workspace / "yandex-data" / "auth").exists()
     assert (workspace / "yandex-data" / "incoming").is_dir()
     assert (workspace / "yandex-data" / "meetings").is_dir()
     assert runtime.config["accounts"] == []
@@ -157,7 +157,7 @@ def test_bootstrap_runtime_context_accepts_explicit_data_dir_override(tmp_path: 
     )
 
     assert runtime.data_dir == external_data_dir.resolve()
-    assert (external_data_dir / "auth").is_dir()
+    assert not (external_data_dir / "auth").exists()
     assert (external_data_dir / "incoming").is_dir()
     assert (external_data_dir / "meetings").is_dir()
     assert runtime.config["accounts"] == []
@@ -208,7 +208,7 @@ def test_load_runtime_context_requires_agent_config_for_external_data_dir(tmp_pa
 
 def test_resolve_token_converts_new_token_object_shape(tmp_path: Path) -> None:
     data_dir = tmp_path / "workspace" / "yandex-data"
-    token_path = data_dir / "auth" / "corp.token"
+    token_path = Path.home() / "secrets" / "yandex-office" / "corp.token"
     write_json(
         token_path,
         {
@@ -239,12 +239,12 @@ def test_resolve_token_converts_new_token_object_shape(tmp_path: Path) -> None:
 
     assert resolved.token == "directory_token"
     assert canonical_token_key("directory") == "token.directory"
-    assert resolved.source_key == "directory_token"
+    assert resolved.source_key == "directory-app-1"
 
 
 def test_resolve_token_rejects_conflicting_token_health_state(tmp_path: Path) -> None:
     data_dir = tmp_path / "workspace" / "yandex-data"
-    token_path = data_dir / "auth" / "corp.token"
+    token_path = Path.home() / "secrets" / "yandex-office" / "corp.token"
     write_json(
         token_path,
         {
@@ -283,7 +283,7 @@ def test_resolve_token_rejects_conflicting_token_health_state(tmp_path: Path) ->
 
 def test_resolve_token_converts_legacy_service_key_by_verifying_token_value(tmp_path: Path) -> None:
     data_dir = tmp_path / "workspace" / "yandex-data"
-    token_path = data_dir / "auth" / "corp.token"
+    token_path = Path.home() / "secrets" / "yandex-office" / "corp.token"
     write_json(
         token_path,
         {
@@ -324,14 +324,14 @@ def test_resolve_token_converts_legacy_service_key_by_verifying_token_value(tmp_
     assert upgraded["email"] == "verified@example.com"
     assert "token_meta" not in upgraded
     assert "token.directory" not in upgraded
-    assert upgraded["directory_token"] == {"client_id": "directory-client"}
+    assert upgraded["directory-app-1"] == {"access_token": "directory_token", "client_id": "directory-client"}
     assert resolved.token == "directory_token"
-    assert resolved.source_key == "directory_token"
+    assert resolved.source_key == "directory-app-1"
 
 
 def test_resolve_token_deletes_token_meta_before_rejecting_unrecoverable_legacy_key(tmp_path: Path) -> None:
     data_dir = tmp_path / "workspace" / "yandex-data"
-    token_path = data_dir / "auth" / "corp.token"
+    token_path = Path.home() / "secrets" / "yandex-office" / "corp.token"
     write_json(
         token_path,
         {
@@ -369,7 +369,7 @@ def test_resolve_token_deletes_token_meta_before_rejecting_unrecoverable_legacy_
 
 def test_resolve_token_requires_service_specific_token(tmp_path: Path) -> None:
     data_dir = tmp_path / "workspace" / "yandex-data"
-    token_path = data_dir / "auth" / "alex.token"
+    token_path = Path.home() / "secrets" / "yandex-office" / "alex.token"
     write_json(
         token_path,
         {

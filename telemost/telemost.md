@@ -4,7 +4,7 @@ description: 'Telemost / Телемост — process Yandex Telemost meeting da
 license: MIT
 metadata:
   author: bizyumov
-  version: "2026.05.19"
+  version: "2026.07.19"
 ---
 
 # Yandex Telemost / Телемост
@@ -164,15 +164,21 @@ decorator dispatcher.
 | Summary | `Конспект встречи от DD.MM.YYYY` | ~30 min | Transcript `.txt` + YandexGPT summary |
 | Recording | `Запись встречи «Title» от DD.MM.YYYY` | ~hours | Video/audio `yadi.sk` links |
 
-Both contain `https://telemost.yandex.ru/j/{MEETING_UID}` — used as merge key.
+Both contain `https://telemost.yandex.ru/j/{MEETING_UID}`. The unique meeting
+occurrence key is `meeting_uid + start_utc`. IMAP UID is provenance only and
+must not define meeting identity, fragment order, or output order.
+
+All transcript fragments with the same `meeting_uid` and the same UTC calendar
+day are written into one `transcript.txt`. Their order is ascending `start_utc`,
+independent of email arrival order.
 
 ### Processing Pipeline
 
 1. **Enrich** incoming emails: classify type, extract meeting_uid/title/links/start_local
 2. **Scan** enriched emails from `{data_dir}/incoming/`
-3. **Group** by `meeting_uid`
-4. **Sort events** inside each meeting by `imap_uid` (natural integer order)
-5. **Process each email event one-by-one** (no destructive overwrite)
+3. **Identify occurrence** by `meeting_uid + start_utc`
+4. **Route fragments** with the same `meeting_uid` and UTC day into one file
+5. **Upsert and rebuild** fragments in ascending `start_utc`; email arrival order is irrelevant
 6. **Transform** transcript: local start + `[HH:MM:SS]` offsets → absolute UTC diarization
 7. **Route output directory by same-day wildcard invariant**
 8. **Archive** processed dirs (configurable)
@@ -195,8 +201,8 @@ HTML is not used by `telemost` processing.
 
 ```
 {data_dir}/meetings/{YYYY-MM}/{YYYY-MM-DD_HH-MM}_{account}_{MEETING_UID}/
-    transcript.txt        # Single append-only transcript with per-email separators
-    summary.txt           # Single append-only summary with per-email separators
+    transcript.txt        # One deterministic transcript for same UID + UTC day
+    summary.txt           # One deterministic summary for same UID + UTC day
     meeting.meta.json     # Non-destructive merged metadata
     recordings/           # Downloaded by disk (optional)
         video.mp4
@@ -213,10 +219,12 @@ Directory naming:
 
 Directory routing rule (same-day wildcard, single-candidate invariant):
 
-- Email events for each `meeting_uid` are processed in natural `imap_uid` order.
+- Meeting identity is `meeting_uid + start_utc`; IMAP UID is provenance only.
+- Fragments for the same `meeting_uid` and UTC day share one output directory.
+- Final fragment order is ascending `start_utc`, regardless of arrival order.
 - For each incoming email event, resolver scans month bucket with:
   `YYYY-MM/YYYY-MM-DD_*-*_{account}_{meeting_uid}`.
-- If exactly one candidate directory exists, data is appended there.
+- If exactly one candidate directory exists, the fragment is upserted there.
 - If no candidate exists, a new directory is created from:
   `YYYY-MM/YYYY-MM-DD_HH-MM_{account}_{meeting_uid}`.
 - If more than one candidate exists, processing fails fast for that event (explicit integrity error, no heuristic pick).
@@ -254,14 +262,19 @@ Example:
 ### Event Processing and Partial Meetings
 
 A meeting may have only "summary" (no recording) or only "recording" (no transcript).
-The processor appends whatever is available and marks `"partial": true` until both transcript and recording links are present.
-On later runs, newly arrived emails for the same `meeting_uid` are appended (not overwritten).
+The processor upserts whatever is available and marks `"partial": true` until both transcript and recording links are present.
+On later runs, fragments are merged by `meeting_uid + start_utc`, then the same-day file is rebuilt in ascending `start_utc`.
 
-Append semantics:
+Deterministic merge semantics:
 
-- `transcript.txt` contains one section per processed summary email.
-- `summary.txt` contains one section per processed summary email.
-- Each section starts with a separator containing at least `imap_uid` and email type.
+- `meeting_uid + start_utc` is the unique occurrence key.
+- Reprocessing the same occurrence replaces the same logical fragment and does not append a duplicate.
+- During rebuild, duplicate sections are removed, including legacy sections whose separators use the old `imap_uid` format.
+- Legacy section identity is recovered from the directory meeting UID and the section transcript start UTC.
+- If a legacy section key cannot be recovered, rebuild fails without overwriting the existing file.
+- All fragments for the same `meeting_uid` and UTC day are rendered into one file.
+- Email arrival order and IMAP UID do not affect the rendered order.
+- A transcript separator contains `meeting_uid`, `start_utc`, and type; IMAP UID remains only in metadata provenance.
 - `meeting.meta.json.media_links` is append-unique (deduplicated, first-seen order preserved).
 - `meeting.meta.json.source_emails` accumulates all processed source emails for the meeting.
 - `meeting.meta.json` does not use `video_url` or `audio_url`; use `media_links` only.

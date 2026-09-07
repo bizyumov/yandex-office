@@ -131,6 +131,62 @@
         }
       }
     },
+    "disk": {
+      "type": "object",
+      "description": "Local Disk runtime settings, including optional S3/Object Storage bridge configuration.",
+      "additionalProperties": false,
+      "properties": {
+        "s3": {
+          "type": "object",
+          "description": "Optional non-secret S3/Object Storage settings for Disk upload staging. AWS-compatible credentials must be available to the S3 client runtime separately.",
+          "additionalProperties": false,
+          "properties": {
+            "endpoint_url": {
+              "type": "string",
+              "minLength": 1,
+              "description": "S3-compatible endpoint URL, such as https://storage.yandexcloud.net."
+            },
+            "region": {
+              "type": "string",
+              "minLength": 1,
+              "description": "S3 region name used by the client runtime."
+            },
+            "bucket": {
+              "type": ["string", "null"],
+              "description": "S3 bucket used for temporary upload staging. The skill default is yandex-office; operators can override it for live environments."
+            },
+            "prefix": {
+              "type": "string",
+              "description": "Object key prefix for temporary upload staging."
+            },
+            "presign_ttl_seconds": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Lifetime in seconds for presigned URLs generated in memory."
+            },
+            "cleanup_after_disk_import": {
+              "type": "boolean",
+              "description": "Whether temporary S3 objects are deleted after Disk import verification."
+            },
+            "multipart_threshold_mib": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Multipart upload threshold in MiB."
+            },
+            "multipart_chunk_mib": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Multipart chunk size in MiB."
+            },
+            "max_concurrency": {
+              "type": ["integer", "null"],
+              "minimum": 1,
+              "description": "Optional boto3 transfer concurrency limit."
+            }
+          }
+        }
+      }
+    },
     "calendar": {
       "type": "object",
       "description": "Local Calendar settings for event creation and future availability workflows. Calendar event creation needs one effective time context from CLI or this local config. If both timezone and utc_offset are present here, they must represent the same UTC offset at the event start. Time preference belongs here, not in config.skill.json.",
@@ -140,6 +196,18 @@
           "type": "string",
           "minLength": 1,
           "description": "(RESERVED FOR FUTURE USE) Preferred Yandex Calendar name when a command does not specify one."
+        },
+        "attachments": {
+          "type": "object",
+          "description": "Calendar attachment handoff settings. The default Disk upload directory is app:/yandex-calendar-attachments; set remote_dir only when an operator intentionally chooses a different app:/ path or a disk:/ fallback.",
+          "additionalProperties": false,
+          "properties": {
+            "remote_dir": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Disk directory used for Calendar attachment uploads before publishing them as ATTACH URI links."
+            }
+          }
         },
         "business_hours": {
           "type": "object",

@@ -1,0 +1,15 @@
+diff --git a/mail/scripts/fetch_emails.py b/mail/scripts/fetch_emails.py
+index 70125a5..82db861 100644
+--- a/mail/scripts/fetch_emails.py
++++ b/mail/scripts/fetch_emails.py
+@@ -871,7 +871,9 @@ class EmailFetcher:
+ 
+         try:
+             _, msg_data = self._fetch_message_data(conn, uid_bytes, "(RFC822)", ctx=ctx)
+-            raw_email = msg_data[0][1]
++            raw_email = self._extract_message_bytes(msg_data)
++            if raw_email is None:
++                raise ValueError("No message payload returned by IMAP FETCH")
+             msg = email.message_from_bytes(raw_email)
+ 
+             subject = self._decode_header(msg.get("Subject", ""))

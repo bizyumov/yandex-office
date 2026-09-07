@@ -522,6 +522,82 @@
       ]
     },
     {
+      "id": "disk.resources.upload.post.disk",
+      "sub_skill": "disk",
+      "service_family": "disk",
+      "protocol": "rest",
+      "http_method": "POST",
+      "path": "/v1/disk/resources/upload",
+      "operation": "Upload from URL (Disk path)",
+      "classification": "current_used",
+      "request_fixture_fields": [
+        "path",
+        "url",
+        "overwrite",
+        "disable_redirects",
+        "fields"
+      ],
+      "success_evidence": "HTTP 202 operation response documented by Yandex Disk API.",
+      "local_sources": [
+        "disk/lib/workflows.py:DiskWrite.upload_from_url"
+      ],
+      "upstream_source_ids": [
+        "disk-docs",
+        "upload"
+      ],
+      "probe_requests": [
+        {
+          "id": "disk-upload-from-url",
+          "request": {
+            "params": {
+              "path": "{disk_root}/import-{context_key}.txt",
+              "url": "{public_fixture_url}",
+              "overwrite": "true",
+              "disable_redirects": "false"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "disk.resources.upload.post.app_folder",
+      "sub_skill": "disk",
+      "service_family": "disk",
+      "protocol": "rest",
+      "http_method": "POST",
+      "path": "/v1/disk/resources/upload",
+      "operation": "Upload from URL (app folder path)",
+      "classification": "current_used",
+      "request_fixture_fields": [
+        "path",
+        "url",
+        "overwrite",
+        "disable_redirects",
+        "fields"
+      ],
+      "success_evidence": "HTTP 202 operation response documented by Yandex Disk API when the OAuth app has app-folder access.",
+      "local_sources": [
+        "disk/lib/workflows.py:DiskWrite.upload_from_url"
+      ],
+      "upstream_source_ids": [
+        "disk-docs",
+        "upload"
+      ],
+      "probe_requests": [
+        {
+          "id": "disk-upload-from-url-app-folder",
+          "request": {
+            "params": {
+              "path": "{app_root}/import-{context_key}.txt",
+              "url": "{public_fixture_url}",
+              "overwrite": "true",
+              "disable_redirects": "false"
+            }
+          }
+        }
+      ]
+    },
+    {
       "id": "disk.resources.download.get.disk",
       "sub_skill": "disk",
       "service_family": "disk",
@@ -529,14 +605,14 @@
       "http_method": "GET",
       "path": "/v1/disk/resources/download",
       "operation": "Get download URL (Disk path)",
-      "classification": "upstream_available",
+      "classification": "current_used",
       "request_fixture_fields": [
         "path",
         "fields"
       ],
       "success_evidence": "HTTP success response documented by Yandex Disk API.",
       "local_sources": [
-        "capabilities/methods.json"
+        "disk/lib/workflows.py:DiskRead.get_private_download_link"
       ],
       "upstream_source_ids": [
         "disk-docs",
@@ -561,14 +637,14 @@
       "http_method": "GET",
       "path": "/v1/disk/resources/download",
       "operation": "Get download URL (app folder path)",
-      "classification": "upstream_available",
+      "classification": "current_used",
       "request_fixture_fields": [
         "path",
         "fields"
       ],
       "success_evidence": "HTTP success response documented by Yandex Disk API.",
       "local_sources": [
-        "capabilities/methods.json"
+        "disk/lib/workflows.py:DiskRead.get_private_download_link"
       ],
       "upstream_source_ids": [
         "disk-docs",
@@ -657,7 +733,7 @@
       "http_method": "POST",
       "path": "/v1/disk/resources/copy",
       "operation": "Copy file or folder (Disk path)",
-      "classification": "upstream_available",
+      "classification": "current_used",
       "request_fixture_fields": [
         "from",
         "path",
@@ -667,7 +743,7 @@
       ],
       "success_evidence": "HTTP success response documented by Yandex Disk API.",
       "local_sources": [
-        "capabilities/methods.json"
+        "disk/lib/workflows.py:DiskWrite.copy_resource"
       ],
       "upstream_source_ids": [
         "disk-docs",
@@ -694,7 +770,7 @@
       "http_method": "POST",
       "path": "/v1/disk/resources/copy",
       "operation": "Copy file or folder (app folder path)",
-      "classification": "upstream_available",
+      "classification": "current_used",
       "request_fixture_fields": [
         "from",
         "path",
@@ -704,7 +780,7 @@
       ],
       "success_evidence": "HTTP success response documented by Yandex Disk API.",
       "local_sources": [
-        "capabilities/methods.json"
+        "disk/lib/workflows.py:DiskWrite.copy_resource"
       ],
       "upstream_source_ids": [
         "disk-docs",
@@ -731,7 +807,7 @@
       "http_method": "POST",
       "path": "/v1/disk/resources/move",
       "operation": "Move file or folder (Disk path)",
-      "classification": "upstream_available",
+      "classification": "current_used",
       "request_fixture_fields": [
         "from",
         "path",
@@ -741,7 +817,7 @@
       ],
       "success_evidence": "HTTP success response documented by Yandex Disk API.",
       "local_sources": [
-        "capabilities/methods.json"
+        "disk/lib/workflows.py:DiskWrite.move_resource"
       ],
       "upstream_source_ids": [
         "disk-docs",
@@ -797,7 +873,7 @@
       "http_method": "POST",
       "path": "/v1/disk/resources/move",
       "operation": "Move file or folder (app folder path)",
-      "classification": "upstream_available",
+      "classification": "current_used",
       "request_fixture_fields": [
         "from",
         "path",
@@ -807,7 +883,7 @@
       ],
       "success_evidence": "HTTP success response documented by Yandex Disk API.",
       "local_sources": [
-        "capabilities/methods.json"
+        "disk/lib/workflows.py:DiskWrite.move_resource"
       ],
       "upstream_source_ids": [
         "disk-docs",
@@ -863,7 +939,7 @@
       "http_method": "DELETE",
       "path": "/v1/disk/resources",
       "operation": "Delete file or folder (Disk path)",
-      "classification": "upstream_available",
+      "classification": "current_used",
       "request_fixture_fields": [
         "path",
         "permanently",
@@ -872,7 +948,7 @@
       ],
       "success_evidence": "HTTP success response documented by Yandex Disk API.",
       "local_sources": [
-        "capabilities/methods.json"
+        "disk/lib/workflows.py:DiskWrite.delete_resource"
       ],
       "upstream_source_ids": [
         "disk-docs",
@@ -927,7 +1003,7 @@
       "http_method": "DELETE",
       "path": "/v1/disk/resources",
       "operation": "Delete file or folder (app folder path)",
-      "classification": "upstream_available",
+      "classification": "current_used",
       "request_fixture_fields": [
         "path",
         "permanently",
@@ -936,7 +1012,7 @@
       ],
       "success_evidence": "HTTP success response documented by Yandex Disk API.",
       "local_sources": [
-        "capabilities/methods.json"
+        "disk/lib/workflows.py:DiskWrite.delete_resource"
       ],
       "upstream_source_ids": [
         "disk-docs",
@@ -1653,13 +1729,13 @@
       "http_method": "GET",
       "path": "/v1/disk/operations/{operation_id}",
       "operation": "Get async operation status (Disk path)",
-      "classification": "upstream_available",
+      "classification": "current_used",
       "request_fixture_fields": [
         "operation_id"
       ],
       "success_evidence": "HTTP success response documented by Yandex Disk API.",
       "local_sources": [
-        "capabilities/methods.json"
+        "disk/lib/workflows.py:DiskWrite.wait_operation"
       ],
       "upstream_source_ids": [
         "disk-docs",
@@ -1731,13 +1807,13 @@
       "http_method": "GET",
       "path": "/v1/disk/operations/{operation_id}",
       "operation": "Get async operation status (app folder path)",
-      "classification": "upstream_available",
+      "classification": "current_used",
       "request_fixture_fields": [
         "operation_id"
       ],
       "success_evidence": "HTTP success response documented by Yandex Disk API.",
       "local_sources": [
-        "capabilities/methods.json"
+        "disk/lib/workflows.py:DiskWrite.wait_operation"
       ],
       "upstream_source_ids": [
         "disk-docs",
@@ -13365,6 +13441,8 @@
         "disk.resources.patch.app_folder",
         "disk.resources.upload.get.disk",
         "disk.resources.upload.get.app_folder",
+        "disk.resources.upload.post.app_folder",
+        "disk.resources.upload.post.disk",
         "disk.resources.download.get.disk",
         "disk.resources.download.get.app_folder",
         "disk.resources.put.disk",

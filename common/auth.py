@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
+
+from common.config import resolve_auth_file, resolve_data_dir
 
 
 class TokenResolutionError(RuntimeError):
@@ -72,11 +75,17 @@ def save_token_file(token_path: str | Path, payload: dict[str, Any]) -> None:
     path = Path(token_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     temp_path = path.with_suffix(".tmp")
-    with open(temp_path, "w", encoding="utf-8") as handle:
-        json.dump(payload, handle, ensure_ascii=False, indent=2)
-        handle.write("\n")
-    temp_path.replace(path)
-    path.chmod(0o600)
+    fd = os.open(temp_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle, ensure_ascii=False, indent=2)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        temp_path.replace(path)
+    finally:
+        if temp_path.exists():
+            temp_path.unlink()
 
 
 def _token_object(value: Any) -> dict[str, Any]:
@@ -88,8 +97,8 @@ def token_refs(token_data: dict[str, Any]) -> list[TokenRef]:
     for key, value in token_data.items():
         if key == "email" or key.startswith("token."):
             continue
-        token_value = str(key).strip()
         entry = _token_object(value)
+        token_value = str(entry.get("access_token", key)).strip()
         client_id = str(entry.get("client_id", "")).strip()
         if not token_value or not client_id:
             continue
@@ -98,13 +107,13 @@ def token_refs(token_data: dict[str, Any]) -> list[TokenRef]:
         if good_at and bad_at:
             raise TokenResolutionError(
                 "Token state cannot contain both good_at and bad_at",
-                token_key=token_value,
+                token_key=key,
             )
         refs.append(
             TokenRef(
                 token=token_value,
                 client_id=client_id,
-                source_key=token_value,
+                source_key=key,
                 good_at=good_at,
                 bad_at=bad_at,
             )
@@ -154,6 +163,7 @@ def load_prepared_token_file(
     config: dict[str, Any],
     *,
     verify_identity: TokenIdentityVerifier | None = None,
+    prepare_catalog: Callable[[dict[str, Any]], None] | None = None,
 ) -> dict[str, Any]:
     """Load token state, delete forbidden metadata, and convert legacy tokens.
 
@@ -173,7 +183,12 @@ def load_prepared_token_file(
     ):
         save_token_file(token_path, token_data)
     _reject_legacy_token_keys(token_data)
-    return token_data
+    if prepare_catalog is not None:
+        prepare_catalog(token_data)
+    converted = app_keyed_tokens(token_data, config)
+    if converted != token_data:
+        save_token_file(token_path, converted)
+    return converted
 
 
 def _legacy_token_keys(token_data: dict[str, Any]) -> list[str]:
@@ -193,6 +208,35 @@ def _reject_legacy_token_keys(token_data: dict[str, Any]) -> None:
     legacy_keys = _legacy_token_keys(token_data)
     if legacy_keys:
         _raise_legacy_token_error(legacy_keys[0])
+
+
+def app_keyed_tokens(token_data: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
+    """Convert bearer-keyed entries locally, preserving metadata and stable names.
+
+    Unknown app mappings fail before callers write any data. Already named
+    entries retain their keys. This function performs no I/O or network calls.
+    """
+    from common.oauth_apps import oauth_app_for_client_id
+
+    result = dict(token_data)
+    for key, value in token_data.items():
+        if key == "email":
+            continue
+        if not isinstance(value, dict) or not value.get("client_id"):
+            raise TokenResolutionError("Invalid token entry; migration not written")
+        if "access_token" in value:
+            if not isinstance(value["access_token"], str) or not value["access_token"].strip():
+                raise TokenResolutionError("Empty access_token; migration not written")
+            continue
+        app = oauth_app_for_client_id(config, str(value["client_id"]))
+        if app is None:
+            raise TokenResolutionError("Unknown OAuth app; migration not written", client_id=value["client_id"])
+        number = 1
+        while f"{app.app_id}-{number}" in result:
+            number += 1
+        result[f"{app.app_id}-{number}"] = {**value, "access_token": key}
+        del result[key]
+    return result
 
 
 def get_token_entry(token_data: dict[str, Any], token_key: str) -> dict[str, Any]:
@@ -375,8 +419,8 @@ def resolve_token(
     if skill == "search":
         raise ValueError("search does not use token-file auth")
 
-    data_path = Path(data_dir).resolve()
-    token_path = data_path / "auth" / f"{account}.token"
+    resolve_data_dir(data_dir_override=data_dir)
+    token_path = resolve_auth_file(f"{account}.token")
     token_data = load_prepared_token_file(
         token_path,
         config,

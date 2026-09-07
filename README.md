@@ -4,22 +4,35 @@ A collection of [agentskills.io](https://agentskills.io/specification)-compliant
 
 Current release:
 
-- version: `2026.05.27`
+- version: `2026.6.12`
 - version file: `VERSION`
 - cumulative release notes: `CHANGELOG.md`
 
-2026.05.27 adds Yandex OAuth screen-code setup with PKCE:
+2026.6.12 expands Disk support around private paths, public folders, URL import,
+and large-file transport:
 
-- `oauth_setup.py --code-flow start` prints a Yandex authorization URL and
-  records pending PKCE verifier state
-- `oauth_setup.py --code-flow complete --code <code>` exchanges the short code
-  and imports the bearer token through managed auth without printing it
-- completion reports token-safe JSON with requested/saved account, app/client
-  id, apps, and token path
+- `disk/scripts/disk.py` is the canonical Disk command surface with
+  `list`, `download`, `upload`, `import-url`, `share`, `manage`, and
+  `s3-upload` subcommands.
+- `disk.py list` lists authenticated `disk:/` and `app:/` folders as JSON or
+  JSONL with stable public/share metadata keys.
+- `disk.py download` downloads private `disk:/` and `app:/` files, materializes
+  selected private manifests, and materializes public folders with
+  root-preserving or single-root-flattened output.
+- `disk.py upload --publish` reports a Calendar-ready standard published-upload
+  handoff shape: `{fileName, url, size}`.
+- `disk.py import-url` imports direct downloadable URLs into Disk, and
+  `disk.py s3-upload` adds an optional boto3-backed S3 presign bridge for large
+  files using non-secret `disk.s3` settings plus boto3 runtime credentials.
+- Live measurements on the primary 1.039 GB archive fixture showed the direct
+  `disk:/` upload path progressing poorly and stopped incomplete at 31.00%
+  after 2,237 s / 140.6 KiB/s average; S3-mediated `disk:/` upload completed
+  in 100.215 s / 9.890 MiB/s. The direct upload path remains one Disk
+  upload-link request plus one file-body `PUT`.
 
 ## Versioning
 
-`yandex-office` uses dated skill versions in `YYYY.MM.DD` format.
+`yandex-office` uses dated skill versions in `YYYY.M.D` format.
 
 - current released version lives in `VERSION`
 - cumulative downloader-facing notes live in `CHANGELOG.md`
@@ -34,7 +47,7 @@ Current release:
 | [contacts](contacts/) | Contacts / Контакты: CardDAV integration for Yandex Contacts — fuzzy lookup, create/update contacts |
 | [directory](directory/) | Directory / Директория: Yandex 360 Directory API — users, departments, groups, and org-aware identity data |
 | [telemost](telemost/) | Telemost / Телемост: process Telemost emails, manage real conferences, and admin Telemost org defaults |
-| [disk](disk/) | Disk / Диск: download files from Yandex Disk, upload files to Disk, and manage public or organization-only share links (Telemost links may require OAuth) |
+| [disk](disk/) | Disk / Диск: list, upload, download, publish, import direct URLs, and manage public or organization-only share links for `disk:/`, `app:/`, and public-link workflows |
 | [forms](forms/) | Forms / Формы: export form responses from Yandex Forms — download results as XLSX or JSON |
 | [tracker](tracker/) | Tracker / Трекер: manage tasks in Yandex Tracker — create, search, update issues, manage Agile boards |
 
@@ -80,6 +93,14 @@ Root `config.skill.json`:
     "telemost_api": "https://cloud-api.yandex.net/v1/telemost-api"
   },
   "imap": { "server": "imap.yandex.com", "port": 993 },
+  "disk": {
+    "s3": {
+      "endpoint_url": "https://storage.yandexcloud.net",
+      "region": "ru-central1",
+      "bucket": "yandex-office",
+      "prefix": "upload"
+    }
+  },
   "mail": {
     "since": "off",
     "filters": {

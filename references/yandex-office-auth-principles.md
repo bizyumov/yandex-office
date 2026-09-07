@@ -131,3 +131,31 @@ This document does not define a separate OpenClaw secret-storage design for Yand
 - Use runtime API responses as final truth. Scopes guide onboarding and remediation; they must not become premature runtime blockers.
 - Keep this model scoped to `yandex-office`; do not turn Yandex OAuth scopes into a universal OpenClaw auth abstraction.
 - Keep Yandex account isolation orthogonal to scope modeling.
+
+
+## App-keyed token files
+
+Account files retain `email` and a dictionary of token entries. Entry keys use the
+OAuth catalog app ID resolved from `client_id`, followed by a numeric suffix
+(e.g. `office-core-1`). Each entry stores the bearer only in `access_token`, with
+unchanged `client_id`, optional `good_at` or `bad_at`. Existing numbered entries
+keep their keys. Reimporting the same bearer preserves its key and health.
+
+Normal managed-auth loading automatically checks the format and converts legacy
+bearer-keyed entries to app-name-number keys before token selection. The old
+location is resolved first by the canonical secret-path migration. Thus a file
+moved from `{data_dir}/auth` is converted on the same authorization path.
+Already converted files are not rewritten just for loading. Metadata is preserved;
+app names come from the catalog by client_id. Existing unknown-client resolution
+in the API dispatcher runs before conversion; unresolved mappings block use without
+inventing an app name. Pure format conversion makes no network calls.
+
+The optional `scripts/migrate_token_keys.py` remains a diagnostic/preconversion
+utility, not a required operator step. New imports write named entries. Atomic
+writes create their staging file with mode 0600 before writing secret bytes.
+
+## Documentation search
+
+Build the derived index at the skill root with GitMark `index`, then use GitMark
+`search` before documentation fan-out. `.gitmark/` belongs in `.gitignore` and must
+never be committed. Rebuild after documentation updates.

@@ -26,6 +26,14 @@ def verified(email: str, client_id: str):
     return type("VerifiedTokenIdentity", (), {"email": email, "client_id": client_id})()
 
 
+def canonical_token(account: str) -> Path:
+    return Path.home() / "secrets" / "yandex-office" / f"{account}.token"
+
+
+def canonical_registry() -> Path:
+    return Path.home() / "secrets" / "yandex-office" / "oauth-code-flow.json"
+
+
 def test_oauth_setup_access_token_prompt_uses_hidden_input(monkeypatch) -> None:
     calls: dict[str, str] = {}
 
@@ -144,10 +152,11 @@ def test_oauth_setup_bootstraps_from_workspace_cwd(monkeypatch, tmp_path: Path) 
     assert calls["email"] == "work@example.com"
     assert calls["cwd"] == workspace.resolve()
     assert calls["data_dir_override"] is None
-    assert saved["path"] == data_dir / "auth" / "work.token"
+    assert saved["path"] == canonical_token("work")
     token_data = saved["token_data"]
     assert token_data["email"] == "work@example.com"
-    assert token_data["token-value"] == {
+    assert token_data["mail-readonly-1"] == {
+        "access_token": "token-value",
         "client_id": "660686ff45f947f2ac6e3f6495a9ec74",
     }
     assert "token_meta" not in token_data
@@ -268,7 +277,7 @@ def test_oauth_setup_bootstraps_without_creating_account_without_token(
     assert calls["cwd"] == workspace.resolve()
     assert calls["data_dir_override"] is None
     assert captured.out == '{"alias":"alex","email":"user@example.com","apps":[]}\n'
-    assert saved["path"] == data_dir / "auth" / "alex.token"
+    assert saved["path"] == canonical_token("alex")
     assert saved["token_data"] == {"email": "user@example.com"}
 
 
@@ -286,7 +295,7 @@ def test_oauth_setup_bare_account_bootstraps_token_file(monkeypatch, tmp_path: P
 
     captured = capsys.readouterr()
     assert captured.out == '{"alias":"work","apps":[]}\n'
-    assert json.loads((workspace / "yandex-data" / "auth" / "work.token").read_text()) == {}
+    assert json.loads(canonical_token("work").read_text()) == {}
 
     for argv, expected in (
         (["--email", "work@example.com", "--account", "work"], '{"alias":"work","email":"work@example.com","apps":[]}\n'),
@@ -390,9 +399,10 @@ def test_oauth_setup_app_without_identity_imports_verified_account(monkeypatch, 
 
     oauth_setup.main()
 
-    assert saved["path"] == data_dir / "auth" / "user.token"
+    assert saved["path"] == canonical_token("user")
     assert saved["token_data"]["email"] == "user@example.com"
-    assert saved["token_data"]["token-value"] == {
+    assert saved["token_data"]["mail-readonly-1"] == {
+        "access_token": "token-value",
         "client_id": "660686ff45f947f2ac6e3f6495a9ec74",
     }
 
@@ -444,7 +454,7 @@ def test_oauth_setup_creates_account_from_verified_email(monkeypatch, tmp_path: 
 
     oauth_setup.main()
 
-    assert saved["path"] == data_dir / "auth" / "new-user.token"
+    assert saved["path"] == canonical_token("new-user")
     assert '"email": "new.user@example.com"' not in agent_config_path.read_text(encoding="utf-8")
 
 
@@ -505,10 +515,10 @@ def test_oauth_setup_imports_legacy_yandex_disk_token_from_env(
     captured = capsys.readouterr()
     assert captured.out == "diskacct\n"
     assert "YANDEX_DISK_TOKEN" not in captured.out
-    assert saved["path"] == data_dir / "auth" / "diskacct.token"
+    assert saved["path"] == canonical_token("diskacct")
     assert saved["token_data"] == {
         "email": "legacy@example.com",
-        "legacy-env-token": {"client_id": "disk-client"},
+        "disk-read-1": {"access_token": "legacy-env-token", "client_id": "disk-client"},
     }
 
 
@@ -565,7 +575,7 @@ def test_oauth_setup_code_flow_start_writes_ordered_pending_registry(
     assert "Code lifetime: 10 minutes" in captured.out
     assert "Expires at:" in captured.out
     assert "Check order: links are tried in the order printed" in captured.out
-    registry_path = data_dir / "auth" / "oauth-code-flow.json"
+    registry_path = canonical_registry()
     assert registry_path.exists()
     registry = json.loads(registry_path.read_text(encoding="utf-8"))
     pending = registry["pending"]
@@ -584,7 +594,7 @@ def test_oauth_setup_code_flow_complete_tries_registry_in_issue_order(
     workspace = tmp_path / "workspace"
     workspace.mkdir(parents=True, exist_ok=True)
     data_dir = workspace / "yandex-data"
-    registry_path = data_dir / "auth" / "oauth-code-flow.json"
+    registry_path = canonical_registry()
     registry_path.parent.mkdir(parents=True, exist_ok=True)
     registry_path.write_text(
         json.dumps(
@@ -645,7 +655,7 @@ def test_oauth_setup_code_flow_complete_tries_registry_in_issue_order(
                 "warnings": [],
                 "resolved_account": kwargs.get("account") or "user",
                 "identity": verified("user@example.com", "disk-client"),
-                "token_path": data_dir / "auth" / f"{kwargs.get('account') or 'user'}.token",
+                "token_path": canonical_token(kwargs.get("account") or "user"),
                 "token_data": {"email": "user@example.com", "disk-access-token": {"client_id": "disk-client"}},
             },
         )()
@@ -668,7 +678,7 @@ def test_oauth_setup_code_flow_complete_tries_registry_in_issue_order(
     assert report["saved_account"] == "user"
     assert report["app_id"] == "disk-read"
     assert report["apps"] == ["disk-read"]
-    assert report["token_path"].endswith("/auth/user.token")
+    assert report["token_path"].endswith("/secrets/yandex-office/user.token")
     assert calls == [
         ("mail-client", "mail-verifier"),
         ("disk-client", "disk-verifier"),
@@ -742,10 +752,10 @@ def test_oauth_setup_imports_generic_env_token_without_app(
     captured = capsys.readouterr()
     assert captured.out == "user\n"
     assert "YANDEX_ACCESS_TOKEN" not in captured.out
-    assert saved["path"] == data_dir / "auth" / "user.token"
+    assert saved["path"] == canonical_token("user")
     assert saved["token_data"] == {
         "email": "user@example.com",
-        "env-token": {"client_id": "mail-client"},
+        "mail-readonly-1": {"access_token": "env-token", "client_id": "mail-client"},
     }
 
 
@@ -769,12 +779,12 @@ def test_managed_import_uses_explicit_account_instead_of_deriving_alias_from_ema
     )
 
     assert result.resolved_account == "test"
-    assert result.token_path == data_dir / "auth" / "test.token"
-    assert json.loads((data_dir / "auth" / "test.token").read_text(encoding="utf-8")) == {
+    assert result.token_path == canonical_token("test")
+    assert json.loads(canonical_token("test").read_text(encoding="utf-8")) == {
         "email": "bdi@example.com",
-        "office-token": {"client_id": "office-client"},
+        "office-core-1": {"access_token": "office-token", "client_id": "office-client"},
     }
-    assert not (data_dir / "auth" / "bdi.token").exists()
+    assert not canonical_token("bdi").exists()
 
 
 def test_managed_import_uses_existing_account_for_verified_email_even_with_different_account_arg(
@@ -803,12 +813,12 @@ def test_managed_import_uses_existing_account_for_verified_email_even_with_diffe
     )
 
     assert result.resolved_account == "bdi"
-    assert result.token_path == auth_dir / "bdi.token"
-    assert json.loads((auth_dir / "bdi.token").read_text(encoding="utf-8")) == {
+    assert result.token_path == canonical_token("bdi")
+    assert json.loads(canonical_token("bdi").read_text(encoding="utf-8")) == {
         "email": "bdi@example.com",
-        "office-token": {"client_id": "office-client"},
+        "office-core-1": {"access_token": "office-token", "client_id": "office-client"},
     }
-    assert not (auth_dir / "test.token").exists()
+    assert not canonical_token("test").exists()
     assert 'Provided --account "test" does not match existing account "bdi"' in "\n".join(result.warnings)
 
 
@@ -884,7 +894,7 @@ def test_oauth_setup_warns_on_preconfigured_app_mismatch(monkeypatch, tmp_path: 
 
     captured = capsys.readouterr()
     assert "non-standard token" in captured.err
-    assert saved["token_data"]["token-value"] == {"client_id": "other-client"}
+    assert saved["token_data"]["mail-readwrite-1"] == {"access_token": "token-value", "client_id": "other-client"}
     assert "token_meta" not in saved["token_data"]
 
 
@@ -941,7 +951,7 @@ def test_oauth_setup_accepts_app_without_service(monkeypatch, tmp_path: Path) ->
     oauth_setup.main()
 
     token_data = saved["token_data"]
-    assert token_data["token-value"] == {"client_id": "office-core-client"}
+    assert token_data["office-core-1"] == {"access_token": "token-value", "client_id": "office-core-client"}
     assert not any(key.startswith("token.") for key in token_data)
 
 
@@ -998,7 +1008,7 @@ def test_oauth_setup_propagates_multi_service_app_token(monkeypatch, tmp_path: P
     oauth_setup.main()
 
     token_data = saved["token_data"]
-    assert token_data["token-value"] == {"client_id": "office-core-client"}
+    assert token_data["office-core-1"] == {"access_token": "token-value", "client_id": "office-core-client"}
     assert "token_meta" not in token_data
 
 
@@ -1055,7 +1065,7 @@ def test_oauth_setup_imports_custom_app_from_live_metadata(monkeypatch, tmp_path
 
     oauth_setup.main()
 
-    assert saved["token_data"]["token-value"] == {"client_id": "custom-client"}
+    assert saved["token_data"]["custom-custom-client-1"] == {"access_token": "token-value", "client_id": "custom-client"}
     assert "token_meta" not in saved["token_data"]
     agent_config = json.loads(agent_config_path.read_text(encoding="utf-8"))
     assert "accounts" not in agent_config
@@ -1131,7 +1141,7 @@ def test_managed_import_marks_captcha_client_unresolved(monkeypatch, tmp_path: P
     )
 
     assert result.resolved_account == "user"
-    assert result.token_data["token-value"] == {"client_id": "custom-client"}
+    assert result.token_data["custom-custom-client-1"] == {"access_token": "token-value", "client_id": "custom-client"}
     assert any("CAPTCHA JSON" in warning for warning in result.warnings)
     agent_config = json.loads(agent_config_path.read_text(encoding="utf-8"))
     assert agent_config["oauth_apps"]["catalog"]["custom-custom-client"] == {
