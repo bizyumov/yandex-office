@@ -31,7 +31,13 @@ from common.auth import (
     token_refs,
     verify_token_identity,
 )
-from common.config import load_agent_config_payload, save_agent_config_payload
+from common.config import (
+    list_auth_token_paths,
+    load_agent_config_payload,
+    resolve_auth_file,
+    resolve_data_dir,
+    save_agent_config_payload,
+)
 from common.oauth_apps import (
     UNRESOLVED_SCOPE,
     fetch_yandex_oauth_client_metadata,
@@ -114,6 +120,10 @@ class YandexApiContext:
     session: requests.Session
     token_ref: TokenRef | None = None
     token_data: dict[str, Any] | None = None
+
+    def __post_init__(self) -> None:
+        """Sync module auth paths to this context's data directory."""
+        resolve_data_dir(data_dir_override=self.data_dir)
 
     def for_token(
         self,
@@ -585,8 +595,7 @@ def _resolve_account_alias(ctx: YandexApiContext, method_id: str) -> str:
     if ctx.account:
         return ctx.account
 
-    auth_dir = ctx.data_dir / "auth"
-    token_paths = sorted(auth_dir.glob("*.token")) if auth_dir.exists() else []
+    token_paths = list_auth_token_paths()
     if len(token_paths) == 1:
         return token_paths[0].stem
     if not token_paths:
@@ -626,7 +635,7 @@ def _dispatch_yandex_api(
         return invoke(ctx)
 
     account = _resolve_account_alias(ctx, auth.method_id)
-    token_path = ctx.data_dir / "auth" / f"{account}.token"
+    token_path = resolve_auth_file(f"{account}.token")
     token_data = _load_token_data_for_dispatch(
         ctx,
         account=account,

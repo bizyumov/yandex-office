@@ -9,6 +9,18 @@ All Yandex sub-skills use the same two-level config:
 - runtime resolves `{data_dir}` to `./yandex-data` by default
 - scripts that support `--data-dir` can use an explicit external path instead
 
+Managed OAuth secrets are separate from runtime data:
+
+- canonical auth path: `~/secrets/yandex-office`
+- legacy migration source: `{data_dir}/auth`
+- account token files: `~/secrets/yandex-office/{alias}.token`
+- pending screen-code state: `~/secrets/yandex-office/oauth-code-flow.json`
+
+Authorization reads use the canonical file first. When it is absent, the auth
+layer checks the corresponding legacy file and moves it to the canonical path.
+Successful migration prints a token-safe `WARNING` to stderr. New secrets are
+never written to `{data_dir}/auth`.
+
 Root `config.skill.json`:
 
 ```json

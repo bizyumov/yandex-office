@@ -112,10 +112,10 @@ class DummyResponse:
 
 
 def write_calendar_token(data_dir: Path) -> Path:
-    auth_dir = data_dir / "auth"
-    auth_dir.mkdir(parents=True)
-    token_path = auth_dir / "acct.token"
-    token_path.write_text(
+    legacy_dir = data_dir / "auth"
+    legacy_dir.mkdir(parents=True)
+    legacy_path = legacy_dir / "acct.token"
+    legacy_path.write_text(
         json.dumps(
             {
                 "email": "user@example.com",
@@ -127,7 +127,7 @@ def write_calendar_token(data_dir: Path) -> Path:
         encoding="utf-8",
     )
     (data_dir / "config.agent.json").write_text("{}\n", encoding="utf-8")
-    return token_path
+    return Path.home() / "secrets" / "yandex-office" / "acct.token"
 
 
 def write_agent_config(data_dir: Path, payload: dict) -> None:

@@ -101,6 +101,22 @@ All public `yandex-office` skill releases use the `YYYY.M.D` version format.
   materialization, attachment handoff, URL import behavior, S3 transport, and
   cleanup checks on `disk:/` and `app:/`
 
+## 2026.08.31
+
+### Changed
+
+- Moved managed OAuth token files and pending screen-code state to the standard
+  per-user secret directory at `~/secrets/yandex-office`.
+- Added canonical-first authorization checks with automatic one-time migration
+  from the legacy `{data_dir}/auth` location and a token-safe success warning.
+- Stopped creating new legacy auth directories during runtime bootstrap.
+
+### Verification
+
+- focused RED/GREEN migration tests
+- full `scripts/test_regression.sh` suite
+- method-auth capability audit and validation
+
 ## 2026.05.27
 
 ### Added

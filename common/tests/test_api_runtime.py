@@ -58,6 +58,10 @@ def write_json(path: Path, payload: dict) -> None:
     path.write_text(json.dumps(payload), encoding="utf-8")
 
 
+def canonical_token(account: str) -> Path:
+    return Path.home() / "secrets" / "yandex-office" / f"{account}.token"
+
+
 def config() -> dict:
     return {
         "urls": {"oauth": "https://oauth.yandex.ru/authorize"},
@@ -325,7 +329,7 @@ def test_forbidden_error_marks_bad_and_tries_next_token(tmp_path: Path) -> None:
         return "ok"
 
     result = method(context(tmp_path))
-    saved = json.loads((tmp_path / "auth" / "acct.token").read_text())
+    saved = json.loads(canonical_token("acct").read_text())
 
     assert result == "ok"
     assert attempts == ["bad-token", "good-token"]
@@ -355,7 +359,7 @@ def test_non_auth_failure_does_not_mark_token_good_or_bad(tmp_path: Path) -> Non
     with pytest.raises(YandexApiError):
         method(context(tmp_path))
 
-    saved = json.loads((tmp_path / "auth" / "acct.token").read_text())
+    saved = json.loads(canonical_token("acct").read_text())
     assert saved["token"] == {"client_id": "client-read"}
 
 
@@ -387,7 +391,7 @@ def test_dispatch_converts_legacy_token_file_before_selecting_candidates(
         return "ok"
 
     result = method(context(tmp_path))
-    saved = json.loads((tmp_path / "auth" / "acct.token").read_text())
+    saved = json.loads(canonical_token("acct").read_text())
 
     assert result == "ok"
     assert saved["email"] == "verified@example.com"
