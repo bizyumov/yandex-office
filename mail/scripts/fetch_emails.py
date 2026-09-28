@@ -1146,9 +1146,11 @@ class EmailFetcher:
                         update_keys=all_branch_keys,
                     )
                 except Exception as exc:
-                    logger.error(f"OR search failed for filter {filter_name}: {exc}")
+                    logger.error(f"OR search failed for account {account_name} filter {filter_name}: {exc}")
                     conn.logout()
-                    return 0
+                    raise RuntimeError(
+                        f"OR search failed for account {account_name} filter {filter_name}"
+                    ) from exc
 
                 matching = [matching_by_uid[uid] for uid in sorted(matching_by_uid)]
             else:
@@ -1178,9 +1180,11 @@ class EmailFetcher:
                         )
                     ]
                 except Exception as exc:
-                    logger.error(f"Search failed: {exc}")
+                    logger.error(f"Search failed for account {account_name} filter {filter_name}: {exc}")
                     conn.logout()
-                    return 0
+                    raise RuntimeError(
+                        f"Search failed for account {account_name} filter {filter_name}"
+                    ) from exc
 
         if max_messages is not None:
             matching = matching[:max_messages]
