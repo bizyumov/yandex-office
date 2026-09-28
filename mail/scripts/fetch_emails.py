@@ -1146,11 +1146,15 @@ class EmailFetcher:
                         update_keys=all_branch_keys,
                     )
                 except Exception as exc:
-                    logger.error(f"OR search failed for account {account_name} filter {filter_name}: {exc}")
+                    logger.error(
+                        "IMAP search failed: "
+                        f"account={account_name} "
+                        f"filter={filter_name} "
+                        f"branches={sorted(all_branch_keys)} "
+                        f"error={exc}"
+                    )
                     conn.logout()
-                    raise RuntimeError(
-                        f"OR search failed for account {account_name} filter {filter_name}"
-                    ) from exc
+                    return 0
 
                 matching = [matching_by_uid[uid] for uid in sorted(matching_by_uid)]
             else:
@@ -1180,11 +1184,15 @@ class EmailFetcher:
                         )
                     ]
                 except Exception as exc:
-                    logger.error(f"Search failed for account {account_name} filter {filter_name}: {exc}")
+                    logger.error(
+                        "IMAP search failed: "
+                        f"account={account_name} "
+                        f"filter={filter_name} "
+                        "branches=[] "
+                        f"error={exc}"
+                    )
                     conn.logout()
-                    raise RuntimeError(
-                        f"Search failed for account {account_name} filter {filter_name}"
-                    ) from exc
+                    return 0
 
         if max_messages is not None:
             matching = matching[:max_messages]
