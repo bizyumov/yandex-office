@@ -418,6 +418,25 @@ $YO/mail/scripts/send_email.py \
     --body "<h1>Hello</h1><p>Content</p>" \
     --content-type html
 
+# Attach local files; every attachment is read before any network operation
+$YO/mail/scripts/send_email.py \
+    --account <alias> \
+    --to recipient@example.com \
+    --subject "Report" \
+    --body "See attachments" \
+    --attachment /path/to/report.pdf \
+    --attachment /path/to/data.xlsx
+
+# Save and verify a copy in the existing Sent folder
+$YO/mail/scripts/send_email.py \
+    --account <alias> \
+    --to recipient@example.com \
+    --subject "Report" \
+    --body "See attachments" \
+    --attachment /path/to/report.pdf \
+    --save-sent \
+    --format json
+
 # JSON output
 $YO/mail/scripts/send_email.py \
     --account <alias> \
@@ -440,8 +459,11 @@ result = sender.send(
     subject="Hello",
     body="Hi there",
     account="alex",
+    attachments=[Path("/path/to/report.pdf")],
+    save_sent=True,
 )
-# result = {"status": "sent", "from": "...", "to": [...], "subject": "...", "message_id": "..."}
+# result includes status, smtp_status, retry_safe, and sent_copy.
+# If status is "partial", SMTP may already have accepted the message: do not auto-resend.
 ```
 
 ### Send CLI Options
@@ -455,15 +477,29 @@ result = sender.send(
 - `--bcc <addr> [<addr> ...]` — BCC recipient(s) (not included in message headers)
 - `--reply-to <addr>` — Reply-To header
 - `--content-type plain|html` — Body content type (default: `plain`)
+- `--attachment <path>` — Local file to attach; repeat for several files. Files are validated and read before SMTP.
+- `--save-sent` — After SMTP acceptance, append the same MIME bytes to the existing `Sent` folder and verify by UID read-back. Off by default.
 - `--format json|text` — Output format (default: `text`)
 - `--data-dir <path>` — Override data directory
 - `-v / --verbose` — Debug logging
+
+### Send Results And Retry Safety
+
+`status="sent"` means SMTP accepted the message and any requested Sent copy was verified or not requested. `status="partial"` means SMTP may already have accepted at least one recipient, but a recipient or Sent-copy step was incomplete. Do not automatically resend partial results. CLI exits `2` for incomplete outcomes.
+
+`sent_copy.status` values:
+- `not_requested` — `--save-sent` / `save_sent=True` was not used.
+- `verified` — APPENDUID was returned and read-back content matched the composed message.
+- `unverified` — the copy may exist, but APPENDUID/read-back verification was unavailable or mismatched.
+- `failed` — the preflight or append step failed; inspect the bounded `error` value.
 
 ### Auth for Sending
 
 `send_email.py` uses `@yandex_api_method("mail.smtp.send")` and managed OAuth
 token dispatch. Authorize the configured `mail-smtp` app for SMTP sending. IMAP
-read/readwrite apps are not SMTP-send authority. The SMTP
+read/readwrite apps are not SMTP-send authority for SMTP. `--save-sent` also
+uses `@yandex_api_method("mail.imap.sent_copy")` and requires full IMAP access
+(`mail:imap_full`) for the same verified email identity. The SMTP
 XOAUTH2 auth string format is:
 
 ```
