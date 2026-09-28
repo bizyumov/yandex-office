@@ -29,6 +29,13 @@ from __future__ import annotations
 import argparse
 import base64
 import json
+import imaplib
+import mimetypes
+import re
+import time
+from email import policy
+from email.parser import BytesParser
+from email.utils import make_msgid, formatdate
 import logging
 import smtplib
 import ssl
@@ -127,101 +134,153 @@ class EmailSender:
         ctx = self._api_context(account=account)
         return self._connect_smtp_oauth2(ctx=ctx)
 
-    def send(
-        self,
-        *,
-        to: str | list[str],
-        subject: str,
-        body: str,
-        cc: str | list[str] | None = None,
-        bcc: str | list[str] | None = None,
-        reply_to: str | None = None,
-        content_type: str = "plain",
-        account: str | None = None,
-    ) -> dict[str, Any]:
-        """Send an email and return a result dict.
-
-        Parameters
-        ----------
-        to : str or list[str]
-            Recipient email address(es).
-        subject : str
-            Email subject line.
-        body : str
-            Email body text.
-        cc : str or list[str], optional
-            CC recipient(s).
-        bcc : str or list[str], optional
-            BCC recipient(s).
-        reply_to : str, optional
-            Reply-To header value.
-        content_type : str
-            "plain" (default) or "html".
-        account : str, optional
-            Managed account alias to use.
-
-        Returns
-        -------
-        dict
-            ``{"status": "sent", "from": ..., "to": [...], "message_id": ...}``
-        """
-        result = self._connect_smtp(account=account)
-        conn = result.conn
-        sender_email = result.sender_email
-
+    @yandex_api_method("mail.imap.sent_copy", one_of=["mail:imap_full"])
+    def _connect_sent_oauth2(self, ctx: YandexApiContext) -> tuple[Any, str]:
+        """Full-access managed auth, separate from SMTP and readonly fetch scopes."""
+        cfg = self.config.get("imap", {})
+        email_addr, token = self._mail_credentials(ctx)
+        conn = imaplib.IMAP4_SSL(
+            cfg.get("server", "imap.yandex.com"), int(cfg.get("port", 993)),
+            ssl_context=ssl.create_default_context(), timeout=30,
+        )
         try:
-            msg = EmailMessage()
-            msg["From"] = sender_email
+            auth = f"user={email_addr}\x01auth=Bearer {token}\x01\x01".encode()
+            conn.authenticate("XOAUTH2", lambda _: auth)
+            return conn, email_addr
+        except Exception:
+            self._close(conn, "logout")
+            raise
 
-            to_list = [to] if isinstance(to, str) else to
-            msg["To"] = ", ".join(to_list)
+    def _connect_sent(self, *, account: str | None = None) -> tuple[Any, str]:
+        return self._connect_sent_oauth2(ctx=self._api_context(account=account))
 
-            cc_list: list[str] = []
-            if cc:
-                cc_list = [cc] if isinstance(cc, str) else cc
-                msg["Cc"] = ", ".join(cc_list)
-
-            if reply_to:
-                msg["Reply-To"] = reply_to
-
-            msg["Subject"] = subject
-
-            if content_type == "html":
-                msg.set_content(body, subtype="html")
-            else:
-                msg.set_content(body)
-
-            # Build full recipient list for SMTP envelope (includes BCC)
-            all_recipients = list(to_list)
-            if cc_list:
-                all_recipients.extend(cc_list)
-            if bcc:
-                bcc_list = [bcc] if isinstance(bcc, str) else bcc
-                all_recipients.extend(bcc_list)
-
-            conn.send_message(msg, from_addr=sender_email, to_addrs=all_recipients)
-            message_id = msg.get("Message-ID", "")
-
-            send_result: dict[str, Any] = {
-                "status": "sent",
-                "from": sender_email,
-                "to": to_list,
-                "subject": subject,
-                "message_id": message_id,
-            }
-            if cc:
-                send_result["cc"] = [cc] if isinstance(cc, str) else cc
-            if bcc:
-                send_result["bcc"] = [bcc] if isinstance(bcc, str) else bcc
-            if reply_to:
-                send_result["reply_to"] = reply_to
-
-            return send_result
-        finally:
+    @staticmethod
+    def _close(conn: Any, method: str) -> None:
+        if conn is not None:
             try:
-                conn.quit()
+                getattr(conn, method)()
             except Exception:
                 pass
+
+    @staticmethod
+    def _message_signature(raw: bytes) -> tuple:
+        """Ignore transport-added headers but verify all composed content."""
+        msg = BytesParser(policy=policy.default).parsebytes(raw)
+        headers = tuple((name, tuple(str(v) for v in msg.get_all(name, []))) for name in
+                        ("Message-ID", "Date", "From", "To", "Cc", "Bcc", "Subject", "Reply-To"))
+        parts = tuple((p.get_content_type(), p.get_content_disposition(), p.get_filename(),
+                       p.get_content_charset(), p.get_payload(decode=True))
+                      for p in msg.walk() if not p.is_multipart())
+        return headers, parts
+
+    def _save_sent(self, conn: Any, raw: bytes) -> dict[str, Any]:
+        copy: dict[str, Any] = {"status": "failed", "folder": "Sent"}
+        try:
+            typ, data = conn.append("Sent", "\\Seen", imaplib.Time2Internaldate(time.time()), raw)
+            if typ != "OK":
+                return {**copy, "error": "append_rejected"}
+            copy["status"] = "unverified"
+            match = re.search(rb"APPENDUID (\d+) (\d+)\]", b" ".join(x for x in data if isinstance(x, bytes)))
+            if not match:
+                return {**copy, "error": "append_uid_missing"}
+            copy["uid"] = match.group(2).decode("ascii")
+            typ, _ = conn.select("Sent", readonly=True)
+            if typ != "OK":
+                return {**copy, "error": "sent_select_failed"}
+            typ, data = conn.uid("fetch", copy["uid"], "(BODY.PEEK[])")
+            bodies = [x[1] for x in data if isinstance(x, tuple) and isinstance(x[1], bytes)]
+            if typ != "OK" or len(bodies) != 1:
+                return {**copy, "error": "sent_fetch_failed"}
+            if self._message_signature(bodies[0]) != self._message_signature(raw):
+                return {**copy, "error": "sent_content_mismatch"}
+            copy["status"] = "verified"
+            return copy
+        except Exception:
+            # APPEND can succeed server-side before a disconnect: never retry blindly.
+            return {**copy, "error": "sent_copy_exception", "retry_safe": False}
+
+    def send(
+        self, *, to: str | list[str], subject: str, body: str,
+        cc: str | list[str] | None = None, bcc: str | list[str] | None = None,
+        reply_to: str | None = None, content_type: str = "plain",
+        account: str | None = None, attachments: list[str | Path] | None = None,
+        save_sent: bool = False,
+    ) -> dict[str, Any]:
+        """Send once; optionally archive and verify without ever retrying SMTP.
+
+        Attachments are local files read before authentication. ``save_sent`` is
+        opt-in and requires full IMAP access for the same SMTP identity. Result
+        ``smtp_status`` and ``sent_copy.status`` describe independent outcomes.
+        Post-send failures return structured partial results, not retry signals.
+        """
+        if content_type not in ("plain", "html"):
+            raise ValueError("content_type must be plain or html")
+        to_list = [to] if isinstance(to, str) else list(to)
+        cc_list = [cc] if isinstance(cc, str) else list(cc or [])
+        bcc_list = [bcc] if isinstance(bcc, str) else list(bcc or [])
+        if not to_list or any(not a.strip() for a in to_list + cc_list + bcc_list):
+            raise ValueError("Nonempty recipients are required")
+        msg = EmailMessage(policy=policy.SMTP)
+        msg["To"] = ", ".join(to_list)
+        msg["Subject"] = subject
+        msg["Message-ID"] = make_msgid()
+        msg["Date"] = formatdate(localtime=False)
+        if cc_list:
+            msg["Cc"] = ", ".join(cc_list)
+        if reply_to:
+            msg["Reply-To"] = reply_to
+        msg.set_content(body, subtype=content_type)
+        for filename in attachments or []:
+            path = Path(filename)
+            payload = path.read_bytes()  # raises before any network activity
+            mime, encoding = mimetypes.guess_type(path.name)
+            maintype, subtype = (mime if mime and not encoding else "application/octet-stream").split("/", 1)
+            msg.add_attachment(payload, maintype=maintype, subtype=subtype, filename=path.name)
+        smtp = None
+        imap = None
+        try:
+            connection = self._connect_smtp(account=account)
+            smtp = connection.conn
+            sender_email = connection.sender_email
+            msg["From"] = sender_email
+            raw = msg.as_bytes()  # freeze MIME boundaries, identifiers and bytes once
+            if save_sent:
+                imap, imap_email = self._connect_sent(account=account)
+                if imap_email.casefold() != sender_email.casefold():
+                    raise RuntimeError("SMTP and IMAP identities do not match")
+                typ, _ = imap.select("Sent", readonly=True)
+                if typ != "OK":
+                    raise RuntimeError("Sent folder preflight failed; email not sent")
+            result: dict[str, Any] = {
+                "status": "sent", "from": sender_email, "to": to_list,
+                "subject": subject, "message_id": str(msg["Message-ID"]),
+                "smtp_status": "accepted", "retry_safe": False,
+                "sent_copy": {"status": "not_attempted" if save_sent else "not_requested"},
+            }
+            for key, value in (("cc", cc_list), ("bcc", bcc_list), ("reply_to", reply_to)):
+                if value:
+                    result[key] = value
+            try:
+                refused = smtp.sendmail(sender_email, to_list + cc_list + bcc_list, raw)
+            except smtplib.SMTPRecipientsRefused:
+                result.update(status="failed", smtp_status="refused")
+                return result
+            except smtplib.SMTPResponseException:
+                result.update(status="failed", smtp_status="refused")
+                return result
+            except Exception:
+                result.update(status="partial", smtp_status="unknown", error="smtp_outcome_unknown")
+                return result
+            if refused:
+                result.update(status="partial", smtp_status="partial", refused_recipients=list(refused))
+            if save_sent:
+                result["sent_copy"] = self._save_sent(imap, raw)
+                if result["sent_copy"]["status"] != "verified":
+                    result["status"] = "partial"
+            return result
+        finally:
+            self._close(smtp, "quit")
+            self._close(imap, "logout")
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -288,6 +347,8 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="Enable debug logging",
     )
+    parser.add_argument("--attachment", action="append", default=[], help="Local file to attach (repeatable)")
+    parser.add_argument("--save-sent", action="store_true", help="Save and verify a Sent copy using full IMAP access")
     return parser.parse_args(argv)
 
 
@@ -318,16 +379,20 @@ def main(argv: list[str] | None = None) -> int:
         reply_to=args.reply_to,
         content_type=args.content_type,
         account=args.account,
+        attachments=args.attachment,
+        save_sent=args.save_sent,
     )
 
     if args.output_format == "json":
         print(json.dumps(result, ensure_ascii=False, indent=2))
     else:
-        print(f"Sent: {result['from']} -> {', '.join(result['to'])}")
+        print(f"Status: {result['status']}; SMTP: {result.get('smtp_status', 'accepted')}")
+        print(f"Sent copy: {result.get('sent_copy', {})}")
+        print(f"From: {result['from']} -> {', '.join(result['to'])}")
         print(f"Subject: {result['subject']}")
         print(f"Message-ID: {result.get('message_id', 'N/A')}")
 
-    return 0
+    return 0 if result["status"] == "sent" else 2
 
 
 if __name__ == "__main__":

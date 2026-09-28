@@ -7,6 +7,8 @@ import base64
 import json
 import sys
 from pathlib import Path
+from email import policy
+from email.parser import BytesParser
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -109,6 +111,7 @@ def test_mail_credentials_raises_on_missing_email() -> None:
 @patch("send_email.smtplib.SMTP_SSL")
 def test_connect_smtp_oauth2_authenticates_with_xoauth2(mock_smtp_cls: MagicMock) -> None:
     mock_conn = MagicMock()
+    mock_conn.sendmail.return_value = {}
     mock_conn.docmd.return_value = (235, b"2.0.0 OK")
     mock_smtp_cls.return_value = mock_conn
 
@@ -134,6 +137,7 @@ def test_connect_smtp_oauth2_authenticates_with_xoauth2(mock_smtp_cls: MagicMock
 @patch("send_email.smtplib.SMTP_SSL")
 def test_connect_smtp_oauth2_raises_on_auth_failure(mock_smtp_cls: MagicMock) -> None:
     mock_conn = MagicMock()
+    mock_conn.sendmail.return_value = {}
     mock_smtp_cls.return_value = mock_conn
     mock_conn.docmd.return_value = (535, b"5.7.8 Error: authentication failed")
 
@@ -149,6 +153,7 @@ def test_connect_smtp_oauth2_raises_on_auth_failure(mock_smtp_cls: MagicMock) ->
 
 def test_connect_smtp_uses_managed_oauth_context() -> None:
     mock_conn = MagicMock()
+    mock_conn.sendmail.return_value = {}
     sender = build_sender()
 
     with patch.object(sender, "_connect_smtp_oauth2") as mock_oauth2:
@@ -168,6 +173,7 @@ def test_connect_smtp_uses_managed_oauth_context() -> None:
 @patch("send_email.smtplib.SMTP_SSL")
 def test_send_builds_correct_message(mock_smtp_cls: MagicMock) -> None:
     mock_conn = MagicMock()
+    mock_conn.sendmail.return_value = {}
     mock_conn.docmd.return_value = (235, b"2.0.0 OK")
     mock_smtp_cls.return_value = mock_conn
 
@@ -189,13 +195,13 @@ def test_send_builds_correct_message(mock_smtp_cls: MagicMock) -> None:
     assert result["to"] == ["recipient@example.com"]
     assert result["subject"] == "Test Subject"
 
-    mock_conn.send_message.assert_called_once()
-    msg = mock_conn.send_message.call_args.args[0]
+    mock_conn.sendmail.assert_called_once()
+    msg = BytesParser(policy=policy.default).parsebytes(mock_conn.sendmail.call_args.args[2])
     assert msg["To"] == "recipient@example.com"
     assert msg["Subject"] == "Test Subject"
     assert msg["From"] == "sender@yandex.ru"
-    assert mock_conn.send_message.call_args.kwargs["from_addr"] == "sender@yandex.ru"
-    assert mock_conn.send_message.call_args.kwargs["to_addrs"] == [
+    assert mock_conn.sendmail.call_args.args[0] == "sender@yandex.ru"
+    assert mock_conn.sendmail.call_args.args[1] == [
         "recipient@example.com",
     ]
 
@@ -203,6 +209,7 @@ def test_send_builds_correct_message(mock_smtp_cls: MagicMock) -> None:
 @patch("send_email.smtplib.SMTP_SSL")
 def test_send_with_cc_and_bcc_uses_explicit_envelope(mock_smtp_cls: MagicMock) -> None:
     mock_conn = MagicMock()
+    mock_conn.sendmail.return_value = {}
     mock_conn.docmd.return_value = (235, b"OK")
     mock_smtp_cls.return_value = mock_conn
 
@@ -227,13 +234,13 @@ def test_send_with_cc_and_bcc_uses_explicit_envelope(mock_smtp_cls: MagicMock) -
     assert result["bcc"] == ["secret@example.com"]
     assert result["reply_to"] == "reply@example.com"
 
-    call = mock_conn.send_message.call_args
-    msg = call.args[0]
+    call = mock_conn.sendmail.call_args
+    msg = BytesParser(policy=policy.default).parsebytes(call.args[2])
     assert msg["To"] == "a@example.com, b@example.com"
     assert msg["Cc"] == "cc@example.com"
     assert msg["Reply-To"] == "reply@example.com"
     assert "Bcc" not in msg
-    assert call.kwargs["to_addrs"] == [
+    assert call.args[1] == [
         "a@example.com",
         "b@example.com",
         "cc@example.com",
@@ -244,6 +251,7 @@ def test_send_with_cc_and_bcc_uses_explicit_envelope(mock_smtp_cls: MagicMock) -
 @patch("send_email.smtplib.SMTP_SSL")
 def test_send_html_content_type(mock_smtp_cls: MagicMock) -> None:
     mock_conn = MagicMock()
+    mock_conn.sendmail.return_value = {}
     mock_smtp_cls.return_value = mock_conn
 
     sender = build_sender()
@@ -260,7 +268,7 @@ def test_send_html_content_type(mock_smtp_cls: MagicMock) -> None:
             content_type="html",
         )
 
-    msg = mock_conn.send_message.call_args.args[0]
+    msg = BytesParser(policy=policy.default).parsebytes(mock_conn.sendmail.call_args.args[2])
     assert msg.get_content_type() == "text/html"
 
 

@@ -1,0 +1,94 @@
+FFFFFFFFFFFFFFFF                                                         [100%]
+=================================== FAILURES ===================================
+_______________ test_attachment_bytes_headers_and_verified_sent ________________
+mail/scripts/test_send_attachments_sent.py:35: in test_attachment_bytes_headers_and_verified_sent
+    result = sender.send(to='a@example.com', cc='c@example.com', bcc='hidden@example.com',
+E   TypeError: EmailSender.send() got an unexpected keyword argument 'attachments'
+_______________ test_invalid_attachment_before_network[missing] ________________
+mail/scripts/test_send_attachments_sent.py:62: in test_invalid_attachment_before_network
+    sender.send(to='a@example.com', subject='x', body='y', attachments=[target], save_sent=True)
+E   TypeError: EmailSender.send() got an unexpected keyword argument 'attachments'
+______________ test_invalid_attachment_before_network[directory] _______________
+mail/scripts/test_send_attachments_sent.py:62: in test_invalid_attachment_before_network
+    sender.send(to='a@example.com', subject='x', body='y', attachments=[target], save_sent=True)
+E   TypeError: EmailSender.send() got an unexpected keyword argument 'attachments'
+____________________ test_sent_preflight_blocks_smtp[auth] _____________________
+mail/scripts/test_send_attachments_sent.py:73: in test_sent_preflight_blocks_smtp
+    sender.send(to='a@example.com', subject='x', body='y', save_sent=True)
+E   TypeError: EmailSender.send() got an unexpected keyword argument 'save_sent'
+__________________ test_sent_preflight_blocks_smtp[identity] ___________________
+mail/scripts/test_send_attachments_sent.py:73: in test_sent_preflight_blocks_smtp
+    sender.send(to='a@example.com', subject='x', body='y', save_sent=True)
+E   TypeError: EmailSender.send() got an unexpected keyword argument 'save_sent'
+___________________ test_sent_preflight_blocks_smtp[folder] ____________________
+mail/scripts/test_send_attachments_sent.py:73: in test_sent_preflight_blocks_smtp
+    sender.send(to='a@example.com', subject='x', body='y', save_sent=True)
+E   TypeError: EmailSender.send() got an unexpected keyword argument 'save_sent'
+________________ test_archival_failure_never_resends[append_no] ________________
+mail/scripts/test_send_attachments_sent.py:87: in test_archival_failure_never_resends
+    result = sender.send(to='a@example.com', subject='x', body='y', save_sent=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: EmailSender.send() got an unexpected keyword argument 'save_sent'
+______________ test_archival_failure_never_resends[append_error] _______________
+mail/scripts/test_send_attachments_sent.py:87: in test_archival_failure_never_resends
+    result = sender.send(to='a@example.com', subject='x', body='y', save_sent=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: EmailSender.send() got an unexpected keyword argument 'save_sent'
+_______________ test_archival_failure_never_resends[missing_uid] _______________
+mail/scripts/test_send_attachments_sent.py:87: in test_archival_failure_never_resends
+    result = sender.send(to='a@example.com', subject='x', body='y', save_sent=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: EmailSender.send() got an unexpected keyword argument 'save_sent'
+_______________ test_archival_failure_never_resends[fetch_error] _______________
+mail/scripts/test_send_attachments_sent.py:87: in test_archival_failure_never_resends
+    result = sender.send(to='a@example.com', subject='x', body='y', save_sent=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: EmailSender.send() got an unexpected keyword argument 'save_sent'
+______________ test_archival_failure_never_resends[wrong_content] ______________
+mail/scripts/test_send_attachments_sent.py:87: in test_archival_failure_never_resends
+    result = sender.send(to='a@example.com', subject='x', body='y', save_sent=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: EmailSender.send() got an unexpected keyword argument 'save_sent'
+_________________________ test_smtp_outcomes[partial] __________________________
+mail/scripts/test_send_attachments_sent.py:101: in test_smtp_outcomes
+    result = sender.send(to=['a@example.com', 'b@example.com'], subject='x', body='y', save_sent=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: EmailSender.send() got an unexpected keyword argument 'save_sent'
+_________________________ test_smtp_outcomes[refused] __________________________
+mail/scripts/test_send_attachments_sent.py:101: in test_smtp_outcomes
+    result = sender.send(to=['a@example.com', 'b@example.com'], subject='x', body='y', save_sent=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: EmailSender.send() got an unexpected keyword argument 'save_sent'
+_________________________ test_smtp_outcomes[unknown] __________________________
+mail/scripts/test_send_attachments_sent.py:101: in test_smtp_outcomes
+    result = sender.send(to=['a@example.com', 'b@example.com'], subject='x', body='y', save_sent=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: EmailSender.send() got an unexpected keyword argument 'save_sent'
+_____________________ test_save_sent_opt_in_and_cli_wiring _____________________
+mail/scripts/test_send_attachments_sent.py:111: in test_save_sent_opt_in_and_cli_wiring
+    assert r['sent_copy']['status'] == 'not_requested'
+           ^^^^^^^^^^^^^^
+E   KeyError: 'sent_copy'
+_______________ test_sent_auth_requires_full_scope_and_uses_tls ________________
+mail/scripts/test_send_attachments_sent.py:122: in test_sent_auth_requires_full_scope_and_uses_tls
+    assert method_auth(module.EmailSender._connect_sent_oauth2).one_of == ('mail:imap_full',)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: type object 'EmailSender' has no attribute '_connect_sent_oauth2'. Did you mean: '_connect_smtp_oauth2'?
+=========================== short test summary info ============================
+FAILED mail/scripts/test_send_attachments_sent.py::test_attachment_bytes_headers_and_verified_sent
+FAILED mail/scripts/test_send_attachments_sent.py::test_invalid_attachment_before_network[missing]
+FAILED mail/scripts/test_send_attachments_sent.py::test_invalid_attachment_before_network[directory]
+FAILED mail/scripts/test_send_attachments_sent.py::test_sent_preflight_blocks_smtp[auth]
+FAILED mail/scripts/test_send_attachments_sent.py::test_sent_preflight_blocks_smtp[identity]
+FAILED mail/scripts/test_send_attachments_sent.py::test_sent_preflight_blocks_smtp[folder]
+FAILED mail/scripts/test_send_attachments_sent.py::test_archival_failure_never_resends[append_no]
+FAILED mail/scripts/test_send_attachments_sent.py::test_archival_failure_never_resends[append_error]
+FAILED mail/scripts/test_send_attachments_sent.py::test_archival_failure_never_resends[missing_uid]
+FAILED mail/scripts/test_send_attachments_sent.py::test_archival_failure_never_resends[fetch_error]
+FAILED mail/scripts/test_send_attachments_sent.py::test_archival_failure_never_resends[wrong_content]
+FAILED mail/scripts/test_send_attachments_sent.py::test_smtp_outcomes[partial]
+FAILED mail/scripts/test_send_attachments_sent.py::test_smtp_outcomes[refused]
+FAILED mail/scripts/test_send_attachments_sent.py::test_smtp_outcomes[unknown]
+FAILED mail/scripts/test_send_attachments_sent.py::test_save_sent_opt_in_and_cli_wiring
+FAILED mail/scripts/test_send_attachments_sent.py::test_sent_auth_requires_full_scope_and_uses_tls
+16 failed in 0.21s
