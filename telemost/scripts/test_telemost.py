@@ -158,6 +158,24 @@ def test_transform_no_header():
     print("  PASS: transform_transcript (no header) → graceful None")
 
 
+def test_extract_meeting_uid_from_meeting_link_line():
+    """Extract UID from the Telemost meeting-link line regardless of host."""
+    assert extract_meeting_uid(
+        "Конспект встречи\n"
+        "Ссылка на встречу: https://telemost.yandex.ru/j/5981404294\n"
+    ) == "5981404294"
+    assert extract_meeting_uid(
+        "Конспект встречи\n"
+        "Ссылка на встречу: https://telemost.360.yandex.ru/j/7265205142   \n"
+    ) == "7265205142"
+    assert extract_meeting_uid(
+        "Конспект встречи\n"
+        "Ссылка на встречу: https://example.invalid/meetings/path/8655030835\n"
+    ) == "8655030835"
+    assert extract_meeting_uid("https://telemost.360.yandex.ru/j/7265205142") is None
+    print("  PASS: extract_meeting_uid → meeting-link line trailing UID")
+
+
 # ── T14: Integration test — full merge (summary + recording) ────────
 
 def test_full_merge():
@@ -648,7 +666,7 @@ def test_nested_incoming_filter_dirs():
             json.dumps(raw_meta, ensure_ascii=False), encoding="utf-8"
         )
         (raw_dir / "email_body.txt").write_text(
-            "Ссылка: https://telemost.yandex.ru/j/5981404294",
+            "Ссылка на встречу: https://telemost.yandex.ru/j/5981404294",
             encoding="utf-8",
         )
 
