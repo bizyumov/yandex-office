@@ -41,7 +41,7 @@ logger = logging.getLogger("telemost")
 # ── Business logic moved from mail ─────────────────────────────────────
 
 # Telemost meeting UID pattern in email body
-TELEMOST_UID_RE = re.compile(r'https://telemost\.yandex\.ru/j/(\d+)')
+TELEMOST_UID_RE = re.compile(r'Ссылка на встречу:\s*.+/(\d+)\s*$', re.MULTILINE)
 
 # Meeting title in "Запись встречи «Title» от DD.MM.YYYY"
 MEETING_TITLE_RE = re.compile(r'\u00ab(.+?)\u00bb')
@@ -96,7 +96,7 @@ def classify_email(subject: str) -> str:
 def extract_meeting_uid(body_text: str) -> str | None:
     """Extract Telemost meeting UID from email plain text body.
 
-    Looks for https://telemost.yandex.ru/j/{UID} pattern.
+    Looks for the meeting-link line and takes the trailing numeric UID.
     """
     match = TELEMOST_UID_RE.search(body_text)
     return match.group(1) if match else None
