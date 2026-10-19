@@ -17,29 +17,6 @@ AGENT_CONFIG_TEMPLATE_NAME = "config.agent.example.json"
 DEFAULT_DATA_DIR = "yandex-data"
 
 
-def load_config() -> dict[str, Any]:
-    """Load the shared config and resolve the runtime data directory into it."""
-    root = Path(__file__).resolve().parent
-    while not (root / GLOBAL_CONFIG_NAME).exists() and root != root.parent:
-        root = root.parent
-    cfg = json.loads((root / GLOBAL_CONFIG_NAME).read_text(encoding="utf-8"))
-    cfg["data_dir"] = str((Path.cwd() / DEFAULT_DATA_DIR).resolve())
-    return cfg
-
-
-config = load_config()
-
-data_dir = Path(config["data_dir"])
-AUTH_PATH = Path("~/secrets/yandex-office")
-LEGACY_AUTH_PATH = data_dir / "auth"
-
-
-LEGACY_AUTH_MIGRATION_WARNING = (
-    "WARNING: Legacy Yandex Office credentials were found and successfully moved "
-    "to ~/secrets/yandex-office."
-)
-
-
 def _read_json(path: Path) -> dict[str, Any]:
     with open(path, encoding="utf-8") as handle:
         return json.load(handle)
@@ -74,20 +51,34 @@ def load_global_config(skill_root: str | Path, *, bootstrap: bool = False) -> tu
 
 
 def resolve_data_dir(cwd: str | Path | None = None, data_dir_override: str | Path | None = None) -> Path:
-    global data_dir, LEGACY_AUTH_PATH
+    global data_dir, LEGACY_ACCESS_STORAGE
     if data_dir_override is not None:
         resolved = Path(data_dir_override).resolve()
     else:
         base_dir = Path.cwd() if cwd is None else Path(cwd).resolve()
         resolved = (base_dir / DEFAULT_DATA_DIR).resolve()
     data_dir = resolved
-    LEGACY_AUTH_PATH = resolved / "auth"
+    LEGACY_ACCESS_STORAGE = resolved / "auth"
     return resolved
+
+
+config = load_global_config(find_skill_root(__file__))[1]
+config["data_dir"] = str(resolve_data_dir())
+
+data_dir = Path(config["data_dir"])
+ACCESS_STORAGE = Path("~/secrets/yandex-office")
+LEGACY_ACCESS_STORAGE = data_dir / "auth"
+
+
+LEGACY_AUTH_MIGRATION_WARNING = (
+    "WARNING: Legacy Yandex Office credentials were found and successfully moved "
+    "to ~/secrets/yandex-office."
+)
 
 
 def _ensure_auth_path() -> Path:
     """Create the canonical secret directory with owner-only permissions."""
-    auth_path = AUTH_PATH.expanduser()
+    auth_path = ACCESS_STORAGE.expanduser()
     auth_path.mkdir(parents=True, exist_ok=True, mode=0o700)
     auth_path.chmod(0o700)
     return auth_path
@@ -103,7 +94,7 @@ def resolve_auth_file(filename: str) -> Path:
     if canonical_path.exists():
         return canonical_path
 
-    legacy_path = LEGACY_AUTH_PATH / safe_name
+    legacy_path = LEGACY_ACCESS_STORAGE / safe_name
     if not legacy_path.exists():
         return canonical_path
 
@@ -116,8 +107,8 @@ def resolve_auth_file(filename: str) -> Path:
 def list_auth_token_paths() -> list[Path]:
     """Return canonical token paths after migrating missing legacy counterparts."""
     canonical_dir = _ensure_auth_path()
-    if LEGACY_AUTH_PATH.exists():
-        for legacy_path in sorted(LEGACY_AUTH_PATH.glob("*.token")):
+    if LEGACY_ACCESS_STORAGE.exists():
+        for legacy_path in sorted(LEGACY_ACCESS_STORAGE.glob("*.token")):
             resolve_auth_file(legacy_path.name)
     return sorted(canonical_dir.glob("*.token"))
 
@@ -164,7 +155,7 @@ def list_token_accounts() -> list[dict[str, Any]]:
         email = str(payload.get("email", "")).strip()
         if not email:
             continue
-        tokens: dict[str, str] = {}
+        fields: dict[str, str] = {}
         for key, value in payload.items():
             if key == "email":
                 continue
@@ -173,17 +164,17 @@ def list_token_accounts() -> list[dict[str, Any]]:
             if isinstance(value, dict):
                 client_id = str(value.get("client_id", "")).strip()
                 if client_id:
-                    tokens[str(key)] = client_id
+                    fields[str(key)] = client_id
             elif isinstance(value, str):
                 # Legacy transitional read for pre-runtime-state token files.
-                tokens[str(key)] = value
+                fields[str(key)] = value
         accounts.append(
             {
                 "name": token_path.stem,
                 "alias": token_path.stem,
                 "email": email,
                 "token_path": str(token_path),
-                "tokens": tokens,
+                "tokens": fields,
             }
         )
     return accounts

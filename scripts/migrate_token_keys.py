@@ -11,7 +11,7 @@ from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.auth import app_keyed_tokens, load_token_file
-from common.config import AUTH_PATH, _deep_merge, load_global_config, load_agent_config_payload, resolve_data_dir
+from common.config import ACCESS_STORAGE, _deep_merge, load_global_config, load_agent_config_payload, resolve_data_dir
 
 
 def migrate(path, config, *, apply=False):
@@ -48,7 +48,7 @@ def main():
         _, global_config = load_global_config(Path(__file__).resolve().parents[1])
         _, agent_config = load_agent_config_payload(resolve_data_dir(data_dir_override=args.data_dir))
         config = _deep_merge(global_config, agent_config)
-        path = AUTH_PATH.expanduser() / (args.account + '.token')
+        path = ACCESS_STORAGE.expanduser() / (args.account + '.token')
         print(json.dumps(migrate(path, config, apply=args.apply)))
     except Exception as exc:
         print(json.dumps({'error': type(exc).__name__, 'message': 'Migration failed; inspect catalog mapping or file permissions. Secret values omitted.'}))
