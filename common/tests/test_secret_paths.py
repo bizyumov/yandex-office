@@ -22,10 +22,10 @@ def test_auth_paths_are_module_level_declarations(tmp_path: Path) -> None:
 
     sync_data_dir(data_dir)
 
-    assert c.AUTH_PATH == Path("~/secrets/yandex-office")
-    assert c.LEGACY_AUTH_PATH == data_dir / "auth"
-    assert "{" not in str(c.AUTH_PATH)
-    assert "{" not in str(c.LEGACY_AUTH_PATH)
+    assert c.ACCESS_STORAGE == Path("~/secrets/yandex-office")
+    assert c.LEGACY_ACCESS_STORAGE == data_dir / "auth"
+    assert "{" not in str(c.ACCESS_STORAGE)
+    assert "{" not in str(c.LEGACY_ACCESS_STORAGE)
 
 
 def test_runtime_auth_file_uses_standard_user_secrets_directory(
