@@ -15,6 +15,7 @@ from common.auth import (
     VerifiedTokenIdentity,
     load_token_file,
     save_token_file,
+    update_token_file,
     verify_token_identity,
 )
 from common.config import (
@@ -169,31 +170,37 @@ def import_managed_oauth_token(
             )
 
     token_path = resolve_auth_file(f"{resolved_account}.token")
-    try:
-        token_data = load_token_file(token_path)
-    except FileNotFoundError:
-        token_data = {"email": identity.email}
-    token_data["email"] = identity.email
-    token_data.pop("token_meta", None)
-    for key in list(token_data):
-        if str(key).startswith("token."):
-            token_data.pop(key, None)
     app_name = matched_app.app_id if matched_app is not None else app_id
-    existing_key = next(
-        (key for key, value in token_data.items()
-         if isinstance(value, dict) and value.get("access_token") == token),
-        None,
+
+    def store_token(token_data: dict[str, Any], _checkpoint) -> dict[str, Any]:
+        token_data["email"] = identity.email
+        token_data.pop("token_meta", None)
+        for key in list(token_data):
+            if str(key).startswith("token."):
+                token_data.pop(key, None)
+        existing_key = next(
+            (key for key, value in token_data.items()
+             if isinstance(value, dict) and value.get("access_token") == token),
+            None,
+        )
+        if existing_key is None:
+            number = 1
+            while f"{app_name}-{number}" in token_data:
+                number += 1
+            existing_key = f"{app_name}-{number}"
+        previous = token_data.pop(token, {})
+        entry = dict(token_data.get(existing_key, previous))
+        entry.update(access_token=token, client_id=identity.client_id)
+        token_data[existing_key] = entry
+        return token_data
+
+    token_data = update_token_file(
+        token_path,
+        store_token,
+        create=True,
+        _load=load_token_file,
+        _save=save_token_file,
     )
-    if existing_key is None:
-        number = 1
-        while f"{app_name}-{number}" in token_data:
-            number += 1
-        existing_key = f"{app_name}-{number}"
-    previous = token_data.pop(token, {})
-    entry = dict(token_data.get(existing_key, previous))
-    entry.update(access_token=token, client_id=identity.client_id)
-    token_data[existing_key] = entry
-    save_token_file(token_path, token_data)
 
     return ManagedTokenImportResult(
         identity=identity,

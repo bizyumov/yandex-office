@@ -27,8 +27,8 @@ from common.auth import (
     TokenRef,
     build_approval_url,
     load_prepared_token_file,
-    save_token_file,
     token_refs,
+    update_token_file,
     verify_token_identity,
 )
 from common.config import (
@@ -489,6 +489,26 @@ def _mark_token(token_data: dict[str, Any], token_ref: TokenRef, *, good: bool) 
     token_data[token_ref.source_key] = entry
 
 
+def _persist_token_health(
+    token_path: Path,
+    token_ref: TokenRef,
+    *,
+    good: bool,
+) -> dict[str, Any]:
+    """Update one still-current token entry without overwriting peer changes."""
+
+    def mark(token_data: dict[str, Any], _checkpoint: Callable[[], None]) -> dict[str, Any]:
+        entry = token_data.get(token_ref.source_key)
+        if not isinstance(entry, dict):
+            return token_data
+        if str(entry.get("access_token", token_ref.source_key)).strip() != token_ref.token:
+            return token_data
+        _mark_token(token_data, token_ref, good=good)
+        return token_data
+
+    return update_token_file(token_path, mark)
+
+
 def _provider_payload(response: requests.Response) -> tuple[Any, str | None, str]:
     """Extract provider payload, error name, and display message."""
     try:
@@ -622,9 +642,7 @@ def _load_token_data_for_dispatch(
             prepare_catalog=lambda data: _upgrade_missing_client_apps(ctx, token_data=data),
         )
     except FileNotFoundError:
-        raise TokenConfigError(
-            f"Token file not found for account {account}: {token_path}"
-        )
+        raise TokenConfigError("Token file not found") from None
 
 
 def _dispatch_yandex_api(
@@ -670,14 +688,14 @@ def _dispatch_yandex_api(
             result = invoke(token_ctx)
         except TokenRejected:
             _mark_token(token_data, token_ref, good=False)
-            save_token_file(token_path, token_data)
+            _persist_token_health(token_path, token_ref, good=False)
             continue
         except Exception:
             # Non-auth failures are business/API failures. Do not poison the token
             # and do not mark it good: the method did not complete normally.
             raise
         _mark_token(token_data, token_ref, good=True)
-        save_token_file(token_path, token_data)
+        _persist_token_health(token_path, token_ref, good=True)
         return result
 
     raise BlockedYandexMethodError(

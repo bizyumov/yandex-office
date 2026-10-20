@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+import copy
+from contextlib import contextmanager
+import errno
 import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable
+import tempfile
+import time
+from typing import Any, Callable, Iterator
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -25,6 +30,10 @@ class TokenResolutionError(RuntimeError):
         payload = {"error": str(self)}
         payload.update(self.details)
         return payload
+
+
+class TokenFileUpdateError(RuntimeError):
+    """Token persistence failed without exposing account or filesystem details."""
 
 
 @dataclass(frozen=True)
@@ -71,21 +80,190 @@ def load_token_file(token_path: str | Path) -> dict[str, Any]:
         return json.load(handle)
 
 
-def save_token_file(token_path: str | Path, payload: dict[str, Any]) -> None:
+@contextmanager
+def _token_file_lock(token_path: str | Path) -> Iterator[None]:
+    """Serialize cross-process access to one token file."""
+
     path = Path(token_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temp_path = path.with_suffix(".tmp")
-    fd = os.open(temp_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    lock_path = path.with_name(path.name + ".lock")
+    fd = -1
     try:
-        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
+        if hasattr(os, "fchmod"):
+            os.fchmod(fd, 0o600)
+        _lock_file_descriptor(fd)
+    except OSError:
+        if fd >= 0:
+            try:
+                os.close(fd)
+            except OSError:
+                pass
+        raise TokenFileUpdateError("Token file lock failed") from None
+    try:
+        yield
+    finally:
+        try:
+            _unlock_file_descriptor(fd)
+        except OSError:
+            pass
+        try:
+            os.close(fd)
+        except OSError:
+            pass
+
+
+def _lock_file_descriptor(fd: int) -> None:
+    """Acquire one blocking byte-range lock on Windows or flock on POSIX."""
+
+    if os.name != "nt":
+        import fcntl
+
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        return
+
+    import msvcrt
+
+    if os.fstat(fd).st_size == 0:
+        os.write(fd, b"\0")
+        os.fsync(fd)
+    while True:
+        os.lseek(fd, 0, os.SEEK_SET)
+        try:
+            msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+            return
+        except OSError as exc:
+            if exc.errno not in {errno.EACCES, errno.EDEADLK}:
+                raise
+            time.sleep(0.05)
+
+
+def _unlock_file_descriptor(fd: int) -> None:
+    """Release the platform-specific token transaction lock."""
+
+    if os.name != "nt":
+        import fcntl
+
+        fcntl.flock(fd, fcntl.LOCK_UN)
+        return
+
+    import msvcrt
+
+    os.lseek(fd, 0, os.SEEK_SET)
+    msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
+
+
+def _fsync_directory(directory: Path) -> None:
+    """Persist a completed atomic replacement on POSIX filesystems."""
+
+    if os.name == "nt":
+        return
+    fd = os.open(directory, os.O_RDONLY)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
+def _save_token_file_unlocked(token_path: str | Path, payload: dict[str, Any]) -> None:
+    """Atomically replace one token file while its transaction lock is held."""
+
+    path = Path(token_path)
+    fd = -1
+    temp_path: Path | None = None
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        fd, temp_name = tempfile.mkstemp(
+            prefix=f".{path.name}.",
+            suffix=".tmp",
+            dir=path.parent,
+        )
+        temp_path = Path(temp_name)
+        if hasattr(os, "fchmod"):
+            os.fchmod(fd, 0o600)
+        handle = os.fdopen(fd, "w", encoding="utf-8")
+        fd = -1
+        with handle:
             json.dump(payload, handle, ensure_ascii=False, indent=2)
             handle.write("\n")
             handle.flush()
             os.fsync(handle.fileno())
-        temp_path.replace(path)
+        os.replace(temp_path, path)
+        _fsync_directory(path.parent)
+    except OSError:
+        raise TokenFileUpdateError("Token file update failed") from None
     finally:
-        if temp_path.exists():
-            temp_path.unlink()
+        if fd >= 0:
+            try:
+                os.close(fd)
+            except OSError:
+                pass
+        if temp_path is not None:
+            try:
+                temp_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+
+
+def save_token_file(token_path: str | Path, payload: dict[str, Any]) -> None:
+    """Atomically overwrite one token file under its cross-process lock."""
+
+    with _token_file_lock(token_path):
+        _save_token_file_unlocked(token_path, payload)
+
+
+TokenFileCheckpoint = Callable[[], None]
+TokenFileUpdater = Callable[[dict[str, Any], TokenFileCheckpoint], dict[str, Any] | None]
+TokenFileLoader = Callable[[str | Path], dict[str, Any]]
+TokenFileSaver = Callable[[str | Path, dict[str, Any]], None]
+
+
+def update_token_file(
+    token_path: str | Path,
+    update: TokenFileUpdater,
+    *,
+    create: bool = False,
+    _load: TokenFileLoader | None = None,
+    _save: TokenFileSaver | None = None,
+) -> dict[str, Any]:
+    """Apply one read-modify-write token transaction under an exclusive lock."""
+
+    path = Path(token_path)
+    loader = _load or load_token_file
+    with _token_file_lock(path):
+        try:
+            token_data = loader(path)
+        except FileNotFoundError:
+            if not create:
+                raise
+            token_data = {}
+        except OSError:
+            raise TokenFileUpdateError("Token file read failed") from None
+        before = copy.deepcopy(token_data)
+
+        def persist(payload: dict[str, Any]) -> None:
+            try:
+                if _save is None or _save is save_token_file:
+                    _save_token_file_unlocked(path, payload)
+                else:
+                    _save(path, payload)
+            except OSError:
+                raise TokenFileUpdateError("Token file update failed") from None
+
+        def checkpoint() -> None:
+            nonlocal before
+            if token_data != before or not path.exists():
+                persist(token_data)
+                before = copy.deepcopy(token_data)
+
+        updated = update(token_data, checkpoint)
+        if updated is None:
+            updated = token_data
+        if not isinstance(updated, dict):
+            raise TypeError("Token update must return a dictionary or None")
+        if updated != before or not path.exists():
+            persist(updated)
+        return updated
 
 
 def _token_object(value: Any) -> dict[str, Any]:
@@ -172,23 +350,23 @@ def load_prepared_token_file(
     immediately so failed legacy conversion cannot leave ``token_meta`` behind.
     """
 
-    token_data = load_token_file(token_path)
-    if "token_meta" in token_data:
-        token_data.pop("token_meta", None)
-        save_token_file(token_path, token_data)
-    if _normalize_legacy_tokens(
-        token_data,
-        config,
-        verify_identity=verify_identity or _default_token_identity_verifier,
-    ):
-        save_token_file(token_path, token_data)
-    _reject_legacy_token_keys(token_data)
-    if prepare_catalog is not None:
-        prepare_catalog(token_data)
-    converted = app_keyed_tokens(token_data, config)
-    if converted != token_data:
-        save_token_file(token_path, converted)
-    return converted
+    def prepare(token_data: dict[str, Any], checkpoint: TokenFileCheckpoint) -> dict[str, Any]:
+        if "token_meta" in token_data:
+            token_data.pop("token_meta", None)
+            checkpoint()
+        if _normalize_legacy_tokens(
+            token_data,
+            config,
+            verify_identity=verify_identity or _default_token_identity_verifier,
+        ):
+            checkpoint()
+        _reject_legacy_token_keys(token_data)
+        if prepare_catalog is not None:
+            prepare_catalog(token_data)
+        converted = app_keyed_tokens(token_data, config)
+        return converted
+
+    return update_token_file(token_path, prepare)
 
 
 def _legacy_token_keys(token_data: dict[str, Any]) -> list[str]:

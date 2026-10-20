@@ -25,7 +25,7 @@ from urllib.request import Request, urlopen
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from common.auth import load_token_file, save_token_file, token_refs
+from common.auth import load_token_file, save_token_file, token_refs, update_token_file
 from common.config import (
     bootstrap_runtime_context,
     choose_account_alias,
@@ -469,13 +469,18 @@ def main() -> None:
             parser.error("--account must be a plain alias")
 
         token_path = resolve_auth_file(f"{resolved_account}.token")
-        try:
-            token_data = load_token_file(token_path)
-        except FileNotFoundError:
-            token_data = {}
-        if normalized_email:
-            token_data["email"] = normalized_email
-        save_token_file(token_path, token_data)
+        def update_identity(token_data, _checkpoint):
+            if normalized_email:
+                token_data["email"] = normalized_email
+            return token_data
+
+        token_data = update_token_file(
+            token_path,
+            update_identity,
+            create=True,
+            _load=load_token_file,
+            _save=save_token_file,
+        )
 
         _print_account_info(resolved_account, token_data, config=config)
         return

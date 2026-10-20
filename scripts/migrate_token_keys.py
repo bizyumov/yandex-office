@@ -6,11 +6,10 @@ Writes use a same-directory private staging file and atomic replacement.
 """
 import argparse
 import json
-import os
 from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common.auth import app_keyed_tokens, load_token_file
+from common.auth import app_keyed_tokens, load_token_file, update_token_file
 from common.config import ACCESS_STORAGE, _deep_merge, load_global_config, load_agent_config_payload, resolve_data_dir
 
 
@@ -19,20 +18,15 @@ def migrate(path, config, *, apply=False):
     new = app_keyed_tokens(old, config)
     changed = new != old
     if changed and apply:
-        staging = path.with_name(path.name + '.migrating')
-        fd = os.open(staging, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        try:
-            with os.fdopen(fd, 'w', encoding='utf-8') as out:
-                json.dump(new, out, ensure_ascii=False, indent=2)
-                out.write('\n')
-                out.flush()
-                os.fsync(out.fileno())
-            if load_token_file(path) != old:
-                raise RuntimeError('Token file changed concurrently; migration not applied')
-            os.replace(staging, path)
-        finally:
-            if staging.exists():
-                staging.unlink()
+        state = {'changed': False}
+
+        def migrate_current(current, _checkpoint):
+            converted = app_keyed_tokens(current, config)
+            state['changed'] = converted != current
+            return converted
+
+        new = update_token_file(path, migrate_current)
+        changed = state['changed']
     return {'changed': changed, 'applied': bool(changed and apply), 'entries': len(new) - int('email' in new)}
 
 

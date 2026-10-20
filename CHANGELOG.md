@@ -2,6 +2,19 @@
 
 All public `yandex-office` skill releases use the `YYYY.M.D` version format.
 
+## 2026.10.20
+
+### Fixed
+
+- Replaced the shared deterministic token staging path with per-write private
+  temporary files in the target directory, so stale residue and overlapping
+  writers no longer raise `FileExistsError`.
+- Serialized complete token read-modify-write transactions with a private
+  per-token lock file, preventing concurrent health, migration, import, and
+  account metadata updates from overwriting one another.
+- Preserved atomic replacement, data and directory fsync, `0600` token/temp/lock
+  modes, and cleanup limited to the current writer's temporary file.
+
 ## 2026.6.12
 
 ### Added
