@@ -422,7 +422,10 @@ def test_dispatch_does_not_auto_upgrade_legacy_yandex_disk_token_env(
     with pytest.raises(TokenConfigError) as exc_info:
         method(context(tmp_path, account="diskacct"))
 
-    assert "Token file not found" in str(exc_info.value)
+    message = str(exc_info.value)
+    assert "Token file not found" in message
+    assert "diskacct" not in message
+    assert str(tmp_path) not in message
     assert not (tmp_path / "auth" / "diskacct.token").exists()
 
 

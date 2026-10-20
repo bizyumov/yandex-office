@@ -95,7 +95,8 @@ def test_failed_atomic_save_preserves_original(tmp_path, monkeypatch):
     p = tmp_path / "account.token"
     p.write_text("original")
     monkeypatch.setattr(auth.json, "dump", lambda *a, **k: (_ for _ in ()).throw(OSError("write failure")))
-    with pytest.raises(OSError):
+    with pytest.raises(auth.TokenFileUpdateError, match="^Token file update failed$"):
         auth.save_token_file(p, {"email": "user@example.com"})
     assert p.read_text() == "original"
     assert not p.with_suffix(".tmp").exists()
+    assert not list(tmp_path.glob(".*.tmp"))
